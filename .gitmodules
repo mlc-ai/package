@@ -1,0 +1,3 @@
+[submodule "3rdparty/tlcpack"]
+	path = 3rdparty/tlcpack
+	url = https://github.com/tlc-pack/tlcpack
