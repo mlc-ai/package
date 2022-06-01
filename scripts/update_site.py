@@ -17,6 +17,7 @@ def py_str(cstr):
 skip_list = set([
     "wheels.html",
     ".gitignore",
+    ".nojekyll",
     "CNAME"
 ])
 
@@ -62,7 +63,10 @@ def main():
         run_cmd(["git", "add", "--all"])
 
     if not args.dry_run:
-        run_cmd(["git", "commit", "-am", " Update at %s" % datetime.now()])
+        try:
+            run_cmd(["git", "commit", "-am", " Update at %s" % datetime.now()])
+        except RuntimeError:
+            pass
         run_cmd(["git", "push", "origin", "main"])
         print("Finish updating and push to origin/main ...")
 
