@@ -41,7 +41,7 @@ jobs:
         ln -s 3rdparty/tlcpack/common common
     - name: Checkout source
       run: |
-        git clone https://github.com/tlc-pack/relax tvm --recursive
+        git clone https://github.com/mlc-ai/relax tvm --recursive
     - name: Sync Package
       run: python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/relax
     - name: Build
