@@ -64,7 +64,7 @@ jobs:
       run: >-
         wheel/build_lib_win.bat
     # Build wheel for three python versions
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.7
     - name: Wheel-Build@Py37
@@ -75,7 +75,7 @@ jobs:
         python3.7 -m pip install setuptools Cython wheel
         cd tvm/python
         python3.7 setup.py bdist_wheel
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.8
     - name: Wheel-Build@Py38
