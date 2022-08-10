@@ -73,9 +73,9 @@ jobs:
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         python --version
-        python3.7 -m pip install setuptools Cython wheel
+        python -m pip install setuptools Cython wheel
         cd tvm/python
-        python3.7 setup.py bdist_wheel
+        python setup.py bdist_wheel
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: build-Py38
@@ -85,9 +85,9 @@ jobs:
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         python --version
-        python3.8 -m pip install setuptools Cython wheel
+        python -m pip install setuptools Cython wheel
         cd tvm/python
-        python3.8 setup.py bdist_wheel
+        python setup.py bdist_wheel
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
