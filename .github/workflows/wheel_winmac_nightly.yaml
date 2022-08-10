@@ -15,7 +15,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [macOS-latest, windows-2019]
+        os: [macOS-11, windows-2019]
         pkg: ['mlc-ai-nightly']
 
     runs-on: ${{ matrix.os }}
@@ -66,10 +66,10 @@ jobs:
     # Build wheel for three python versions
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.7
+        python-version: '3.7'
     - name: Wheel-Build@Py37
       env:
-        MACOSX_DEPLOYMENT_TARGET: 10.15
+        MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         python --version
         python3.7 -m pip install setuptools Cython wheel
@@ -77,10 +77,10 @@ jobs:
         python3.7 setup.py bdist_wheel
     - uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: '3.8'
     - name: Wheel-Build@Py38
       env:
-        MACOSX_DEPLOYMENT_TARGET: 10.15
+        MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         python --version
         python3.8 -m pip install setuptools Cython wheel
