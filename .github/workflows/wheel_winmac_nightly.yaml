@@ -71,11 +71,15 @@ jobs:
       with:
         activate-environment: build-Py37
         python-version: 3.7
+        auto-activate-base: false
+    - name: Conda info
+      run: |
+        conda info
+        conda list
     - name: Wheel-Build@Py37
       env:
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
-        python3 --version
         python3 -m pip install setuptools Cython wheel
         cd tvm/python
         python3 setup.py bdist_wheel
@@ -83,6 +87,11 @@ jobs:
       with:
         activate-environment: build-Py38
         python-version: 3.8
+        auto-activate-base: false
+    - name: Conda info
+      run: |
+        conda info
+        conda list
     - name: Wheel-Build@Py38
       env:
         MACOSX_DEPLOYMENT_TARGET: 11.0
