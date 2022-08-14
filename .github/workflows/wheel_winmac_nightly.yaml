@@ -51,6 +51,7 @@ jobs:
       run: |
         conda info
         conda list
+        python --version
     - name: TVM checkout
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
