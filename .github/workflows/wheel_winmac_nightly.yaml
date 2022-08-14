@@ -19,6 +19,9 @@ jobs:
         pkg: ['mlc-ai-nightly']
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v2
@@ -45,7 +48,6 @@ jobs:
         auto-activate-base: false
         use-only-tar-bz2: true
     - name: Conda info
-      shell: bash -l {0}
       run: |
         conda info
         conda list
