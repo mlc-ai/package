@@ -15,10 +15,15 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [macOS-11, windows-2019]
+        sys:
+          - { os: macos-11,  shell: 'bash -l {0}'  }
+          - { os: windows-2019,   shell: 'cmd /C call {0}'  }
         pkg: ['mlc-ai-nightly']
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.sys.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.sys.shell }}
 
     steps:
     - uses: actions/checkout@v2
@@ -48,19 +53,18 @@ jobs:
       run: |
         conda info
         conda list
+        python --version
     - name: TVM checkout
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
     - name: Sync Package
-      run: python3 common/sync_package.py ${{ matrix.pkg }} --revision origin/relax
+      run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/relax
     - name: Build@MacOS
-      if: startsWith(matrix.os, 'macOS')
-      shell: bash -l {0}
+      if: startsWith(matrix.sys.os, 'macOS')
       run: >-
         wheel/build_lib_osx.sh
     - name: Build@Win
-      if: startsWith(matrix.os, 'windows')
-      shell: cmd /C call {0}
+      if: startsWith(matrix.sys.os, 'windows')
       run: >-
         wheel/build_lib_win.bat
     # Build wheel for three python versions
@@ -68,31 +72,33 @@ jobs:
       with:
         activate-environment: build-Py37
         python-version: 3.7
+        auto-activate-base: false
     - name: Wheel-Build@Py37
       env:
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
-        python3 --version
-        python3 -m pip install setuptools Cython wheel
+        python --version
+        python -m pip install setuptools Cython wheel
         cd tvm/python
-        python3 setup.py bdist_wheel
+        python setup.py bdist_wheel
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: build-Py38
         python-version: 3.8
+        auto-activate-base: false
     - name: Wheel-Build@Py38
       env:
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
-        python3 --version
-        python3 -m pip install setuptools Cython wheel
+        python --version
+        python -m pip install setuptools Cython wheel
         cd tvm/python
-        python3 setup.py bdist_wheel
+        python setup.py bdist_wheel
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       run: |
-        python3 -m pip install github3.py
-        python3 wheel/wheel_upload.py --repo mlc-ai/utils --tag v0.9.dev0 tvm/python/dist
+        python -m pip install github3.py
+        python wheel/wheel_upload.py --repo mlc-ai/utils --tag v0.9.dev0 tvm/python/dist
