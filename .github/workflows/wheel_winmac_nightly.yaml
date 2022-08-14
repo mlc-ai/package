@@ -15,7 +15,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        os: [macOS-11, windows-2019]
+        os: [macos-11, windows-2019]
         pkg: ['mlc-ai-nightly']
 
     runs-on: ${{ matrix.os }}
@@ -39,6 +39,7 @@ jobs:
     # Use conda for LLVM dep
     - uses: conda-incubator/setup-miniconda@v2
       with:
+        auto_update_conda: true
         activate-environment: tlcpack-build
         channel-priority: strict
         environment-file: conda/build-environment.yaml
