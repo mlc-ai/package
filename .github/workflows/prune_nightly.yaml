@@ -62,5 +62,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       run: >-
+        python -m pip install pyOpenSSL --upgrade
         python -m pip install github3.py requests &&
         python wheel/wheel_prune_and_sync.py --site-path mlc-ai.github.io --repo mlc-ai/utils
