@@ -15,10 +15,12 @@ jobs:
   Build:
     strategy:
       matrix:
-        sys:
-          - { os: macos-11,  shell: 'bash -l {0}'  }
-          - { os: windows-2019,   shell: 'cmd /C call {0}'  }
         pkg: ['mlc-ai-nightly']
+        sys:
+          - os: macos-latest
+            shell: 'bash -l {0}'
+          - os: windows-2019
+            shell: 'cmd /C call {0}'
 
     runs-on: ${{ matrix.sys.os }}
     defaults:
@@ -26,7 +28,7 @@ jobs:
         shell: ${{ matrix.sys.shell }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: Setup script env
@@ -61,8 +63,6 @@ jobs:
       run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/relax
     - name: Build@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 11.0
       run: >-
         wheel/build_lib_osx.sh
     - name: Build@Win
@@ -70,27 +70,49 @@ jobs:
       run: >-
         wheel/build_lib_win.bat
     # Build wheel for three python versions
-    - uses: conda-incubator/setup-miniconda@v2
+    - name: Setup@Py37
+      uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: build-Py37
         python-version: 3.7
         auto-activate-base: false
     - name: Wheel-Build@Py37
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         python --version
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - uses: conda-incubator/setup-miniconda@v2
+    - name: Setup@Py38
+      uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: build-Py38
         python-version: 3.8
         auto-activate-base: false
     - name: Wheel-Build@Py38
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 11.0
+      run: |
+        python --version
+        python -m pip install setuptools Cython wheel
+        cd tvm/python
+        python setup.py bdist_wheel
+    - name: Setup@Py39
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build-Py39
+        python-version: 3.9
+        auto-activate-base: false
+    - name: Wheel-Build@Py39
+      run: |
+        python --version
+        python -m pip install setuptools Cython wheel
+        cd tvm/python
+        python setup.py bdist_wheel
+    - name: Setup@Py310
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build-Py310
+        python-version: '3.10'
+        auto-activate-base: false
+    - name: Wheel-Build@Py310
       run: |
         python --version
         python -m pip install setuptools Cython wheel
@@ -99,9 +121,10 @@ jobs:
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
-      run: |
-        python -m pip install pyOpenSSL --upgrade
-        python -m pip install github3.py
-        python wheel/wheel_upload.py --repo mlc-ai/utils --tag v0.9.dev0 tvm/python/dist
+      with:
+        files: tvm/python/dist/*.whl
+        tag_name: v0.9.dev0
+        prerelease: true
