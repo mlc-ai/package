@@ -63,7 +63,7 @@ jobs:
         repository: mlc-ai/relax
         path: tvm
     - name: Sync Package
-      run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/relax
+      run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc
     - name: Build@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
