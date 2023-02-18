@@ -58,10 +58,8 @@ jobs:
         python --version
     - name: TVM checkout
       uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-        repository: mlc-ai/relax
-        path: tvm
+      run: |
+        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch mlc
     - name: Sync Package
       run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc
     - name: Build@MacOS
