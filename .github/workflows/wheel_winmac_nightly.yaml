@@ -57,7 +57,6 @@ jobs:
         conda list
         python --version
     - name: TVM checkout
-      uses: actions/checkout@v3
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch mlc
     - name: Sync Package
