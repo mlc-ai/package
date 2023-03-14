@@ -1,0 +1,22 @@
+<!-- Move to /Library/LaunchDaemons/ for launchd and launchctl -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.mlc.arm64-mac-wheel-nightly-build</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>bash</string>
+        <string>-c</string>
+        <string>su - catalyst -c "source /Users/catalyst/Workspace/miniforge3/etc/profile.d/conda.sh; cd /Users/catalyst/Workspace/wheel-build/; ./scripts/wheel_build_apple_silicon.sh SOME_GITHUB_TOKEN"</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+</dict>
+</plist>
