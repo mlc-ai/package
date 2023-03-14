@@ -57,10 +57,14 @@ jobs:
         conda list
         python --version
     - name: TVM checkout
-      run: |
-        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch mlc
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+        repository: mlc-ai/relax
+        ref: mlc
+        path: tvm
     - name: Sync Package
-      run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc
+      run: python common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc --skip-checkout
     - name: Build@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
