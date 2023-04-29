@@ -1,0 +1,64 @@
+# This file is used as input for scripts/sync_package.py to generate meta.yaml
+{% set default_pkg_name = 'mlc-chat' %}
+{% set pkg_name = pkg_name | default(default_pkg_name) %}
+{% set version = '0.7.0' %}
+
+{% set cuda_tag = cuda_version | replace('.', '') %} # [cuda]
+{% set pkg_name = pkg_name + '-cu' + cuda_tag %} # [cuda]
+{% set build_tag = environ.get('GIT_BUILD_STR', 'unknown') %}
+{% set build_tag = build_tag + '_h' + PKG_HASH + '_' + PKG_BUILDNUM %}
+
+package:
+  name: {{ pkg_name }}-package
+  version: {{ version }}
+
+source:
+  path: '../../../mlc-llm'
+
+build:
+  number: 0
+  include_recipe: False
+  script_env:
+    - TVM_HOME
+  missing_dso_whitelist:
+    - "*libcuda.*"  # [linux]
+
+requirements:
+  build:
+    # The anaconda compilers for OS X are old an annoying
+    # so we rely on the platform ones for now
+    - {{ compiler('cxx') }} # [not osx]
+    - cmake
+    - libvulkan-headers     # [not osx]
+    - spirv-tools           # [not osx]
+    - spirv-headers         # [not osx]
+    - libvulkan-loader      # [not osx]
+    - make # [not win]
+
+outputs:
+  - name: {{ pkg_name }}
+    script: install_libs.bat # [win]
+    script: install_libs.sh  # [not win]
+    string: {{ build_tag }}
+    requirements:
+      build:
+        - {{ compiler('cxx') }}
+        - cmake
+        - git
+        - libvulkan-headers     # [not osx]
+        - spirv-tools           # [not osx]
+        - spirv-headers         # [not osx]
+        - libvulkan-loader      # [not osx]
+        - make # [not win]
+      host:
+        - {{ pin_compatible('cudatoolkit', lower_bound=cuda_version, max_pin='x.x') }}  # [cuda]
+        - libvulkan-loader      # [not osx]
+        - cmake
+      run:
+        - {{ pin_compatible('cudatoolkit', lower_bound=cuda_version, max_pin='x.x') }}  # [cuda]
+        - libvulkan-loader      # [not osx]
+
+about:
+  home: https://mlc.ai
+  license: Apache2
+  summary: MLC
