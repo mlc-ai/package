@@ -26,7 +26,7 @@ jobs:
     - name: Setup script env
       run: |
         ln -s 3rdparty/tlcpack/wheel wheel
-        ln -s 3rdparty/tlcpack/conda conda
+        ln -s 3rdparty/tlcpack/conda tlc-conda
         ln -s 3rdparty/tlcpack/docker docker
         ln -s 3rdparty/tlcpack/common common
     - uses: actions/cache@v1
@@ -34,12 +34,12 @@ jobs:
         CACHE_NUMBER: 0
       with:
         path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/build-environment.yaml') }}
+        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('tlc-conda/build-environment.yaml') }}
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: tlcpack-build
         channel-priority: strict
-        environment-file: conda/build-environment.yaml
+        environment-file: tlc-conda/build-environment.yaml
         auto-activate-base: false
         use-only-tar-bz2: true
     - name: Conda info

@@ -40,8 +40,9 @@ jobs:
     - name: Setup script env
       run: |
         ln -s 3rdparty/tlcpack/wheel wheel
-        ln -s 3rdparty/tlcpack/conda conda
         ln -s 3rdparty/tlcpack/docker docker
+        rm -rf conda
+        ln -s 3rdparty/tlcpack/conda conda
         ln -s 3rdparty/tlcpack/common common
     - name: Checkout source
       run: |

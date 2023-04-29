@@ -34,6 +34,7 @@ jobs:
     - name: Setup script env
       run: |
         ln -s 3rdparty/tlcpack/wheel wheel
+        rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
         ln -s 3rdparty/tlcpack/docker docker
         ln -s 3rdparty/tlcpack/common common

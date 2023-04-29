@@ -44,7 +44,7 @@ jobs:
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package Versions
       run: |
-        python scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg }}
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg }}
     - name: Install Rust
       uses: actions-rs/toolchain@v1.0.6
       with:
