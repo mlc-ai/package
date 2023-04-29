@@ -71,6 +71,7 @@ jobs:
     - name: Build Conda
       env:
         TVM_HOME: ${{ github.workspace }}/tvm
+        MACOSX_DEPLOYMENT_TARGET: 10.15
       run: |
         conda build -c conda-forge --output-folder=conda/pkg -m conda/mlc-llm/build_config.yaml conda/mlc-llm/recipe
     - name: Conda-Deploy
