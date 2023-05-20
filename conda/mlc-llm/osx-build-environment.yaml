@@ -1,0 +1,12 @@
+# build env to run build independently
+name: mlc-llm-build
+
+channels:
+  - conda-forge
+
+dependencies:
+  - conda-build
+  - anaconda-client
+  - git
+  - cmake
+  - bzip2
