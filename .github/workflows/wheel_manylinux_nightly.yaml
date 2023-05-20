@@ -21,13 +21,14 @@ jobs:
         config:
           - cuda: 'none'
             image: 'tlcpack/package-cpu:2fddbe0'
-          - cuda: '11.1'
-            image: 'tlcpack/package-cu111:2fddbe0'
-          - cuda: '11.3'
-            image: 'tlcpack/package-cu113:2fddbe0'
           - cuda: '11.6'
             image: 'tlcpack/package-cu116:2fddbe0'
-
+          - cuda: '11.7'
+            image: 'tlcpack/package-cu117:cce8456'
+          - cuda: '11.8'
+            image: 'tlcpack/package-cu118:cce8456'
+          - cuda: '12.1'
+            image: 'tlcpack/package-cu121:cce8456'
 
     runs-on: ubuntu-latest
 
