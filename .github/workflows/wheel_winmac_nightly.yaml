@@ -75,18 +75,6 @@ jobs:
       run: >-
         wheel/build_lib_win.bat
     # Build wheel for three python versions
-    - name: Setup@Py37
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py37
-        python-version: 3.7
-        auto-activate-base: false
-    - name: Wheel-Build@Py37
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
     - name: Setup@Py38
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -118,6 +106,18 @@ jobs:
         python-version: '3.10'
         auto-activate-base: false
     - name: Wheel-Build@Py310
+      run: |
+        python --version
+        python -m pip install setuptools Cython wheel
+        cd tvm/python
+        python setup.py bdist_wheel
+    - name: Setup@Py311
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build-Py311
+        python-version: '3.11'
+        auto-activate-base: false
+    - name: Wheel-Build@Py311
       run: |
         python --version
         python -m pip install setuptools Cython wheel
