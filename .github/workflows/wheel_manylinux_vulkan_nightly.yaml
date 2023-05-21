@@ -52,6 +52,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
-        files: tvm/python/repaired_wheels/mlc-ai-nightly-vulkan.whl
+        files: tvm/python/repaired_wheels/*.whl
         tag_name: v0.9.dev0
         prerelease: true
