@@ -1,0 +1,61 @@
+# GH actions.
+name: Wheel-Manylinux-Vulkan-Nightly
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 6 * * *' # 6 AM UTC
+
+jobs:
+  Build:
+    strategy:
+      matrix:
+        pkg: ['mlc-ai-nightly']
+        # matrix of build configs
+        config:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Setup script env
+      run: |
+        ln -s 3rdparty/tlcpack/wheel wheel
+        ln -s 3rdparty/tlcpack/docker docker
+        rm -rf conda
+        ln -s 3rdparty/tlcpack/conda conda
+        ln -s 3rdparty/tlcpack/common common
+        cp -a vulkan/docker/* docker
+        cp -a vulkan/wheel/* wheel
+        cp -a vulkan/common/* common
+    - name: Checkout source
+      run: |
+        git clone https://github.com/mlc-ai/relax tvm --recursive
+    - name: Docker build
+      run: |
+        docker build -t mlc-ai-vulkan . -f docker/Dockerfile.package-vulkan
+    - name: Sync Package
+      run: python common/sync_package_vulkan.py ${{ matrix.pkg }} --revision origin/mlc
+    - name: Build
+      env:
+        IMAGE: ${{ matrix.config.image }}
+        CUDA: ${{ matrix.config.cuda }}
+      run: |
+        docker/bash.sh --no-gpu mlc-ai-vulkan ./wheel/build_wheel_vulkan_manylinux.sh
+    - name: Wheel-Deploy
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
+      with:
+        files: tvm/python/repaired_wheels/mlc-ai-nightly-vulkan.whl
+        tag_name: v0.9.dev0
+        prerelease: true
