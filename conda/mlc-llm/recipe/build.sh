@@ -9,10 +9,10 @@ TOOLCHAIN_OPT=""
 
 if [ "$target_platform" == "osx-arm64" ]; then
     GPU_OPT="-DUSE_METAL=ON"
-    TOOLCHAIN_OPT="-DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-10.15}"
+    TOOLCHAIN_OPT="-DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0}"
 elif [ "$target_platform" == "osx-64" ]; then
     GPU_OPT="-DUSE_METAL=ON"
-    TOOLCHAIN_OPT="-DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-10.15}"
+    TOOLCHAIN_OPT="-DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0}"
 elif [ "$target_platform" == "linux-64" ]; then
     TOOLCHAIN_OPT="-DCMAKE_TOOLCHAIN_FILE=${RECIPE_DIR}/cross-linux.cmake"
     # vulkan should be set to build prefix in non osx
