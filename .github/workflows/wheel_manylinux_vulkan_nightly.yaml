@@ -17,8 +17,6 @@ jobs:
     strategy:
       matrix:
         pkg: ['mlc-ai-nightly']
-        # matrix of build configs
-        config:
 
     runs-on: ubuntu-latest
 
@@ -45,9 +43,6 @@ jobs:
     - name: Sync Package
       run: python common/sync_package_vulkan.py ${{ matrix.pkg }} --revision origin/mlc
     - name: Build
-      env:
-        IMAGE: ${{ matrix.config.image }}
-        CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu mlc-ai-vulkan ./wheel/build_wheel_vulkan_manylinux.sh
     - name: Wheel-Deploy
