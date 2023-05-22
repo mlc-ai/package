@@ -11,13 +11,17 @@
 <link rel="stylesheet" href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 <!-- jquery min -->
-<script src="/packages/assets/js/jquery.min.js"></script>
+<script src="/package/assets/js/jquery.min.js"></script>
 <!-- Bootstrap Js -->
-<script src="/packages/assets/js/bootstrap.min.js"></script>
+<script src="/package/assets/js/bootstrap.min.js"></script>
 <!-- jQuery Easing -->
-<script src="/packages/assets/js/jquery.easing.js"></script>
+<script src="/package/assets/js/jquery.easing.js"></script>
 
 <style type="text/css" scoped>
+  .h1 {
+    text-align: center;
+  }
+
   .vertical-center {
     margin: 0;
     position: absolute;
@@ -44,7 +48,29 @@
     background: #f0faff;
     padding: 10px;
     resize: none;
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
   }
+
+  .nav-pills .nav-link.active,.nav-pills .show>.nav-link {
+    color: #fff;
+    background-color: #c41230
+  }
+
+.ivu-radio-group-button .ivu-radio-wrapper-checked:first-child {
+    border-color: #c41230;
+    -webkit-box-shadow: none;
+    box-shadow: none
+}
+
+.ivu-radio-group-button .ivu-radio-wrapper-checked:hover {
+    border-color: #c61432;
+    color: #c61432;
+}
+
+.ivu-radio-group-button .ivu-radio-wrapper-checked:active {
+    border-color: #c41230;
+    color: #c41230
+}
 </style>
 
 <div class="single-blog-details">
