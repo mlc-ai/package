@@ -1,0 +1,146 @@
+<!-- IView CSS -->
+<link rel="stylesheet" href="//unpkg.com/iview/dist/styles/iview.css">
+
+<!-- Bootstrap CSS -->
+
+<!-- Main Stylesheet -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/iview/3.5.4/iview.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/iview/3.5.4/locale/en-US.js"></script>
+<script src="https://unpkg.com/vue-multiselect@2.1.0"></script>
+<link rel="stylesheet" href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<!-- jquery min -->
+<script src="/packages/assets/js/jquery.min.js"></script>
+<!-- Bootstrap Js -->
+<script src="/packages/assets/js/bootstrap.min.js"></script>
+<!-- jQuery Easing -->
+<script src="/packages/assets/js/jquery.easing.js"></script>
+
+<style type="text/css" scoped>
+  .vertical-center {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+  }
+
+  .ivu-radio-wrapper {
+    text-align: center;
+    width: 150px;
+  }
+
+  #vbtn_div > div>label.ivu-radio-wrapper{
+    width: 120px
+  }
+
+  .ivu-col {
+    height: 50px;
+    line-height: 50px;
+  }
+
+  .ivu-input {
+    background: #f0faff;
+    padding: 10px;
+    resize: none;
+  }
+</style>
+
+<div class="single-blog-details">
+  <!-- Begin install cmd app -->
+  <div id="app" style="padding: 32px">
+    <row>
+      <i-col span="4">
+        <div class="guide"> Hardware:</div>
+      </i-col>
+      <i-col span="20">
+        <div id="vbtn_div">
+        <radio-group id="version_button" v-model="button_hardware" type="button" size="large" style="width: 100%;">
+          <radio label="CPU"></radio>
+          <radio label="Vulkan"></radio>
+          <radio label="Metal"></radio>
+          <radio label="CUDA 11.6"></radio>
+          <radio label="CUDA 11.7"></radio>
+          <radio label="CUDA 11.8"></radio>
+          <radio label="CUDA 12.1"></radio>
+        </radio-group>
+      </div>
+      </i-col>
+    </row>
+    <br />
+    <row>
+      <i-col span="4">
+        <div class="guide"> Package:</div>
+      </i-col>
+      <i-col span="20">
+        <radio-group v-model="button_pkg" type="button" size="large">
+          <radio label="Pip(Nightly Build)"></radio>
+        </radio-group>
+      </i-col>
+    </row>
+    <br>
+    <row>
+      <i-col span="4">
+        <div class="guide"> Your OS:</div>
+      </i-col>
+      <i-col span="20">
+        <radio-group v-model="button_os" type="button" size="large">
+          <radio label="Linux"></radio>
+          <radio label="Windows"></radio>
+          <radio label="Mac"></radio>
+        </radio-group>
+      </i-col>
+    </row>    
+    <br><br>
+    <row>
+      <i-col span="4">
+        <div> Run this:</div>
+      </i-col>
+      <i-col span="20">
+        <div><i-input v-model="path_value" type="textarea" :autosize="true" style="width: 100%"
+          class="vertical-center" readonly></i-input>
+        </div>
+      </i-col>
+    </row>
+  </div>
+</div>
+
+<script>
+  Vue.component('vue-multiselect', window.VueMultiselect.default)
+  function pip_path_hardware(_build_dir, _pkg) {
+    var build_dir = {
+      'CUDA 11.6': 'cu116',
+      'CUDA 11.7': 'cu117',
+      'CUDA 11.8': 'cu118',
+      'CUDA 12.1': 'cu121',
+      'CPU': '',
+      'Metal': '',
+      'Vulkan': 'vulkan',
+    }[_build_dir];
+    suffix = (build_dir == '') ? '' : '-' + build_dir;
+    return "pip install --pre mlc-ai-nightly" + suffix + " -f https://mlc.ai/wheels"
+  }
+
+  var vm = new Vue({
+    el: "#app",
+    data: {
+      button_hardware: 'CPU',
+      button_os: 'Linux',
+      button_pkg: 'Pip(Nightly Build)',
+    },
+    computed: {
+      path_value: function () {
+        if (this.button_hardware == "Metal" && this.button_os != "Mac") {
+          return "Metal is only available on Mac."
+        } else if (this.button_os === 'Windows' && this.button_hardware != "CPU") {
+          return "Windows package for " + this.button_hardware + " is not available yet. Install from source if needed."
+        } else if (this.button_os === "Mac" && this.button_hardware.startsWith("cu")) {
+          return "Mac do not support CUDA."
+        } else {
+          return pip_path_hardware(this.button_hardware, this.button_pkg)
+        }
+      }
+    }
+  })
+</script>

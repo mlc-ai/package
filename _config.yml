@@ -1,0 +1,34 @@
+
+name: "Machine Learning Compilation"
+short_name: "MLC"
+
+url: https://mlc.ai/package
+
+exclude: [README.md, Makefile, screenshot.png, serve_local.sh]
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-redirect-from
+
+remote_theme: mlc-ai/jekyll-theme-mlc
+
+# Colorize code snippets with the rogue module if we want to deploy on GH.
+highlighter: rouge
+
+markdown: kramdown
+
+# The path structure for blog posts.
+permalink: /:title
+
+# Number of news stories on the front page.
+front_page_news: 8
+
+# Base pathname for links.
+base: '/package'
+
+course_title:
+
+# Navigation bar links.
+navigation:
+  - title: Home
+    link: /
