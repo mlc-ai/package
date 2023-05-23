@@ -182,7 +182,7 @@
       path_value: function () {
         if (this.button_hardware == "Metal" && this.button_os != "Mac") {
           return "Metal is only available on Mac."
-        } else if (this.button_os === 'Windows' && this.button_hardware != "CPU") {
+        } else if (this.button_os === 'Windows' && (this.button_hardware != "CPU" || this.button_hardware != "Vulkan")) {
           return "Windows package for " + this.button_hardware + " is not available yet. Install from source if needed."
         } else if (this.button_os === "Mac" && this.button_hardware.startsWith("cu")) {
           return "Mac do not support CUDA."
