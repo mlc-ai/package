@@ -9,7 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/iview/3.5.4/locale/en-US.js"></script>
 <script src="https://unpkg.com/vue-multiselect@2.1.0"></script>
 <link rel="stylesheet" href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+  integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 <!-- jquery min -->
 <script src="/package/assets/js/jquery.min.js"></script>
 <!-- Bootstrap Js -->
@@ -22,7 +23,8 @@
     color: #c41230;
   }
 
-  .h1, h1 {
+  .h1,
+  h1 {
     text-align: center;
   }
 
@@ -39,7 +41,7 @@
     width: 150px;
   }
 
-  #vbtn_div > div>label.ivu-radio-wrapper{
+  #vbtn_div>div>label.ivu-radio-wrapper {
     width: 120px
   }
 
@@ -53,14 +55,15 @@
     color: black;
     padding: 10px;
     resize: none;
-    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
   }
 
   .ivu-input:hover {
     border-color: #c41230;
   }
 
-  .nav-pills .nav-link.active,.nav-pills .show>.nav-link {
+  .nav-pills .nav-link.active,
+  .nav-pills .show>.nav-link {
     color: #fff;
     background-color: #c41230
   }
@@ -105,16 +108,16 @@
       </i-col>
       <i-col span="20">
         <div id="vbtn_div">
-        <radio-group id="version_button" v-model="button_hardware" type="button" size="large" style="width: 100%;">
-          <radio label="CPU"></radio>
-          <radio label="Vulkan"></radio>
-          <radio label="Metal"></radio>
-          <radio label="CUDA 11.6"></radio>
-          <radio label="CUDA 11.7"></radio>
-          <radio label="CUDA 11.8"></radio>
-          <radio label="CUDA 12.1"></radio>
-        </radio-group>
-      </div>
+          <radio-group id="version_button" v-model="button_hardware" type="button" size="large" style="width: 100%;">
+            <radio label="CPU"></radio>
+            <radio label="Vulkan"></radio>
+            <radio label="Metal"></radio>
+            <radio label="CUDA 11.6"></radio>
+            <radio label="CUDA 11.7"></radio>
+            <radio label="CUDA 11.8"></radio>
+            <radio label="CUDA 12.1"></radio>
+          </radio-group>
+        </div>
       </i-col>
     </row>
     <br />
@@ -140,15 +143,15 @@
           <radio label="Mac"></radio>
         </radio-group>
       </i-col>
-    </row>    
+    </row>
     <br><br>
     <row>
       <i-col span="4">
         <div> Run this:</div>
       </i-col>
       <i-col span="20">
-        <div><i-input v-model="path_value" type="textarea" :autosize="true" style="width: 100%"
-          class="vertical-center" readonly></i-input>
+        <div><i-input v-model="path_value" type="textarea" :autosize="true" style="width: 100%" class="vertical-center"
+            readonly></i-input>
         </div>
       </i-col>
     </row>
@@ -180,14 +183,14 @@
     },
     computed: {
       path_value: function () {
-        if (this.button_hardware == "Metal" && this.button_os != "Mac") {
+        if (this.button_hardware === "Metal" && this.button_os != "Mac") {
           return "Metal is only available on Mac."
-        } else if (this.button_os === 'Windows' && (this.button_hardware != "CPU" || this.button_hardware != "Vulkan")) {
+        } else if (this.button_os === 'Windows' && this.button_hardware != "CPU" && this.button_hardware != "Vulkan") {
           return "Windows package for " + this.button_hardware + " is not available yet. Install from source if needed."
         } else if (this.button_os === "Mac" && this.button_hardware.startsWith("cu")) {
           return "Mac do not support CUDA."
         } else {
-          return pip_path_hardware(this.button_hardware, this.button_pkg)
+          return pip_path_hardware((this.button_os == "Windows") ? "CPU" : this.button_hardware, this.button_pkg)
         }
       }
     }
