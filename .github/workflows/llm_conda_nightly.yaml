@@ -60,6 +60,7 @@ jobs:
         activate-environment: mlc-llm-build
         channels: conda-forge
         channel-priority: flexible
+        python-version: 3.11
         show-channel-urls: true
         environment-file: conda/mlc-llm/build-environment.yaml
         auto-activate-base: false
