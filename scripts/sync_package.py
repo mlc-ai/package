@@ -100,6 +100,14 @@ def update_conda(args, pkg, package_name):
         args.dry_run,
     )
 
+def update_setup(args, pkg, package_name):
+    pub_ver, _ = get_version_tag(args)
+    rewrites = [
+        (r'(?<=name=")[^\"]+', package_name),
+        (r'(?<=version=)[^\,]+', f'"{pub_ver}"'),
+    ]
+    update(os.path.join(args.src, "python", "setup.py"), rewrites, args.dry_run)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -170,6 +178,8 @@ def main():
 
     if not args.skip_conda:
         update_conda(args, args.package, package_name)
+
+    update_setup(args, args.package, package_name)
 
 
 if __name__ == "__main__":
