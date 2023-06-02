@@ -1,0 +1,20 @@
+name: tlcpack-build
+
+channels:
+  - tlcpack
+  - anaconda
+  - conda-forge
+
+dependencies:
+  - conda-build
+  - anaconda-client
+  - git
+  - llvmdev==15
+  - numpy
+  - pytest
+  - cmake
+  - bzip2
+  - make
+  - scipy
+  - cython
+  - pip
