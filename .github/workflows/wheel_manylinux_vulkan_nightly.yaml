@@ -26,6 +26,7 @@ jobs:
         submodules: 'recursive'
     - name: Setup script env
       run: |
+        mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
         ln -s 3rdparty/tlcpack/wheel wheel
         ln -s 3rdparty/tlcpack/docker docker
         rm -rf conda
