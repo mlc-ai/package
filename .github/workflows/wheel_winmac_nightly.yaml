@@ -19,7 +19,7 @@ jobs:
         sys:
           - os: macos-latest
             shell: 'bash -l {0}'
-          - os: windows-2019
+          - os: windows-latest
             shell: 'cmd /C call {0}'
 
     runs-on: ${{ matrix.sys.os }}
