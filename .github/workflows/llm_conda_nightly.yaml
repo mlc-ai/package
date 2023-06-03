@@ -21,7 +21,7 @@ jobs:
           - os: ubuntu-latest
             conda_pkg_path: linux-64
             shell: 'bash -l {0}'
-          - os: windows-2019
+          - os: windows-latest
             shell: 'cmd /C call {0}'
             conda_pkg_path: win-64
           - os: macos-latest

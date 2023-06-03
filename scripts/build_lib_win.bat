@@ -6,7 +6,7 @@ mkdir build
 cd build
 
 cmake -A x64 -Thost=x64 ^
-      -G "Visual Studio 16 2019" ^
+      -G "Visual Studio 17 2022" ^
       -DUSE_LLVM="llvm-config --link-static" ^
       -DUSE_RPC=ON ^
       -DUSE_SORT=ON ^
