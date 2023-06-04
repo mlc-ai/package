@@ -6,14 +6,15 @@ channels:
 
 dependencies:
   - llvmdev>=15
-  - cmake>=3.18
+  - cmake>=3.24
+  - zlib
+  - zstd
+  - git
   - conda-build
   - anaconda-client
-  - git
   - numpy
   - pytest
   - bzip2
   - scipy
-  - cython
   - pip
-  - zlib
+  - cython
