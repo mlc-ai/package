@@ -51,7 +51,7 @@ def main():
     logging.basicConfig(level=logging.WARNING)
     parser = argparse.ArgumentParser(description="Upload wheel as an asset of a tag.")
     parser.add_argument("--tag", type=str)
-    parser.add_argument("--repo", type=str, default="tlc-pack/tlcpack")
+    parser.add_argument("--repo", type=str, default="mlc-ai/package")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--timeout-retry", type=int, default=10)
     parser.add_argument("path", type=str)

@@ -26,7 +26,6 @@ jobs:
     - name: Setup script env
       run: |
         mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
-        ln -s 3rdparty/tlcpack/wheel wheel
         ln -s 3rdparty/tlcpack/conda tlc-conda
         ln -s 3rdparty/tlcpack/docker docker
         ln -s 3rdparty/tlcpack/common common
@@ -65,4 +64,4 @@ jobs:
       run: >-
         python -m pip install pyOpenSSL --upgrade &&
         python -m pip install github3.py requests &&
-        python wheel/wheel_prune_and_sync.py --site-path mlc-ai.github.io --repo mlc-ai/utils
+        python wheel/wheel_prune_and_sync.py --site-path mlc-ai.github.io --repo mlc-ai/package

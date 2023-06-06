@@ -28,5 +28,5 @@ do
     cd tvm/python && python setup.py bdist_wheel && cd -
 
     # deploy wheel
-    python scripts/wheel_upload.py --repo mlc-ai/utils --tag v0.9.dev0 tvm/python/dist
+    python scripts/wheel_upload.py --repo mlc-ai/package --tag v0.9.dev0 tvm/python/dist
 done
