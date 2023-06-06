@@ -89,13 +89,6 @@ echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >> config.cm
 echo set\(HIDE_PRIVATE_SYMBOLS ON\) >> config.cmake
 echo set\(USE_RPC ON\) >> config.cmake
 echo set\(USE_SORT ON\) >> config.cmake
-echo set\(USE_GRAPH_RUNTIME ON\) >> config.cmake
-echo set\(USE_ETHOSN /opt/arm/ethosn-driver\) >> config.cmake
-echo set\(USE_ARM_COMPUTE_LIB /opt/arm/acl\) >> config.cmake
-echo set\(USE_MICRO ON\) >> config.cmake
-echo set\(USE_MICRO_STANDALONE_RUNTIME ON\) >> config.cmake
-echo set\(USE_ETHOSU ON\) >> config.cmake
-echo set\(USE_CMSISNN ON\) >> config.cmake
 if [[ ${CUDA} != "none" ]]; then
     echo set\(USE_CUDA ON\) >> config.cmake
     echo set\(USE_CUBLAS ON\) >> config.cmake

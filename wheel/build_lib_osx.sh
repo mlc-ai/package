@@ -17,13 +17,8 @@ cmake -DCMAKE_BUILD_TYPE=Release \
       -DUSE_CPP_RPC=OFF \
       -DUSE_SORT=ON \
       -DUSE_RANDOM=ON \
-      -DUSE_GRAPH_RUNTIME_DEBUG=ON \
       -DUSE_LLVM="llvm-config --link-static" \
       -DHIDE_PRIVATE_SYMBOLS=ON \
-      -DUSE_ETHOSU=ON \
-      -DUSE_CMSISNN=ON \
-      -DUSE_MICRO=ON \
-      -DUSE_MICRO_STANDALONE_RUNTIME=ON \
       -DUSE_METAL=ON \
       ..
 
