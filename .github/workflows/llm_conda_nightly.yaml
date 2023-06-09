@@ -39,8 +39,7 @@ jobs:
         submodules: 'recursive'
     - name: Checkout
       run: |
-        rm -rf tvm mlc-llm
-        git clone https://github.com/mlc-ai/relax tvm --recursive
+        rm -rf mlc-llm
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package Versions
       run: |
@@ -71,7 +70,6 @@ jobs:
         python --version
     - name: Build Conda
       env:
-        TVM_HOME: ${{ github.workspace }}/tvm
         MACOSX_DEPLOYMENT_TARGET: 11.0
       run: |
         conda build -c conda-forge --output-folder=conda/pkg -m conda/mlc-llm/build_config.yaml conda/mlc-llm/recipe

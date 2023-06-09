@@ -4,11 +4,9 @@ set -u
 PKG="mlc-chat-nightly"
 CONDA_ENV_NAME="mlc-llm-build"
 export CONDA_PKG_PATH="osx-arm64"
-export TVM_HOME="$(pwd)/tvm"
 
-rm -rf tvm mlc-llm
+rm -rf mlc-llm
 git clone git@github.com:mlc-ai/mlc-llm.git mlc-llm --recursive
-git clone git@github.com:mlc-ai/relax.git tvm --recursive
 
 python3 scripts/sync_package.py --package mlc-llm --package-name $PKG
 
