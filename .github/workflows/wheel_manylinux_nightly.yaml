@@ -50,7 +50,7 @@ jobs:
       run: python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
     - name: Setup Conda Environment
       run: |
-        conda env create -f 3rdparty/tlcpack/conda/build-environment.yml
+        conda env create -f conda/build-environment.yaml
     - name: Build
       env:
         IMAGE: ${{ matrix.config.image }}
