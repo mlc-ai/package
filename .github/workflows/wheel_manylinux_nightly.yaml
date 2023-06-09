@@ -48,6 +48,14 @@ jobs:
         git clone https://github.com/mlc-ai/relax tvm --recursive
     - name: Sync Package
       run: python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
+    - name: Setup Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: tlcpack-build
+        channel-priority: strict
+        environment-file: conda/build-environment.yaml
+        auto-activate-base: false
+        use-only-tar-bz2: true
     - name: Build
       env:
         IMAGE: ${{ matrix.config.image }}
