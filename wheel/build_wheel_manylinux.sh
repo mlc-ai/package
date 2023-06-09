@@ -70,6 +70,8 @@ if ! in_array "${CUDA}" "${CUDA_OPTIONS[*]}" ; then
     exit -1
 fi
 
+conda env create -f /docker/build_environment.yaml
+
 if [[ ${CUDA} == "none" ]]; then
     echo "Building TVM for CPU only"
     PYTHON_VERSIONS=${PYTHON_VERSIONS_CPU[*]}
