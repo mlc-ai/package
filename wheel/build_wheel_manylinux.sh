@@ -71,6 +71,7 @@ if ! in_array "${CUDA}" "${CUDA_OPTIONS[*]}" ; then
 fi
 
 conda env create -f /docker/build-environment.yaml
+conda init bash
 conda activate tlcpack-build
 
 if [[ ${CUDA} == "none" ]]; then
