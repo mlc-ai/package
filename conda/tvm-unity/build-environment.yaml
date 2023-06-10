@@ -21,3 +21,4 @@ dependencies:
   - libvulkan-headers
   - libvulkan-loader
   - spirv-tools
+  - spirv-headers
