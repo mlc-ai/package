@@ -72,6 +72,7 @@ fi
 
 conda env create -f /docker/build-environment.yaml
 conda init bash
+source ~/.bashrc
 conda activate tlcpack-build
 
 if [[ ${CUDA} == "none" ]]; then
