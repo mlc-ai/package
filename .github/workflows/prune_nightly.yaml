@@ -41,7 +41,6 @@ jobs:
         channel-priority: strict
         environment-file: tlc-conda/build-environment.yaml
         auto-activate-base: false
-        use-only-tar-bz2: true
     - name: Conda info
       run: |
         conda info
