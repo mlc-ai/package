@@ -22,4 +22,3 @@ dependencies:
   - libvulkan-loader
   - spirv-tools
   - spirv-headers
-  - libxml2 
