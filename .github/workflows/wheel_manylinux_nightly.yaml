@@ -39,7 +39,7 @@ jobs:
     - name: Setup script env
       run: |
         ln -s 3rdparty/tlcpack/docker docker
-        mv conda/tvm-unity/build-environment.yaml docker/build-environment.yaml
+        mv conda/tvm-unity/build-environment-manylinux.yaml docker/build-environment.yaml
         rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
         ln -s 3rdparty/tlcpack/common common

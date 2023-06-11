@@ -1,0 +1,24 @@
+# our manylinux docker already ships llvm 10, and llvm 15 is not compatible with g++ in our manylinux image.
+name: tlcpack-build
+
+channels:
+  - conda-forge
+  - anaconda
+
+dependencies:
+  - cmake>=3.24
+  - zlib
+  - zstd
+  - git
+  - conda-build
+  - anaconda-client
+  - numpy
+  - pytest
+  - bzip2
+  - scipy
+  - pip
+  - cython
+  - libvulkan-headers
+  - libvulkan-loader
+  - spirv-tools
+  - spirv-headers
