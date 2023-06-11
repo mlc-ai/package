@@ -110,7 +110,6 @@
         <div id="vbtn_div">
           <radio-group id="version_button" v-model="button_hardware" type="button" size="large" style="width: 100%;">
             <radio label="CPU"></radio>
-            <radio label="Vulkan"></radio>
             <radio label="Metal"></radio>
             <radio label="CUDA 11.6"></radio>
             <radio label="CUDA 11.7"></radio>
@@ -168,7 +167,6 @@
       'CUDA 12.1': 'cu121',
       'CPU': '',
       'Metal': '',
-      'Vulkan': 'vulkan',
     }[_build_dir];
     suffix = (build_dir == '') ? '' : '-' + build_dir;
     return "pip install --pre mlc-ai-nightly" + suffix + " -f https://mlc.ai/wheels"
@@ -185,14 +183,11 @@
       path_value: function () {
         if (this.button_hardware === "Metal" && this.button_os != "Mac") {
           return "Metal is only available on Mac."
-        } else if (this.button_os === 'Windows' && this.button_hardware != "CPU" && this.button_hardware != "Vulkan") {
+        } else if (this.button_os === 'Windows' && this.button_hardware != "CPU") {
           return "Windows package for " + this.button_hardware + " is not available yet. Install from source if needed."
         } else if (this.button_os === "Mac") {
           if (this.button_hardware.startsWith("CUDA")) {
             return "Mac do not support CUDA."
-          } else if (this.button_hardware === "Vulkan") {
-            return "For Mac, use Metal instead of Vulkan."
-          }
         }
         return pip_path_hardware((this.button_os == "Windows") ? "CPU" : this.button_hardware, this.button_pkg)
       }
