@@ -188,6 +188,7 @@
         } else if (this.button_os === "Mac") {
           if (this.button_hardware.startsWith("CUDA")) {
             return "Mac do not support CUDA."
+          }
         }
         return pip_path_hardware((this.button_os == "Windows") ? "CPU" : this.button_hardware, this.button_pkg)
       }
