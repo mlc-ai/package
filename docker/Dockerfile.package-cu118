@@ -15,7 +15,7 @@ COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
 RUN bash /install/almalinux_install_llvm.sh
 
 # install cuda
-COPY install/almalinux_install_cuda_117.sh /install/almalinux_install_cuda.sh
+COPY install/almalinux_install_cuda_118.sh /install/almalinux_install_cuda.sh
 RUN bash /install/almalinux_install_cuda.sh
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}

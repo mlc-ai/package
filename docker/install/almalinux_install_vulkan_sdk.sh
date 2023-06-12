@@ -15,5 +15,3 @@ cp -p $VULKAN_SDK/lib/libSPIRV* /usr/lib64/
 cp -P $VULKAN_SDK/lib/libvulkan* /usr/lib64/
 cp -P $VULKAN_SDK/lib/libVkLayer_* /usr/lib64/
 ln -s /usr/lib64/libSPIRV-Tools-shared.so /usr/lib64/libSPIRV-Tools.so
-# mkdir -p /usr/local/share/vulkan/explicit_layer.d
-# cp $VULKAN_SDK/etc/vulkan/explicit_layer.d/VkLayer_*.json /usr/local/share/vulkan/explicit_layer.d
