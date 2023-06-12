@@ -20,15 +20,15 @@ jobs:
         # matrix of build configs
         config:
           - cuda: 'none'
-            image: 'tlcpack/package-cpu:2fddbe0'
+            dockerfile: 'Dockerfile.package-cpu'
           - cuda: '11.6'
-            image: 'tlcpack/package-cu116:2fddbe0'
+            dockerfile: 'Dockerfile.package-cu116'
           - cuda: '11.7'
-            image: 'tlcpack/package-cu117:cce8456'
+            dockerfile: 'Dockerfile.package-cu117'
           - cuda: '11.8'
-            image: 'tlcpack/package-cu118:cce8456'
+            dockerfile: 'Dockerfile.package-cu118'
           - cuda: '12.1'
-            image: 'tlcpack/package-cu121:cce8456'
+            dockerfile: 'Dockerfile.package-cu121'
 
     runs-on: ubuntu-latest
 
@@ -38,8 +38,6 @@ jobs:
         submodules: 'recursive'
     - name: Setup script env
       run: |
-        ln -s 3rdparty/tlcpack/docker docker
-        mv conda/tvm-unity/build-environment-manylinux.yaml docker/build-environment.yaml
         rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
         ln -s 3rdparty/tlcpack/common common
@@ -48,9 +46,13 @@ jobs:
         git clone https://github.com/mlc-ai/relax tvm --recursive
     - name: Sync Package
       run: python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
-    - name: Build
+    - name: Docker build
+      run: |
+        cd docker
+        docker build -t mlc-ai-${{ matrix.config.cuda }} . -f ${{ matrix.config.dockerfile }}
+    - name: Build TVM Unity
       env:
-        IMAGE: ${{ matrix.config.image }}
+        IMAGE: mlc-ai-${{ matrix.config.image }}
         CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./wheel/build_wheel_manylinux.sh --cuda $CUDA
