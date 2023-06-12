@@ -18,3 +18,7 @@ dependencies:
   - scipy
   - pip
   - cython
+  - libvulkan-headers
+  - libvulkan-loader
+  - spirv-tools
+  - spirv-headers

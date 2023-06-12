@@ -10,6 +10,7 @@ dependencies:
   - libvulkan-headers
   - libvulkan-loader
   - spirv-tools
+  - spirv-headers
   - git
   - cmake
   - bzip2

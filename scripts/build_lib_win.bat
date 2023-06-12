@@ -10,8 +10,6 @@ cmake -A x64 -Thost=x64 ^
       -DUSE_LLVM="llvm-config --link-static" ^
       -DZLIB_USE_STATIC_LIBS=ON ^
       -DUSE_RPC=ON ^
-      -DUSE_SORT=ON ^
-      -DUSE_RANDOM=ON ^
       -DUSE_VULKAN=ON ^
       ..
 

@@ -80,7 +80,7 @@ fi
 
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
 if [[ ${CUDA} != "none" ]]; then
-    AUDITWHEEL_OPTS="--skip-libs libcuda ${AUDITWHEEL_OPTS}"
+    AUDITWHEEL_OPTS="--exclude libcuda ${AUDITWHEEL_OPTS}"
 fi
 
 # config the cmake
@@ -88,11 +88,10 @@ cd /workspace/tvm
 echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >> config.cmake
 echo set\(HIDE_PRIVATE_SYMBOLS ON\) >> config.cmake
 echo set\(USE_RPC ON\) >> config.cmake
-echo set\(USE_SORT ON\) >> config.cmake
+echo set\(USE_VULKAN ON\) >> config.cmake
+
 if [[ ${CUDA} != "none" ]]; then
     echo set\(USE_CUDA ON\) >> config.cmake
-    echo set\(USE_CUBLAS ON\) >> config.cmake
-    echo set\(USE_CUDNN ON\) >> config.cmake
 fi
 
 # compile the tvm

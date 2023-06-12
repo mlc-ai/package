@@ -10,8 +10,20 @@ RUN bash /install/almalinux_install_core.sh
 COPY install/almalinux_install_cmake.sh /install/almalinux_install_cmake.sh
 RUN bash /install/almalinux_install_cmake.sh
 
-# build llvm
-RUN dnf install -y llvm llvm-devel
+# install llvm
+COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
+RUN bash /install/almalinux_install_llvm.sh
+
+# install cuda
+COPY install/almalinux_install_cuda_121.sh /install/almalinux_install_cuda.sh
+RUN bash /install/almalinux_install_cuda.sh
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=${CUDA_HOME}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${PATH}
+
+# install vulkan sdk
+COPY install/almalinux_install_vulkan_sdk.sh /install/almalinux_install_vulkan_sdk.sh
+RUN bash /install/almalinux_install_vulkan_sdk.sh
 
 # upgrade patchelf due to the bug in patchelf 0.10
 # see details at https://stackoverflow.com/questions/61007071/auditwheel-repair-not-working-as-expected
@@ -32,14 +44,7 @@ RUN conda create -n py311 python=3.11 -y
 COPY install/almalinux_install_python_package.sh /install/almalinux_install_python_package.sh
 RUN bash /install/almalinux_install_python_package.sh
 
+# Install auditwheel
 COPY install/almalinux_install_auditwheel.sh /install/almalinux_install_auditwheel.sh
 RUN bash /install/almalinux_install_auditwheel.sh
 ENV AUDITWHEEL_PLAT=manylinux_2_28_x86_64
-
-# Install SPIRV-Tools
-RUN dnf --enablerepo=powertools -y install spirv-tools-devel
-
-# Install Vulkan SDK
-COPY install/almalinux_install_vulkan_sdk.sh /install/almalinux_install_vulkan_sdk.sh
-RUN bash /install/almalinux_install_vulkan_sdk.sh
-ENV VULKAN_SDK=/vulkan

@@ -15,14 +15,8 @@ cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
       -DUSE_RPC=ON \
       -DUSE_CPP_RPC=OFF \
-      -DUSE_SORT=ON \
-      -DUSE_RANDOM=ON \
       -DUSE_LLVM="llvm-config --link-static" \
       -DHIDE_PRIVATE_SYMBOLS=ON \
-      -DUSE_ETHOSU=ON \
-      -DUSE_CMSISNN=ON \
-      -DUSE_MICRO=ON \
-      -DUSE_MICRO_STANDALONE_RUNTIME=ON \
       -DUSE_METAL=ON \
       ..
 
