@@ -10,14 +10,10 @@ wget https://sdk.lunarg.com/sdk/download/${vulkan_version}/linux/vulkansdk-linux
 tar xf vulkansdk-linux-x86_64-${vulkan_version}.tar.gz -C ~/vulkan
 rm vulkansdk-linux-x86_64-${vulkan_version}.tar.gz
 export VULKAN_SDK=~/vulkan/${vulkan_version}/x86_64
-cp -r $VULKAN_SDK/include/vulkan/ /usr/include/
-cp -P $VULKAN_SDK/lib/libvulkan.so* /usr/lib64/
-cp $VULKAN_SDK/lib/libVkLayer_*.so /usr/lib64/
-mkdir -p /usr/local/share/vulkan/explicit_layer.d
-cp $VULKAN_SDK/etc/vulkan/explicit_layer.d/VkLayer_*.json /usr/local/share/vulkan/explicit_layer.d
-
-# Install SPIRV-Headers
-git clone -b sdk-1.3.236  https://github.com/KhronosGroup/SPIRV-Tools.git
-cp -a SPIRV-Tools/include/* /usr/include/
-git clone -b sdk-1.3.236 https://github.com/KhronosGroup/SPIRV-Headers.git
-cp -a SPIRV-Headers/include/* /usr/include/
+cp -ar $VULKAN_SDK/include/* /usr/include/
+cp -p $VULKAN_SDK/lib/libSPIRV* /usr/lib64/
+cp -P $VULKAN_SDK/lib/libvulkan* /usr/lib64/
+cp -P $VULKAN_SDK/lib/libVkLayer_* /usr/lib64/
+ln -s /usr/lib64/libSPIRV-Tools-shared.so /usr/lib64/libSPIRV-Tools.so
+# mkdir -p /usr/local/share/vulkan/explicit_layer.d
+# cp $VULKAN_SDK/etc/vulkan/explicit_layer.d/VkLayer_*.json /usr/local/share/vulkan/explicit_layer.d

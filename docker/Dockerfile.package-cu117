@@ -11,7 +11,8 @@ COPY install/almalinux_install_cmake.sh /install/almalinux_install_cmake.sh
 RUN bash /install/almalinux_install_cmake.sh
 
 # install llvm
-RUN dnf install -y llvm llvm-devel
+COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
+RUN bash /install/almalinux_install_llvm.sh
 
 # install cuda
 COPY install/almalinux_install_cuda_117.sh /install/almalinux_install_cuda.sh
