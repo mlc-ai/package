@@ -52,7 +52,7 @@ jobs:
         docker build -t mlc-ai-${{ matrix.config.cuda }} . -f ${{ matrix.config.dockerfile }}
     - name: Build TVM Unity
       env:
-        IMAGE: mlc-ai-${{ matrix.config.image }}
+        IMAGE: mlc-ai-${{ matrix.config.cuda }}
         CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./wheel/build_wheel_manylinux.sh --cuda $CUDA
