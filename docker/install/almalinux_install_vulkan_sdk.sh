@@ -18,4 +18,4 @@ cp $VULKAN_SDK/etc/vulkan/explicit_layer.d/VkLayer_*.json /usr/local/share/vulka
 
 # Install SPIRV-Headers
 git clone -b sdk-1.3.236 https://github.com/KhronosGroup/SPIRV-Headers.git
-ln -s /usr/include/spirv SPIRV-Headers/include/spirv
+ln -s SPIRV-Headers/include/spirv /usr/local/include/spirv
