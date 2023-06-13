@@ -42,7 +42,7 @@ jobs:
     - name: Checkout source
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
-        git clone https://github.com/mlc-ai/mlc-llm tvm --recursive
+        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package
       run: |
         python3 common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc --skip-checkout
