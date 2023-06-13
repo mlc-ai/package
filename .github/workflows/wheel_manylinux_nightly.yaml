@@ -56,12 +56,23 @@ jobs:
         CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./wheel/build_wheel_manylinux.sh --cuda $CUDA
-    - name: Wheel-Deploy
+    - name: Checkout MLC-LLM source
+      run: |
+        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
+    - name: Build MLC-Chat
+      env:
+        IMAGE: mlc-ai-${{ matrix.config.cuda }}
+        CUDA: ${{ matrix.config.cuda }}
+      run: |
+        docker/bash.sh --no-gpu $IMAGE ./wheel/build_mlc_chat_wheel_manylinux.sh --cuda $CUDA
+    - name: MLC-Chat Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
-        files: tvm/python/repaired_wheels/*.whl
+        files: |
+          tvm/python/repaired_wheels/*.whl
+          mlc-llm/python/repaired_wheels/*.whl
         tag_name: v0.9.dev0
         prerelease: true
