@@ -17,6 +17,7 @@ jobs:
     strategy:
       matrix:
         pkg: ['mlc-ai-nightly']
+        mlc-chat-pkg: ['mlc-chat-nightly']
         # matrix of build configs
         config:
           - cuda: 'none'
@@ -44,8 +45,11 @@ jobs:
     - name: Checkout source
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
+        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package
-      run: python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
+      run: |
+        python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
+        python common/sync_package.py --cuda $ {{ matrix.conda.cuda }} ${{ matrix.mlc-chat-pkg }} --revision origin/main
     - name: Docker build
       run: |
         cd docker
@@ -56,9 +60,6 @@ jobs:
         CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./wheel/build_wheel_manylinux.sh --cuda $CUDA
-    - name: Checkout MLC-LLM source
-      run: |
-        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Build MLC-Chat
       env:
         IMAGE: mlc-ai-${{ matrix.config.cuda }}

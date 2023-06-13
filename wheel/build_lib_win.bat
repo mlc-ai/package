@@ -6,12 +6,13 @@ mkdir build
 cd build
 
 cmake -A x64 -Thost=x64 ^
-      -G "Visual Studio 16 2019" ^
+      -G "Visual Studio 17 2022" ^
       -DUSE_LLVM="llvm-config --link-static" ^
+      -DZLIB_USE_STATIC_LIBS=ON ^
       -DUSE_RPC=ON ^
       -DUSE_VULKAN=ON ^
       ..
 
-cmake --build . --config Release -- /m
+cmake --build . --parallel 3 --config Release -- /m
 
 cd ..\..
