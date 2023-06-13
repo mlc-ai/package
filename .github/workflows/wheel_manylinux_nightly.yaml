@@ -49,7 +49,7 @@ jobs:
     - name: Sync Package
       run: |
         python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
-        python common/sync_package.py --cuda $ {{ matrix.conda.cuda }} ${{ matrix.mlc-chat-pkg }} --revision origin/main
+        python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.mlc-chat-pkg }} --revision origin/main
     - name: Docker build
       run: |
         cd docker
