@@ -41,15 +41,14 @@ jobs:
       run: |
         rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
-        ln -s 3rdparty/tlcpack/common common
     - name: Checkout source
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package
       run: |
-        python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.pkg }} --revision origin/mlc
-        python common/sync_package.py --cuda ${{ matrix.config.cuda }} ${{ matrix.mlc-chat-pkg }} --revision origin/main
+        python scripts/sync_package.py --cuda ${{ matrix.config.cuda }} --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc
+        python scripts/sync_package.py --cuda ${{ matrix.config.cuda }} --package mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main
     - name: Docker build
       run: |
         cd docker

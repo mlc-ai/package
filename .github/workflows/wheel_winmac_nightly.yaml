@@ -37,16 +37,14 @@ jobs:
         mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
         rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
-        ln -s 3rdparty/tlcpack/docker docker
-        ln -s 3rdparty/tlcpack/common common
     - name: Checkout source
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync Package
       run: |
-        python3 common/sync_package.py ${{ matrix.pkg }} --revision origin/mlc --skip-checkout
-        python3 common/sync_package.py ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout
+        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc --skip-checkout
+        python3 scripts/sync_package.py --pacakge mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout
     - uses: actions/cache@v1
       env:
         CACHE_NUMBER: 0
@@ -68,19 +66,19 @@ jobs:
     - name: Build@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
-        wheel/build_lib_osx.sh
+        scripts/build_lib_osx.sh
     - name: Build MLC-Chat@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
-        wheel/build_mlc_chat_lib_osx.sh
+        scripts/build_mlc_chat_lib_osx.sh
     - name: Build@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: >-
-        wheel/build_lib_win.bat
+        scripts/build_lib_win.bat
     - name: Build MLC-Chat@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: >-
-        wheel/build_mlc_chat_lib_win.bat
+        scripts/build_mlc_chat_lib_win.bat
     # Build wheel for three python versions
     - name: Setup@Py38
       uses: conda-incubator/setup-miniconda@v2
