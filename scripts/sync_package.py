@@ -100,11 +100,19 @@ def update_conda(args, pkg, package_name):
         args.dry_run,
     )
 
+
+def name_with_cuda(args, package_name):
+    """Update name with cuda version"""
+    if args.cuda == "none":
+        return package_name
+    return package_name + "-cu" + "".join(args.cuda.split("."))
+
+
 def update_setup(args, pkg, package_name):
     pub_ver, _ = get_version_tag(args)
     rewrites = [
-        (r'(?<=name=")[^\"]+', package_name),
-        (r'(?<=version=)[^\,]+', f'"{pub_ver}"'),
+        (r'(?<=name=")[^\"]+', name_with_cuda(args, package_name)),
+        (r"(?<=version=)[^\,]+", f'"{pub_ver}"'),
     ]
     update(os.path.join(args.src, "python", "setup.py"), rewrites, args.dry_run)
 
@@ -119,22 +127,18 @@ def main():
         help="Run the syncronization process without modifying any files.",
     )
     parser.add_argument(
-        "--package",
-        type=str,
-        required=True,
-        help="The package to sync for."
+        "--package", type=str, required=True, help="The package to sync for."
     )
     parser.add_argument(
-        "--package-name",
-        type=str,
-        required=True,
-        help="The output package name"
+        "--package-name", type=str, required=True, help="The output package name"
     )
     parser.add_argument(
         "--nightly",
         action="store_true",
-        help=("Whether force build nightly package. " +
-              "Otherwise nightly will only be trigged by package name")
+        help=(
+            "Whether force build nightly package. "
+            + "Otherwise nightly will only be trigged by package name"
+        ),
     )
     parser.add_argument(
         "--src",
@@ -148,8 +152,15 @@ def main():
         "--revision",
         type=str,
         default="origin/main",
-        help="Specify a revision to build packages from. "
-        "Defaults to 'origin/main'",
+        help="Specify a revision to build packages from. " "Defaults to 'origin/main'",
+    )
+    parser.add_argument(
+        "--cuda",
+        type=str,
+        default="none",
+        choices=["none", "10.2", "11.1", "11.3", "11.6", "11.7", "11.8", "12.1"],
+        help="CUDA version to be linked to the resultant binaries,"
+        "or none, to disable CUDA. Defaults to none.",
     )
     parser.add_argument(
         "--skip-checkout",
