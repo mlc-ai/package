@@ -117,10 +117,10 @@ do
 
     if [ -d "${cpython_dir}" ]; then
       echo "Generating package for Python ${python_version}."
-      build_mlc_ai_wheel ${cpython_dir}
+      build_mlc_chat_wheel ${cpython_dir}
 
       echo "Running auditwheel on package for Python ${python_version}."
-      audit_mlc_ai_wheel ${python_version_str}
+      audit_mlc_chat_wheel ${python_version_str}
     else
       echo "Python ${python_version} not found. Skipping.";
     fi

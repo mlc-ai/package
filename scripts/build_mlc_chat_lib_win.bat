@@ -1,6 +1,6 @@
 echo on
 
-cd tvm
+cd mlc-llm
 rd /s /q build
 mkdir build
 cd build
