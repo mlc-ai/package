@@ -5,6 +5,10 @@ rd /s /q build
 mkdir build
 cd build
 
+IF "%1" NEQ "none" (
+    echo (set USE_CUDA %1) > config.cmake
+)
+
 cmake -A x64 -Thost=x64 ^
       -G "Visual Studio 17 2022" ^
       -DUSE_LLVM="llvm-config --link-static" ^

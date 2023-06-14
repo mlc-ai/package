@@ -20,8 +20,10 @@ jobs:
         sys:
           - os: macos-latest
             shell: 'bash -l {0}'
+            cuda-version: ['none']
           - os: windows-latest
             shell: 'cmd /C call {0}'
+            cuda-version: ['none', '11.6', '11.7', '11.8', '12.1']
 
     runs-on: ${{ matrix.sys.os }}
     defaults:
@@ -71,14 +73,24 @@ jobs:
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
         scripts/build_mlc_chat_lib_osx.sh
+    - name: Install-CUDA@Win
+      if: matrix.sys.cuda-version != 'none' && startsWith(matrix.sys.os, 'windows')
+      uses: Jimver/cuda-toolkit@v0.2.10
+      id: cuda-toolkit
+      with:
+        cuda: ${{ matrix.sys.cuda-version }}
     - name: Build@Win
       if: startsWith(matrix.sys.os, 'windows')
+      env:
+        CUDA_PATH: ${{ steps.cuda-toolkit.outputs.cuda_path }}
       run: >-
-        scripts/build_lib_win.bat
+        scripts/build_lib_win.bat $CUDA_PATH
     - name: Build MLC-Chat@Win
       if: startsWith(matrix.sys.os, 'windows')
+      env:
+        CUDA_PATH: ${{ steps.cuda-toolkit.outputs.cuda_path }}
       run: >-
-        scripts/build_mlc_chat_lib_win.bat
+        scripts/build_mlc_chat_lib_win.bat $CUDA_PATH
     # Build wheel for three python versions
     - name: Setup@Py38
       uses: conda-incubator/setup-miniconda@v2
