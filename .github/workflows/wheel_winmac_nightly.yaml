@@ -155,6 +155,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
-        files: tvm/python/dist/*.whl
+        files: |
+          tvm/python/dist/*.whl
+          mlc-llm/python/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true
