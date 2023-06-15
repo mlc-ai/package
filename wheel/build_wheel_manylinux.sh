@@ -80,7 +80,7 @@ fi
 
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
 if [[ ${CUDA} != "none" ]]; then
-    AUDITWHEEL_OPTS="--exclude libcuda ${AUDITWHEEL_OPTS}"
+    AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
 fi
 
 # config the cmake
