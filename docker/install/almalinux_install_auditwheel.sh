@@ -4,4 +4,7 @@ set -e
 
 source /multibuild/manylinux_utils.sh
 
-pip3 install auditwheel==5.4.0
+# use a forked version with skip-libs option
+git clone https://github.com/mlc-ai/auditwheel
+cd auditwheel
+python3 setup.py install
