@@ -169,7 +169,7 @@
       'Metal': '',
     }[_build_dir];
     suffix = (build_dir == '') ? '' : '-' + build_dir;
-    return "pip install --pre mlc-ai-nightly" + suffix + " -f https://mlc.ai/wheels"
+    return "pip install --pre mlc-ai-nightly" + suffix + " mlc-chat-nightly" + suffix + " -f https://mlc.ai/wheels"
   }
 
   var vm = new Vue({
