@@ -8,7 +8,7 @@ dependencies:
   - llvmdev>=15
   - cmake>=3.24
   - zlib
-  - zstd
+  - zstd-static
   - git
   - conda-build
   - anaconda-client
