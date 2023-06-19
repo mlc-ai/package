@@ -17,16 +17,16 @@ do
     # conda activate
     conda activate $name
 
-    # cleanup and clone tvm mlc
-    rm -rf tvm && git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch mlc
+    # cleanup and clone mlc-llm
+    rm -rf mlc-llm && git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch main
     # sync package
-    python common/sync_package.py mlc-ai-nightly --revision origin/mlc
-    # build tvm
-    ./scripts/build_lib_apple_silicon.sh
+    python scripts/sync_package.py --package mlc-llm --package-name mlc-chat-nightly --revision origin/main
+    # build mlc-llm
+    ./scripts/build_mlc_chat_lib_apple_silicon.sh
 
     # build wheel
-    cd tvm/python && python setup.py bdist_wheel && cd -
+    cd mlc-llm/python && python setup.py bdist_wheel && cd -
 
     # deploy wheel
-    python scripts/wheel_upload.py --repo mlc-ai/package --tag v0.9.dev0 tvm/python/dist
+    python scripts/wheel_upload.py --repo mlc-ai/package --tag v0.9.dev0 mlc-llm/python/dist
 done
