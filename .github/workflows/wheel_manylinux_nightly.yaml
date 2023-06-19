@@ -58,13 +58,13 @@ jobs:
         IMAGE: mlc-ai-${{ matrix.config.cuda }}
         CUDA: ${{ matrix.config.cuda }}
       run: |
-        docker/bash.sh --no-gpu $IMAGE ./wheel/build_wheel_manylinux.sh --cuda $CUDA
+        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --cuda $CUDA
     - name: Build MLC-Chat
       env:
         IMAGE: mlc-ai-${{ matrix.config.cuda }}
         CUDA: ${{ matrix.config.cuda }}
       run: |
-        docker/bash.sh --no-gpu $IMAGE ./wheel/build_mlc_chat_wheel_manylinux.sh --cuda $CUDA
+        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_chat_wheel_manylinux.sh --cuda $CUDA
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1

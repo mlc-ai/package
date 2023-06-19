@@ -1,5 +1,5 @@
 # GH actions.
-name: LLM-Conda-Nightly
+name: MLC-Chat-CLI-Conda-Nightly
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg: ['mlc-chat-nightly']
+        pkg: ['mlc-chat-cli-nightly']
         sys:
           - os: ubuntu-latest
             conda_pkg_path: linux-64
