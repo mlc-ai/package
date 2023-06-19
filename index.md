@@ -22,6 +22,6 @@ All Linux/Windows packages (both CPU/CUDA versions) supports vulkan. If you are 
 We provide conda packages for MLC-Chat-CLI nightly build, which can be installed with conda:
 
 ```bash
-conda create -n mlc-chat-venv -c mlc-ai -c conda-forge mlc-chat-nightly
+conda create -n mlc-chat-venv -c mlc-ai -c conda-forge mlc-chat-cli-nightly
 conda activate mlc-chat-venv
 ```
