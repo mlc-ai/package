@@ -66,7 +66,7 @@ jobs:
     - name: Build@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
-        scripts/build_lib_osx.sh
+        scripts/build_mlc_ai_lib_osx.sh
     - name: Build MLC-Chat@MacOS
       if: startsWith(matrix.sys.os, 'macOS')
       run: >-
@@ -74,7 +74,7 @@ jobs:
     - name: Build@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: >-
-        scripts/build_lib_win.bat
+        scripts/build_mlc_ai_lib_win.bat
     - name: Build MLC-Chat@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: >-
