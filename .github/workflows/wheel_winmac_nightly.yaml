@@ -78,13 +78,13 @@ jobs:
     - name: Build-Check@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: |
-        IF EXIST "Release\tvm_runtime.dll" (
+        IF EXIST "build\Release\tvm_runtime.dll" (
           echo tvm_runtime.dll exists.
         ) ELSE (
           echo tvm_runtime.dll does not exist.
           exit /b 1
         )
-        IF EXIST "Release\tvm.dll" (
+        IF EXIST "build\Release\tvm.dll" (
           echo tvm.dll exists.
         ) ELSE (
           echo tvm.dll does not exist.
