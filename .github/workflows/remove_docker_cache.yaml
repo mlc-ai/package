@@ -1,0 +1,18 @@
+# GH actions.
+name: Prune Unused Docker Image
+
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Prune unused docker image
+      run: |
+        docker image prune -a -f
+
