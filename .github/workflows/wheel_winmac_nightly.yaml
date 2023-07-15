@@ -45,12 +45,6 @@ jobs:
       run: |
         python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc --skip-checkout --skip-conda
         python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout --skip-conda
-    - uses: actions/cache@v1
-      env:
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/build-environment.yaml') }}
     # Use conda for LLVM dep
     - uses: conda-incubator/setup-miniconda@v2
       with:

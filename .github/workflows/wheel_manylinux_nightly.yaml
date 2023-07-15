@@ -49,6 +49,12 @@ jobs:
       run: |
         python scripts/sync_package.py --cuda ${{ matrix.config.cuda }} --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc --skip-checkout --skip-conda
         python scripts/sync_package.py --cuda ${{ matrix.config.cuda }} --package mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout --skip-conda
+    - name: Build TVM Unity
+      env:
+        IMAGE: ${{ matrix.config.image }}
+        CUDA: ${{ matrix.config.cuda }}
+      run: |
+        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --cuda $CUDA
     - name: Build MLC-Chat
       env:
         IMAGE: ${{ matrix.config.image }}
