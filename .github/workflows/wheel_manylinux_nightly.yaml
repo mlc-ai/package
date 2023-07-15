@@ -21,15 +21,15 @@ jobs:
         # matrix of build configs
         config:
           - cuda: 'none'
-            dockerfile: 'Dockerfile.package-cpu'
+            image: 'mlcaidev/package-cpu:694d4db'
           - cuda: '11.6'
-            dockerfile: 'Dockerfile.package-cu116'
+            image: 'mlcaidev/package-cu116:694d4db'
           - cuda: '11.7'
-            dockerfile: 'Dockerfile.package-cu117'
+            image: 'mlcaidev/package-cu117:694d4db'
           - cuda: '11.8'
-            dockerfile: 'Dockerfile.package-cu118'
+            image: 'mlcaidev/package-cu118:694d4db'
           - cuda: '12.1'
-            dockerfile: 'Dockerfile.package-cu121'
+            image: 'mlcaidev/package-cu121:694d4db'
 
     runs-on: ubuntu-latest
 
@@ -53,15 +53,9 @@ jobs:
       run: |
         cd docker
         docker build -t mlc-ai-${{ matrix.config.cuda }} . -f ${{ matrix.config.dockerfile }}
-    - name: Build TVM Unity
-      env:
-        IMAGE: mlc-ai-${{ matrix.config.cuda }}
-        CUDA: ${{ matrix.config.cuda }}
-      run: |
-        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --cuda $CUDA
     - name: Build MLC-Chat
       env:
-        IMAGE: mlc-ai-${{ matrix.config.cuda }}
+        IMAGE: ${{ matrix.config.image }}
         CUDA: ${{ matrix.config.cuda }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_chat_wheel_manylinux.sh --cuda $CUDA
