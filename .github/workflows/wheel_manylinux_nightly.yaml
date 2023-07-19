@@ -37,9 +37,9 @@ jobs:
     - name: Reclaim disk space
       run: |
         df -h
-        rm -rf /usr/local/lib/android
-        rm -rf /opt/hostedtoolcache/CodeQL
-        rm -rf /usr/local/.ghcup
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo rm -rf /usr/local/.ghcup
         df -h
 
     - uses: actions/checkout@v3
