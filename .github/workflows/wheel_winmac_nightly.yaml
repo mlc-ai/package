@@ -16,10 +16,7 @@ jobs:
     strategy:
       matrix:
         pkg: ['mlc-ai-nightly']
-        mlc-chat-pkg: ['mlc-chat-nightly']
         sys:
-          - os: macos-latest
-            shell: 'bash -l {0}'
           - os: windows-latest
             shell: 'cmd /C call {0}'
 
@@ -39,12 +36,10 @@ jobs:
         ln -s 3rdparty/tlcpack/conda conda
     - name: Checkout source
       run: |
-        git clone https://github.com/mlc-ai/relax tvm --recursive
-        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
+        git clone https://github.com/junrushao/mlc-tvm tvm --branch windows-ice-fix --recursive
     - name: Sync Package
       run: |
         python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc --skip-checkout --skip-conda
-        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout --skip-conda
     # Use conda for LLVM dep
     - uses: conda-incubator/setup-miniconda@v2
       with:
@@ -57,14 +52,6 @@ jobs:
         conda info
         conda list
         python --version
-    - name: Build@MacOS
-      if: startsWith(matrix.sys.os, 'macOS')
-      run: >-
-        scripts/build_mlc_ai_lib_osx.sh
-    - name: Build MLC-Chat@MacOS
-      if: startsWith(matrix.sys.os, 'macOS')
-      run: >-
-        scripts/build_mlc_chat_lib_osx.sh
     - name: Build@Win
       if: startsWith(matrix.sys.os, 'windows')
       run: >-
@@ -84,10 +71,6 @@ jobs:
           echo tvm.dll does not exist.
           exit /b 1
         )
-    - name: Build MLC-Chat@Win
-      if: startsWith(matrix.sys.os, 'windows')
-      run: >-
-        scripts/build_mlc_chat_lib_win.bat
     # Build wheel for three python versions
     - name: Setup@Py38
       uses: conda-incubator/setup-miniconda@v2
@@ -101,11 +84,6 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py38
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
     - name: Setup@Py39
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -117,11 +95,6 @@ jobs:
         python --version
         python -m pip install setuptools Cython wheel
         cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py39
-      run: |
-        python --version
-        cd mlc-llm/python
         python setup.py bdist_wheel
     - name: Setup@Py310
       uses: conda-incubator/setup-miniconda@v2
@@ -135,11 +108,6 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py310
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
     - name: Setup@Py311
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -152,20 +120,3 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py311
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
-    # Use system python instead of conda for upload
-    - name: Wheel-Deploy
-      if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
-      with:
-        files: |
-          tvm/python/dist/*.whl
-          mlc-llm/python/dist/*.whl
-        tag_name: v0.9.dev0
-        prerelease: true
