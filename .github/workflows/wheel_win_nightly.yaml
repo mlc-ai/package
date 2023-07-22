@@ -1,5 +1,5 @@
 # GH actions.
-name: Wheel-WinMac-Nightly
+name: Wheel-Windows-Nightly
 
 on:
   push:
@@ -17,16 +17,11 @@ jobs:
       matrix:
         pkg: ['mlc-ai-nightly']
         mlc-chat-pkg: ['mlc-chat-nightly']
-        sys:
-          - os: macos-latest
-            shell: 'bash -l {0}'
-          - os: windows-latest
-            shell: 'cmd /C call {0}'
 
-    runs-on: ${{ matrix.sys.os }}
+    runs-on: windows-latest
     defaults:
       run:
-        shell: ${{ matrix.sys.shell }}
+        shell: 'cmd /C call {0}'
 
     steps:
     - uses: actions/checkout@v3
@@ -57,20 +52,10 @@ jobs:
         conda info
         conda list
         python --version
-    - name: Build@MacOS
-      if: startsWith(matrix.sys.os, 'macOS')
-      run: >-
-        scripts/build_mlc_ai_lib_osx.sh
-    - name: Build MLC-Chat@MacOS
-      if: startsWith(matrix.sys.os, 'macOS')
-      run: >-
-        scripts/build_mlc_chat_lib_osx.sh
     - name: Build@Win
-      if: startsWith(matrix.sys.os, 'windows')
       run: >-
         scripts/build_mlc_ai_lib_win.bat
     - name: Build-Check@Win
-      if: startsWith(matrix.sys.os, 'windows')
       run: |
         IF EXIST "tvm\build\Release\tvm_runtime.dll" (
           echo tvm_runtime.dll exists.
@@ -85,7 +70,6 @@ jobs:
           exit /b 1
         )
     - name: Build MLC-Chat@Win
-      if: startsWith(matrix.sys.os, 'windows')
       run: >-
         scripts/build_mlc_chat_lib_win.bat
     # Build wheel for three python versions
