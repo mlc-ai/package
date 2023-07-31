@@ -21,15 +21,15 @@ jobs:
         # matrix of build configs
         config:
           - cuda: 'none'
-            image: 'mlcaidev/package-cpu:694d4db'
+            image: 'mlcaidev/package-cpu:072632e'
           - cuda: '11.6'
-            image: 'mlcaidev/package-cu116:694d4db'
+            image: 'mlcaidev/package-cu116:072632e'
           - cuda: '11.7'
-            image: 'mlcaidev/package-cu117:694d4db'
+            image: 'mlcaidev/package-cu117:072632e'
           - cuda: '11.8'
-            image: 'mlcaidev/package-cu118:694d4db'
+            image: 'mlcaidev/package-cu118:072632e'
           - cuda: '12.1'
-            image: 'mlcaidev/package-cu121:694d4db'
+            image: 'mlcaidev/package-cu121:072632e'
 
     runs-on: ubuntu-latest
 
