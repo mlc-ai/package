@@ -30,10 +30,9 @@ jobs:
         cd docker
         docker build -t package-${{ matrix.platform }} -f Dockerfile.package-${{ matrix.platform }} .
     - name: Upload to Docker Hub
-      if: ${{ github.ref == 'refs/heads/main' }}
       run: |
         set -eux
         NEW_TAG=$(git log -1 --format='%h')
-        docker tag docker-${{ matrix.platform }} mlcaidev/package-${{ matrix.platform }}:$NEW_TAG
+        docker tag package-${{ matrix.platform }} mlcaidev/package-${{ matrix.platform }}:$NEW_TAG
         docker push mlcaidev/package-${{ matrix.platform }}:$NEW_TAG
 
