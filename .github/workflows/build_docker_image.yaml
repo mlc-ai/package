@@ -28,7 +28,7 @@ jobs:
       run: |
         set -eux
         cd docker
-        docker built -t package-${{ matrix.platform }} -f Dockerfile.package-${{ matrix.platform }} .
+        docker build -t package-${{ matrix.platform }} -f Dockerfile.package-${{ matrix.platform }} .
     - name: Upload to Docker Hub
       if: ${{ github.ref == 'refs/heads/main' }}
       run: |
