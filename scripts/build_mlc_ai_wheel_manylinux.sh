@@ -97,6 +97,7 @@ if [[ ${CUDA} != "none" ]]; then
 fi
 
 # compile the tvm
+git config --global --add safe.directory /workspace/tvm
 mkdir -p build
 cd build
 cmake ..
