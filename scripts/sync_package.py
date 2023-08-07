@@ -101,17 +101,20 @@ def update_conda(args, pkg, package_name):
     )
 
 
-def name_with_cuda(args, package_name):
-    """Update name with cuda version"""
-    if args.cuda == "none":
+def name_with_gpu(args, package_name):
+    """Update name with GPU version"""
+    if args.gpu == "none":
         return package_name
-    return package_name + "-cu" + "".join(args.cuda.split("."))
+    elif args.gpu == "rocm":
+        return package_name + "-rocm"
+    else:
+        return package_name + "-cu" + "".join(args.gpu[5:].split("."))
 
 
 def update_setup(args, pkg, package_name):
     pub_ver, _ = get_version_tag(args)
     rewrites = [
-        (r'(?<=name=")[^\"]+', name_with_cuda(args, package_name)),
+        (r'(?<=name=")[^\"]+', name_with_gpu(args, package_name)),
         (r"(?<=version=)[^\,]+", f'"{pub_ver}"'),
     ]
     update(os.path.join(args.src, "python", "setup.py"), rewrites, args.dry_run)
@@ -145,7 +148,7 @@ def main():
         type=str,
         metavar="DIR_NAME",
         default="",
-        help="Set the directory in which souces will be checked out. "
+        help="Set the directory in which sources will be checked out. "
         "Defaults to package",
     )
     parser.add_argument(
@@ -155,12 +158,22 @@ def main():
         help="Specify a revision to build packages from. " "Defaults to 'origin/main'",
     )
     parser.add_argument(
-        "--cuda",
+        "--gpu",
         type=str,
         default="none",
-        choices=["none", "10.2", "11.1", "11.3", "11.6", "11.7", "11.8", "12.1"],
-        help="CUDA version to be linked to the resultant binaries,"
-        "or none, to disable CUDA. Defaults to none.",
+        choices=[
+            "none",
+            "cuda-10.2",
+            "cuda-11.1",
+            "cuda-11.3",
+            "cuda-11.6",
+            "cuda-11.7",
+            "cuda-11.8",
+            "cuda-12.1",
+            "rocm",
+        ],
+        help="GPU (CUDA/ROCm) version to be linked to the resultant binaries,"
+        "or none, to disable CUDA/ROCm. Defaults to none.",
     )
     parser.add_argument(
         "--skip-checkout",
