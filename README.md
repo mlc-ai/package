@@ -7,3 +7,4 @@
 [![MLC-Chat-CLI-Conda-Nightly](https://github.com/mlc-ai/package/actions/workflows/llm_conda_nightly.yaml/badge.svg)](https://github.com/mlc-ai/package/actions/workflows/llm_conda_nightly.yaml)
 [![MLC-Chat-CLI-Conda-Nightly-Apple-Silicon-Mac](https://github.com/mlc-ai/package/actions/workflows/llm_conda_nightly_apple_silicon_mac.yaml/badge.svg)](https://github.com/mlc-ai/package/actions/workflows/llm_conda_nightly_apple_silicon_mac.yaml)
 [![Prune-Nightly](https://github.com/mlc-ai/package/actions/workflows/prune_nightly.yaml/badge.svg)](https://github.com/mlc-ai/package/actions/workflows/prune_nightly.yaml)
+
