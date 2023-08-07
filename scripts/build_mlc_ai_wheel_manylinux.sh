@@ -40,7 +40,7 @@ function audit_mlc_ai_wheel() {
 TVM_PYTHON_DIR="/workspace/tvm/python"
 PYTHON_VERSIONS_CPU=("3.7" "3.8" "3.9" "3.10" "3.11")
 PYTHON_VERSIONS_GPU=("3.7" "3.8" "3.9" "3.10" "3.11")
-CUDA_OPTIONS=("none" "11.1" "11.3" "11.6" "11.7" "11.8" "12.1", "rocm")
+CUDA_OPTIONS=("none" "11.1" "11.3" "11.6" "11.7" "11.8" "12.1" "rocm")
 CUDA="none"
 
 while [[ $# -gt 0 ]]; do
