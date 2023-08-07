@@ -6,7 +6,7 @@ source /opt/rh/gcc-toolset-11/enable # GCC-11 is the hightest GCC version compat
 function usage() {
     echo "Usage: $0 [--cuda CUDA]"
     echo
-    echo -e "--cuda {none 10.2 11.1 11.3 11.6 11.7 11.8 12.1}"
+    echo -e "--cuda {none 11.1 11.3 11.6 11.7 11.8 12.1 rocm}"
     echo -e "\tSpecify the CUDA version in the TVM (default: none)."
 }
 
@@ -40,7 +40,7 @@ function audit_mlc_ai_wheel() {
 TVM_PYTHON_DIR="/workspace/tvm/python"
 PYTHON_VERSIONS_CPU=("3.7" "3.8" "3.9" "3.10" "3.11")
 PYTHON_VERSIONS_GPU=("3.7" "3.8" "3.9" "3.10" "3.11")
-CUDA_OPTIONS=("none" "10.2" "11.1" "11.3" "11.6" "11.7" "11.8" "12.1")
+CUDA_OPTIONS=("none" "11.1" "11.3" "11.6" "11.7" "11.8" "12.1", "rocm")
 CUDA="none"
 
 while [[ $# -gt 0 ]]; do
@@ -67,7 +67,7 @@ done
 if ! in_array "${CUDA}" "${CUDA_OPTIONS[*]}" ; then
     echo "Invalid CUDA option: ${CUDA}"
     echo
-    echo 'CUDA can only be {"none", "10.2", "11.1", "11.3", "11.6" "11.7" "11.8" "12.1"}'
+    echo 'CUDA can only be {"none", "11.1", "11.3", "11.6" "11.7" "11.8" "12.1" "rocm"}'
     exit -1
 fi
 
@@ -80,7 +80,9 @@ else
 fi
 
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
-if [[ ${CUDA} != "none" ]]; then
+if [[ ${CUDA} == "rocm" ]]; then
+    AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 ${AUDITWHEEL_OPTS}"
+elif [[ ${CUDA} != "none" ]]; then
     AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
 fi
 
@@ -91,7 +93,9 @@ echo set\(HIDE_PRIVATE_SYMBOLS ON\) >> config.cmake
 echo set\(USE_RPC ON\) >> config.cmake
 echo set\(USE_VULKAN ON\) >> config.cmake
 
-if [[ ${CUDA} != "none" ]]; then
+if [[ ${CUDA} == "rocm" ]]; then
+    echo set\(USE_ROCM ON\) >> config.cmake
+elif [[ ${CUDA} != "none" ]]; then
     echo set\(USE_CUDA ON\) >> config.cmake
     echo set\(USE_CUTLASS ON\) >> config.cmake
 fi
@@ -125,7 +129,7 @@ do
       echo "Generating package for Python ${python_version}."
       build_mlc_ai_wheel ${cpython_dir}
 
-      echo "Running auditwheel on package for Python ${python_version}."
+      echo "Running auditwheel on package for Python ${python_version}"
       audit_mlc_ai_wheel ${python_version_str}
     else
       echo "Python ${python_version} not found. Skipping.";
