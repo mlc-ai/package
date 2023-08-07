@@ -3,10 +3,10 @@
 source /multibuild/manylinux_utils.sh
 
 function usage() {
-    echo "Usage: $0 [--cuda CUDA]"
+    echo "Usage: $0 [--gpu GPU-VERSION]"
     echo
-    echo -e "--cuda {none 10.2 11.1 11.3 11.6 11.7 11.8 12.1 rocm}"
-    echo -e "\tSpecify the CUDA version in the MLC-LLM (default: none)."
+    echo -e "--gpu {none cuda-11.1 cuda-11.3 cuda-11.6 cuda-11.7 cuda-11.8 cuda-12.1 rocm}"
+    echo -e "\tSpecify the GPU version (CUDA/ROCm) in the MLC-LLM (default: none)."
 }
 
 function in_array() {
@@ -39,14 +39,14 @@ function audit_mlc_chat_wheel() {
 MLC_LLM_PYTHON_DIR="/workspace/mlc-llm/python"
 PYTHON_VERSIONS_CPU=("3.7" "3.8" "3.9" "3.10" "3.11")
 PYTHON_VERSIONS_GPU=("3.7" "3.8" "3.9" "3.10" "3.11")
-CUDA_OPTIONS=("none" "10.2" "11.1" "11.3" "11.6" "11.7" "11.8" "12.1" "rocm")
-CUDA="none"
+GPU_OPTIONS=("none" "cuda-11.1" "cuda-11.3" "cuda-11.6" "cuda-11.7" "cuda-11.8" "cuda-12.1" "rocm")
+GPU="none"
 
 while [[ $# -gt 0 ]]; do
     arg="$1"
     case $arg in
-        --cuda)
-            CUDA=$2
+        --gpu)
+            GPU=$2
             shift
             shift
             ;;
@@ -63,26 +63,26 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if ! in_array "${CUDA}" "${CUDA_OPTIONS[*]}" ; then
-    echo "Invalid CUDA option: ${CUDA}"
+if ! in_array "${GPU}" "${GPU_OPTIONS[*]}" ; then
+    echo "Invalid GPU option: ${GPU}"
     echo
-    echo 'CUDA can only be {"none", "10.2", "11.1", "11.3", "11.6" "11.7" "11.8" "12.1" "rocm"}'
+    echo 'GPU version can only be {"none", "cuda-11.1", "cuda-11.3", "cuda-11.6" "cuda-11.7" "cuda-11.8" "cuda-12.1" "rocm"}'
     exit -1
 fi
 
-if [[ ${CUDA} == "none" ]]; then
+if [[ ${GPU} == "none" ]]; then
     echo "Building MLC-LLM for CPU only"
     PYTHON_VERSIONS=${PYTHON_VERSIONS_CPU[*]}
 else
-    echo "Building MLC-LLM with CUDA ${CUDA}"
+    echo "Building MLC-LLM with GPU ${GPU}"
     PYTHON_VERSIONS=${PYTHON_VERSIONS_GPU[*]}
 fi
 
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
 AUDITWHEEL_OPTS="--exclude libtvm --exclude libtvm_runtime --exclude libvulkan ${AUDITWHEEL_OPTS}"
-if [[ ${CUDA} == "rocm" ]]; then
+if [[ ${GPU} == "rocm" ]]; then
     AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 ${AUDITWHEEL_OPTS}"
-elif [[ ${CUDA} != "none" ]]; then
+elif [[ ${GPU} != "none" ]]; then
     AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
 fi
 
@@ -90,9 +90,9 @@ fi
 cd /workspace/mlc-llm
 echo set\(USE_VULKAN ON\) >> config.cmake
 
-if [[ ${CUDA} == "rocm" ]]; then
+if [[ ${GPU} == "rocm" ]]; then
     echo set\(USE_ROCM ON\) >> config.cmake
-elif [[ ${CUDA} != "none" ]]; then
+elif [[ ${GPU} != "none" ]]; then
     echo set\(USE_CUDA ON\) >> config.cmake
 fi
 
