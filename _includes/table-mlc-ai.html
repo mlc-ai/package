@@ -115,6 +115,7 @@
             <radio label="CUDA 11.7"></radio>
             <radio label="CUDA 11.8"></radio>
             <radio label="CUDA 12.1"></radio>
+            <radio label="ROCm"></radio>
           </radio-group>
         </div>
       </i-col>
@@ -165,6 +166,7 @@
       'CUDA 11.7': 'cu117',
       'CUDA 11.8': 'cu118',
       'CUDA 12.1': 'cu121',
+      'ROCm': 'rocm',
       'CPU': '',
       'Metal': '',
     }[_build_dir];
@@ -188,6 +190,8 @@
         } else if (this.button_os === "Mac") {
           if (this.button_hardware.startsWith("CUDA")) {
             return "Mac do not support CUDA."
+          } else if (this.button_hardware.startsWith("ROCm")) {
+            return "Mac do not support ROCm."
           }
         }
         return pip_path_hardware((this.button_os == "Windows") ? "CPU" : this.button_hardware, this.button_pkg)
