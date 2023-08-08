@@ -15,7 +15,7 @@ Select your operating system/compute platform and run the command in your termin
 {% include table-mlc-ai.html %}
 {:/nomarkdown}
 
-All Linux/Windows packages (both CPU/CUDA versions) supports vulkan. If you are a AMD GPU user, please install the CPU version where you can use Vulkan for AMD GPUs.
+All Linux/Windows packages (both CPU/CUDA versions) supports Vulkan.
 
 ## MLC-Chat-CLI
 
