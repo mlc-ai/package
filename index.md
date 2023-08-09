@@ -17,6 +17,12 @@ Select your operating system/compute platform and run the command in your termin
 
 All Linux/Windows packages (both CPU/CUDA versions) supports Vulkan.
 
+**NOTE:** If you install the pip wheel under a Conda environment, please also install the latest gcc
+in Conda to resolve possible libstdc++.so issue:
+```bash
+conda install -c conda-forge gcc
+```
+
 ## MLC-Chat-CLI
 
 We provide conda packages for MLC-Chat-CLI nightly build, which can be installed with conda:
