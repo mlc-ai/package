@@ -1,4 +1,4 @@
-# Docker image: mlc-ai/package-vulkan
+# Docker image: mlc-ai/package-rocm
 
 FROM quay.io/pypa/manylinux_2_28_x86_64
 
@@ -13,6 +13,10 @@ RUN bash /install/almalinux_install_cmake.sh
 # install llvm
 COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
 RUN bash /install/almalinux_install_llvm.sh
+
+# install rocm
+COPY install/almalinux_install_rocm_56.sh /install/almalinux_install_rocm.sh
+RUN bash /install/almalinux_install_rocm.sh
 
 # install vulkan sdk
 COPY install/almalinux_install_vulkan_sdk.sh /install/almalinux_install_vulkan_sdk.sh

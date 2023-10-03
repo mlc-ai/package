@@ -11,11 +11,12 @@ jobs:
       matrix:
         platform:
           - cpu
-          - rocm
-          - cu116
+          - rocm56
+          - rocm57
           - cu117
           - cu118
           - cu121
+          - cu122
 
     runs-on: ubuntu-latest
     steps:
