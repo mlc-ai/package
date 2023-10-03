@@ -51,6 +51,11 @@ jobs:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-11
+    - name: Build mlc-ai @ 3.12
+      env:
+        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+      run: |
+        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
     - name: Build mlc-chat @ 3.8
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
@@ -71,6 +76,11 @@ jobs:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-11
+    - name: Build mlc-chat @ 3.12
+      env:
+        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+      run: |
+        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-12
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'

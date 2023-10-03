@@ -1,4 +1,4 @@
-# Docker image: mlc-ai/package-vulkan
+# Docker image: mlc-ai/package-rocm
 
 FROM quay.io/pypa/manylinux_2_28_x86_64
 
@@ -14,12 +14,9 @@ RUN bash /install/almalinux_install_cmake.sh
 COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
 RUN bash /install/almalinux_install_llvm.sh
 
-# install cuda
-COPY install/almalinux_install_cuda_116.sh /install/almalinux_install_cuda.sh
-RUN bash /install/almalinux_install_cuda.sh
-ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=${CUDA_HOME}/bin:${PATH}
-ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${PATH}
+# install rocm
+COPY install/almalinux_install_rocm_57.sh /install/almalinux_install_rocm.sh
+RUN bash /install/almalinux_install_rocm.sh
 
 # install vulkan sdk
 COPY install/almalinux_install_vulkan_sdk.sh /install/almalinux_install_vulkan_sdk.sh
@@ -41,6 +38,7 @@ RUN conda create -n py38 python=3.8 -y
 RUN conda create -n py39 python=3.9 -y
 RUN conda create -n py310 python=3.10 -y
 RUN conda create -n py311 python=3.11 -y
+RUN conda create -n py312 python=3.12 -y
 COPY install/almalinux_install_python_package.sh /install/almalinux_install_python_package.sh
 RUN bash /install/almalinux_install_python_package.sh
 

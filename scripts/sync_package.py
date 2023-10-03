@@ -105,8 +105,8 @@ def name_with_gpu(args, package_name):
     """Update name with GPU version"""
     if args.gpu == "none":
         return package_name
-    elif args.gpu == "rocm":
-        return package_name + "-rocm"
+    elif args.gpu.startswith("rocm"):
+        return package_name + "-rocm" + "".join(args.gpu[5:].split("."))
     else:
         return package_name + "-cu" + "".join(args.gpu[5:].split("."))
 
@@ -163,14 +163,12 @@ def main():
         default="none",
         choices=[
             "none",
-            "cuda-10.2",
-            "cuda-11.1",
-            "cuda-11.3",
-            "cuda-11.6",
             "cuda-11.7",
             "cuda-11.8",
             "cuda-12.1",
-            "rocm",
+            "cuda-12.2",
+            "rocm-5.6",
+            "rocm-5.7",
         ],
         help="GPU (CUDA/ROCm) version to be linked to the resultant binaries,"
         "or none, to disable CUDA/ROCm. Defaults to none.",

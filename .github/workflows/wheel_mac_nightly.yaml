@@ -127,6 +127,23 @@ jobs:
         python --version
         cd mlc-llm/python
         python setup.py bdist_wheel
+    - name: Setup@Py312
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build-Py312
+        python-version: '3.12'
+        auto-activate-base: false
+    - name: Wheel-Build@Py312
+      run: |
+        python --version
+        python -m pip install setuptools Cython wheel
+        cd tvm/python
+        python setup.py bdist_wheel
+    - name: Wheel-Build-MLC-Chat@Py312
+      run: |
+        python --version
+        cd mlc-llm/python
+        python setup.py bdist_wheel
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
