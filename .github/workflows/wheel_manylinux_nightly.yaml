@@ -21,19 +21,19 @@ jobs:
         # matrix of build configs
         config:
           - gpu: 'none'
-            image: 'mlcaidev/package-cpu:072632e'
+            image: 'mlcaidev/package-cpu:b4f9e57'
           - gpu: 'cuda-11.7'
-            image: 'mlcaidev/package-cu117:072632e'
+            image: 'mlcaidev/package-cu117:b4f9e57'
           - gpu: 'cuda-11.8'
-            image: 'mlcaidev/package-cu118:072632e'
+            image: 'mlcaidev/package-cu118:b4f9e57'
           - gpu: 'cuda-12.1'
-            image: 'mlcaidev/package-cu121:072632e'
-          # - gpu: 'cuda-12.2'
-          #   image: 'mlcaidev/package-cu121:072632e'
+            image: 'mlcaidev/package-cu121:b4f9e57'
+          - gpu: 'cuda-12.2'
+            image: 'mlcaidev/package-cu121:b4f9e57'
           - gpu: 'rocm-5.6'
-            image: 'mlcaidev/package-rocm:de46495'
-          # - gpu: 'rocm-5.7'
-          #   image: 'mlcaidev/package-rocm:de46495'
+            image: 'mlcaidev/package-rocm56:b4f9e57'
+          - gpu: 'rocm-5.7'
+            image: 'mlcaidev/package-rocm57:b4f9e57'
 
     runs-on: ubuntu-latest
 
