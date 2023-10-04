@@ -9,4 +9,6 @@ rpm -q epel-release
 yum config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
 dnf install kernel-devel -y
 dnf install cuda-12-2 -y
-dnf install libnccl libnccl-devel libnccl-static -y
+
+NCCL_VERSION=$(dnf --showduplicates list libnccl | grep "cuda12.2" | tail -1 | awk '{print $2}')
+dnf install libnccl-$NCCL_VERSION libnccl-devel-$NCCL_VERSION libnccl-static-$NCCL_VERSION -y
