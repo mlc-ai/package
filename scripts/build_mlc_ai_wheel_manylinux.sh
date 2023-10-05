@@ -80,8 +80,9 @@ else
 fi
 
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
+AUDITWHEEL_OPTS="--exclude libtinfo ${AUDITWHEEL_OPTS}"
 if [[ ${GPU} == rocm* ]]; then
-	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 ${AUDITWHEEL_OPTS}"
+	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 --exclude librocm_smi64 --exclude librccl ${AUDITWHEEL_OPTS}"
 elif [[ ${GPU} == cuda* ]]; then
 	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
 fi
