@@ -77,12 +77,25 @@ def group_wheels(wheels):
 
 def url_is_valid(url):
     """Check if a given URL is valid, i.e. it returns 200 OK when requested."""
-    r = requests.get(url)
-
-    if r.status_code != 200:
-        print("Warning: HTTP code %s for url %s" % (r.status_code, url))
-
-    return r.status_code == 200
+    found = False
+    max_retry = 5
+    for _ in range(max_retry):
+        try:
+            response = requests.head(url)
+            if response.status_code < 400:
+                print(f"Status code: {response.status_code}. URL exists: {url}")
+                found = True
+            else:
+                print(f"Status code: {response.status_code}. URL does not exist: {url}")
+                found = False
+            break
+        except requests.ConnectionError:
+            print(f"[Retry] The URL does not exist or couldn't be reached: {url}")
+        except requests.Timeout:
+            print(f"[Retry] The request timed out: {url}")
+        except requests.RequestException as e:
+            print(f"[Retry] An error occurred on: {url}. Error details: {e}")
+    return found
 
 
 def run_prune(args, group_map):
