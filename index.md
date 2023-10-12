@@ -15,7 +15,15 @@ Select your operating system/compute platform and run the command in your termin
 {% include table-mlc-ai.html %}
 {:/nomarkdown}
 
-All Linux/Windows packages (both CPU/CUDA versions) supports vulkan. If you are a AMD GPU user, please install the CPU version where you can use Vulkan for AMD GPUs.
+All Linux/Windows packages (both CPU/CUDA versions) supports Vulkan.
+
+### Note for Pip Installation under Conda
+
+If you install the pip wheel under a Conda environment, please also install the latest gcc
+in Conda to resolve possible libstdc++.so issue:
+```bash
+conda install -c conda-forge gcc
+```
 
 ## MLC-Chat-CLI
 
