@@ -23,7 +23,7 @@ fi
 cuda=${cuda:-False}
 
 if [ "$cuda" == "True" ]; then
-	GPU_OPT="-DUSE_CUDA=ON -DUSE_CUTLASS=ON -DUSE_NCCL=ON"
+	GPU_OPT="-DUSE_CUDA=ON -DUSE_CUTLASS=ON -DUSE_NCCL=ON -DUSE_CUBLAS=ON"
 	TOOLCHAIN_OPT=""
 fi
 

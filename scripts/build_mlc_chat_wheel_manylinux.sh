@@ -84,7 +84,7 @@ AUDITWHEEL_OPTS="--exclude libtvm --exclude libtvm_runtime --exclude libvulkan $
 if [[ ${GPU} == rocm* ]]; then
 	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 --exclude librocm_smi64 --exclude librccl ${AUDITWHEEL_OPTS}"
 elif [[ ${GPU} == cuda* ]]; then
-	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
+	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc --exclude libcublas ${AUDITWHEEL_OPTS}"
 fi
 
 # config the cmake
@@ -97,6 +97,7 @@ if [[ ${GPU} == rocm* ]]; then
 elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_CUDA ON\) >>config.cmake
 	echo set\(USE_CUTLASS ON\) >>config.cmake
+	echo set\(USE_CUBLAS ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
 fi
 
