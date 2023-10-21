@@ -2,7 +2,9 @@ name: ci-lint
 channels:
 - conda-forge
 dependencies:
+- python
 - black
 - isort
 - pylint
-- python
+- mypy
+- clang-format
