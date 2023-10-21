@@ -2,9 +2,18 @@ name: ci-lint
 channels:
 - conda-forge
 dependencies:
-- python==3.11
+- python
 - black
 - isort
 - pylint
 - mypy
 - clang-format
+- tqdm
+- pytorch-cpu
+- attrs
+- cloudpickle
+- decorator
+- ml_dtypes
+- numpy
+- scipy
+- tornado
