@@ -1,0 +1,13 @@
+FROM ubuntu:22.04
+
+RUN grep -v '[ -z "\$PS1" ] && return' ~/.bashrc >/tmp/bashrc && \
+    mv /tmp/bashrc ~/.bashrc
+
+# install core
+COPY install/ubuntu/core.sh /install/core.sh
+RUN bash /install/core.sh
+
+# Install Conda
+COPY install/ubuntu/conda.sh /install/conda.sh
+COPY install/conda_envs/ci-lint.yml /conda_envs/ci-lint.yml
+RUN bash /install/conda.sh
