@@ -1,6 +1,5 @@
 # GH actions.
-name: Build Docker Images
-
+name: Build Docker for CI
 
 on:
   workflow_dispatch:
@@ -11,12 +10,6 @@ jobs:
       matrix:
         platform:
           - cpu
-          - rocm56
-          - rocm57
-          - cu117
-          - cu118
-          - cu121
-          - cu122
 
     runs-on: ubuntu-latest
     steps:
@@ -37,11 +30,11 @@ jobs:
       run: |
         set -eux
         cd docker
-        docker build -t package-${{ matrix.platform }} -f Dockerfile.package-${{ matrix.platform }} .
+        docker build -t ci-${{ matrix.platform }} -f Dockerfile.ci-${{ matrix.platform }} .
     - name: Upload to Docker Hub
       if: ${{ github.ref == 'refs/heads/main' }}
       run: |
         set -eux
         NEW_TAG=$(git log -1 --format='%h')
-        docker tag package-${{ matrix.platform }} mlcaidev/package-${{ matrix.platform }}:$NEW_TAG
-        docker push mlcaidev/package-${{ matrix.platform }}:$NEW_TAG
+        docker tag ci-${{ matrix.platform }} mlcaidev/ci-${{ matrix.platform }}:$NEW_TAG
+        docker push mlcaidev/ci-${{ matrix.platform }}:$NEW_TAG

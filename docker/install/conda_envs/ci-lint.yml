@@ -1,0 +1,8 @@
+name: ci-lint
+channels:
+- conda-forge
+dependencies:
+- black
+- isort
+- pylint
+- python
