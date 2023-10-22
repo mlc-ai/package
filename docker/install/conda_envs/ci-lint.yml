@@ -7,7 +7,7 @@ dependencies:
 - isort
 - pylint
 - mypy
-- clang-format
+- clangdev
 - tqdm
 - pytorch-cpu
 - attrs
