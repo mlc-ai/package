@@ -102,6 +102,8 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_CUDA ON\) >>config.cmake
 	echo set\(USE_CUTLASS ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
+else
+	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 fi
 
 # compile the tvm
