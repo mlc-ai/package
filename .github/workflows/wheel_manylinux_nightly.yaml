@@ -29,7 +29,7 @@ jobs:
           - gpu: 'cuda-12.1'
             image: 'mlcaidev/package-cu121:aaf521b'
           - gpu: 'cuda-12.2'
-            image: 'mlcaidev/package-cu121:aaf521b'
+            image: 'mlcaidev/package-cu122:aaf521b'
           - gpu: 'rocm-5.6'
             image: 'mlcaidev/package-rocm56:aaf521b'
           - gpu: 'rocm-5.7'

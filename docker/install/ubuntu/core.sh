@@ -12,3 +12,5 @@ apt install --yes wget curl git zsh tmux htop vim ccache cmake subversion gdb bu
 	python3-pip
 
 locale-gen "en_US.UTF-8"
+
+git config --global --add safe.directory "*"
