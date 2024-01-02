@@ -89,9 +89,17 @@ fi
 
 # config the cmake
 cd /workspace/tvm
+
+sed -i "23,28d" 3rdparty/cutlass_fpA_intB_gemm/cutlass_kernels/CMakeLists.txt
 echo set\(HIDE_PRIVATE_SYMBOLS ON\) >>config.cmake
 echo set\(USE_RPC ON\) >>config.cmake
 echo set\(USE_VULKAN ON\) >>config.cmake
+
+if [[ ${GPU} == cuda-11.7 ]]; then
+	CUDA_ARCHS="80;86;87"
+elif [[ ${GPU} == cuda* ]]; then
+	CUDA_ARCHS="80;86;87;89;90"
+fi
 
 if [[ ${GPU} == rocm* ]]; then
 	echo set\(USE_LLVM \"/opt/rocm/llvm/bin/llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
@@ -102,6 +110,9 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_CUDA ON\) >>config.cmake
 	echo set\(USE_CUTLASS ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
+	echo set\(USE_FLASHINFER ON\) >>config.cmake
+	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
+	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
 else
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 fi
