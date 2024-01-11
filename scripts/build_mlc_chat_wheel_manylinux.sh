@@ -89,7 +89,6 @@ fi
 
 # config the cmake
 cd /workspace/mlc-llm
-sed -i "23,28d" 3rdparty/tvm/3rdparty/cutlass_fpA_intB_gemm/cutlass_kernels/CMakeLists.txt
 echo set\(USE_VULKAN ON\) >>config.cmake
 
 if [[ ${GPU} == cuda-11.7 ]]; then
