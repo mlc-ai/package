@@ -33,8 +33,12 @@ function audit_mlc_ai_wheel() {
 	python_version_str=$1
 
 	cd "${TVM_PYTHON_DIR}" &&
-		mkdir -p repaired_wheel &&
+		mkdir -p repaired_wheels &&
 		auditwheel repair ${AUDITWHEEL_OPTS} dist/*cp${python_version_str}*.whl
+
+	rm -rf ${TVM_PYTHON_DIR}/dist/ \
+		${TVM_PYTHON_DIR}/build/ \
+		${TVM_PYTHON_DIR}/*.egg-info
 }
 
 TVM_PYTHON_DIR="/workspace/tvm/python"
@@ -84,7 +88,7 @@ AUDITWHEEL_OPTS="--exclude libtinfo ${AUDITWHEEL_OPTS}"
 if [[ ${GPU} == rocm* ]]; then
 	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 --exclude librocm_smi64 --exclude librccl ${AUDITWHEEL_OPTS}"
 elif [[ ${GPU} == cuda* ]]; then
-	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc ${AUDITWHEEL_OPTS}"
+	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc --exclude libcublas --exclude libcublasLt ${AUDITWHEEL_OPTS}"
 fi
 
 # config the cmake
@@ -107,6 +111,7 @@ if [[ ${GPU} == rocm* ]]; then
 elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 	echo set\(USE_CUDA ON\) >>config.cmake
+	echo set\(USE_CUBLAS ON\) >>config.cmake
 	echo set\(USE_CUTLASS ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
 	echo set\(USE_FLASHINFER ON\) >>config.cmake
@@ -122,6 +127,7 @@ mkdir -p build
 cd build
 cmake ..
 make -j$(nproc)
+find . -type d -name 'CMakeFiles' -exec rm -rf {} +
 
 UNICODE_WIDTH=32 # Dummy value, irrelevant for Python 3
 
