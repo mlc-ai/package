@@ -13,6 +13,12 @@ on:
 
 jobs:
   Build:
+    strategy:
+      matrix:
+        pkg_kind: ['nightly', 'stable']
+        exclude:
+          - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
+
     runs-on: [self-hosted, macOS, ARM64]
     defaults:
       run:
@@ -34,49 +40,59 @@ jobs:
     - name: Build mlc-ai @ 3.8
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-8
     - name: Build mlc-ai @ 3.9
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-9
     - name: Build mlc-ai @ 3.10
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-10
     - name: Build mlc-ai @ 3.11
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-11
     - name: Build mlc-ai @ 3.12
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
     - name: Build mlc-chat @ 3.8
+      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-8
     - name: Build mlc-chat @ 3.9
+      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-9
     - name: Build mlc-chat @ 3.10
+      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-10
     - name: Build mlc-chat @ 3.11
+      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
         scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-11
     - name: Build mlc-chat @ 3.12
+      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
@@ -90,6 +106,6 @@ jobs:
       with:
         files: |
           tvm/python/dist/*.whl
-          mlc-llm/python/dist/*.whl
+          ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm/python/dist/*.whl' || '' }}
         tag_name: v0.9.dev0
         prerelease: true

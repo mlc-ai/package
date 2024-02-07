@@ -15,8 +15,9 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg: ['mlc-ai-nightly']
-        mlc-chat-pkg: ['mlc-chat-nightly']
+        pkg_kind: ['nightly', 'stable']
+        exclude:
+          - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
     runs-on: windows-latest
     defaults:
@@ -36,10 +37,13 @@ jobs:
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
-    - name: Sync Package
+    - name: Sync MLC AI Package
       run: |
-        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg }} --revision origin/mlc --skip-checkout --skip-conda
-        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.mlc-chat-pkg }} --revision origin/main --skip-checkout --skip-conda
+        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+    - name: Sync MLC Chat Package
+      if: matrix.pkg_kind == 'nightly'
+      run: |
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-chat-nightly' || 'mlc-chat' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     # Use conda for LLVM dep
     - uses: conda-incubator/setup-miniconda@v2
       with:
@@ -70,6 +74,7 @@ jobs:
           exit /b 1
         )
     - name: Build MLC-Chat@Win
+      if: matrix.pkg_kind == 'nightly'
       run: >-
         scripts/build_mlc_chat_lib_win.bat
     # Build wheel for three python versions
@@ -86,6 +91,7 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-Chat@Py38
+      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -103,6 +109,7 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-Chat@Py39
+      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -120,6 +127,7 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-Chat@Py310
+      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -137,6 +145,7 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-Chat@Py311
+      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -154,6 +163,7 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-Chat@Py312
+      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -167,6 +177,6 @@ jobs:
       with:
         files: |
           tvm/python/dist/*.whl
-          mlc-llm/python/dist/*.whl
+          ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm/python/dist/*.whl' || '' }}
         tag_name: v0.9.dev0
         prerelease: true
