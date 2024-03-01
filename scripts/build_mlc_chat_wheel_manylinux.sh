@@ -108,6 +108,7 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_CUDA ON\) >>config.cmake
 	echo set\(USE_CUTLASS ON\) >>config.cmake
 	echo set\(USE_CUBLAS ON\) >>config.cmake
+	echo set\(USE_THRUST ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
 	echo set\(USE_FLASHINFER ON\) >>config.cmake
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
