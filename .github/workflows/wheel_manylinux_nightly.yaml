@@ -21,10 +21,6 @@ jobs:
         config:
           - gpu: 'none'
             image: 'mlcaidev/package-cpu:7dc84a7'
-          - gpu: 'cuda-11.7'
-            image: 'mlcaidev/package-cu117:7dc84a7'
-          - gpu: 'cuda-11.8'
-            image: 'mlcaidev/package-cu118:7dc84a7'
           - gpu: 'cuda-12.1'
             image: 'mlcaidev/package-cu121:7dc84a7'
           - gpu: 'cuda-12.2'
