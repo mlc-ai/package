@@ -35,7 +35,7 @@ jobs:
         ln -s 3rdparty/tlcpack/conda conda
     - name: Checkout source
       run: |
-        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch mlc
+        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.15.1' || 'mlc' }}
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch main
     - name: Build mlc-ai @ 3.8
       env:
