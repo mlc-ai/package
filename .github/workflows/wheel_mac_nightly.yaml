@@ -40,10 +40,10 @@ jobs:
     - name: Sync MLC AI Package
       run: |
         python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
-    - name: Sync MLC Chat Package
+    - name: Sync MLC LLM Package
       if: matrix.pkg_kind == 'nightly'
       run: |
-        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-chat-nightly' || 'mlc-chat' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     # Use conda for LLVM dep
     - uses: conda-incubator/setup-miniconda@v2
       with:
@@ -59,10 +59,10 @@ jobs:
     - name: Build@MacOS
       run: >-
         scripts/build_mlc_ai_lib_osx.sh
-    - name: Build MLC-Chat@MacOS
+    - name: Build MLC-LLM@MacOS
       if: matrix.pkg_kind == 'nightly'
       run: >-
-        scripts/build_mlc_chat_lib_osx.sh
+        scripts/build_mlc_llm_lib_osx.sh
     # Build wheel for three python versions
     - name: Setup@Py38
       uses: conda-incubator/setup-miniconda@v2
@@ -76,7 +76,7 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py38
+    - name: Wheel-Build-MLC-LLM@Py38
       if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
@@ -94,7 +94,7 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py39
+    - name: Wheel-Build-MLC-LLM@Py39
       if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
@@ -112,7 +112,7 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py310
+    - name: Wheel-Build-MLC-LLM@Py310
       if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
@@ -130,7 +130,7 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py311
+    - name: Wheel-Build-MLC-LLM@Py311
       if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
@@ -148,7 +148,7 @@ jobs:
         python -m pip install setuptools Cython wheel
         cd tvm/python
         python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-Chat@Py312
+    - name: Wheel-Build-MLC-LLM@Py312
       if: matrix.pkg_kind == 'nightly'
       run: |
         python --version

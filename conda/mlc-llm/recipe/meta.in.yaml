@@ -1,5 +1,5 @@
 # This file is used as input for scripts/sync_package.py to generate meta.yaml
-{% set default_pkg_name = 'mlc-chat' %}
+{% set default_pkg_name = 'mlc-llm' %}
 {% set pkg_name = pkg_name | default(default_pkg_name) %}
 {% set version = '0.7.0' %}
 

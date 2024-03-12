@@ -67,36 +67,36 @@ jobs:
         STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
-    - name: Build mlc-chat @ 3.8
+    - name: Build mlc-llm @ 3.8
       if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
-        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-8
-    - name: Build mlc-chat @ 3.9
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-8
+    - name: Build mlc-llm @ 3.9
       if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
-        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-9
-    - name: Build mlc-chat @ 3.10
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-9
+    - name: Build mlc-llm @ 3.10
       if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
-        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-10
-    - name: Build mlc-chat @ 3.11
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-10
+    - name: Build mlc-llm @ 3.11
       if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
-        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-11
-    - name: Build mlc-chat @ 3.12
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-11
+    - name: Build mlc-llm @ 3.12
       if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
       run: |
-        scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh wheel-3-12
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-12
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'

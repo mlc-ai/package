@@ -15,5 +15,5 @@ rm -rf mlc-llm && git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursiv
 
 for name in "${conda_env_names[@]}"
 do
-    ./scripts/build_mlc_chat_wheel_single_python_apple_silicon.sh $name
+    ./scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh $name
 done

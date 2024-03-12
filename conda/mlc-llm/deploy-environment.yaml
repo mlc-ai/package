@@ -1,9 +1,9 @@
 # deploy environment
-name: mlc-chat
+name: mlc-llm
 
 channels:
   - conda-forge
   - mlc-ai
 
 dependencies:
-  - mlc-chat-nightly
+  - mlc-llm-nightly

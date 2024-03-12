@@ -57,23 +57,23 @@ jobs:
     - name: Sync MLC AI Package
       run: |
         python scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
-    - name: Sync MLC Chat Package
+    - name: Sync MLC LLM Package
       if: matrix.pkg_kind == 'nightly'
       run: |
-        python scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-chat-nightly' || 'mlc-chat' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Build TVM Unity
       env:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
       run: |
         docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
-    - name: Build MLC-Chat
+    - name: Build MLC-LLM
       if: matrix.pkg_kind == 'nightly'
       env:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
       run: |
-        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_chat_wheel_manylinux.sh --gpu $GPU
+        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
