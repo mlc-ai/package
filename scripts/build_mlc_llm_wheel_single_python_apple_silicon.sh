@@ -14,9 +14,9 @@ echo "Start build for $CONDA_ENV_NAME"
 conda activate $CONDA_ENV_NAME
 
 # sync package
-python scripts/sync_package.py --package mlc-llm --package-name mlc-chat-nightly --revision origin/main --skip-checkout --skip-conda
+python scripts/sync_package.py --package mlc-llm --package-name mlc-llm-nightly --revision origin/main --skip-checkout --skip-conda
 # build mlc-llm
-./scripts/build_mlc_chat_lib_apple_silicon.sh
+./scripts/build_mlc_llm_lib_apple_silicon.sh
 
 # build wheel
 cd mlc-llm/python && python setup.py bdist_wheel && cd -

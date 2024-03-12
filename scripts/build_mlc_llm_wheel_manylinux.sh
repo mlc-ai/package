@@ -21,7 +21,7 @@ function in_array() {
 	return 1
 }
 
-function build_mlc_chat_wheel() {
+function build_mlc_llm_wheel() {
 	python_dir=$1
 	PYTHON_BIN="${python_dir}/bin/python"
 
@@ -29,7 +29,7 @@ function build_mlc_chat_wheel() {
 		${PYTHON_BIN} setup.py bdist_wheel
 }
 
-function audit_mlc_chat_wheel() {
+function audit_mlc_llm_wheel() {
 	python_version_str=$1
 
 	cd "${MLC_LLM_PYTHON_DIR}" &&
@@ -141,10 +141,10 @@ for python_version in ${PYTHON_VERSIONS[*]}; do
 
 	if [ -d "${cpython_dir}" ]; then
 		echo "Generating package for Python ${python_version}."
-		build_mlc_chat_wheel ${cpython_dir}
+		build_mlc_llm_wheel ${cpython_dir}
 
 		echo "Running auditwheel on package for Python ${python_version}."
-		audit_mlc_chat_wheel ${python_version_str}
+		audit_mlc_llm_wheel ${python_version_str}
 	else
 		echo "Python ${python_version} not found. Skipping."
 	fi
