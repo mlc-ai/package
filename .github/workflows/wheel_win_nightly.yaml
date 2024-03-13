@@ -59,20 +59,6 @@ jobs:
     - name: Build@Win
       run: >-
         scripts/build_mlc_ai_lib_win.bat
-    - name: Build-Check@Win
-      run: |
-        IF EXIST "tvm\build\Release\tvm_runtime.dll" (
-          echo tvm_runtime.dll exists.
-        ) ELSE (
-          echo tvm_runtime.dll does not exist.
-          exit /b 1
-        )
-        IF EXIST "tvm\build\Release\tvm.dll" (
-          echo tvm.dll exists.
-        ) ELSE (
-          echo tvm.dll does not exist.
-          exit /b 1
-        )
     - name: Build MLC-LLM@Win
       if: matrix.pkg_kind == 'nightly'
       run: >-

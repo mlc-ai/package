@@ -10,6 +10,10 @@ cmake -A x64 -Thost=x64 ^
       -DUSE_VULKAN=ON ^
       ..
 
+if %errorlevel% neq 0 exit %errorlevel%
+
 cmake --build . --parallel 3 --config Release -- /m
+
+if %errorlevel% neq 0 exit %errorlevel%
 
 cd ..\..
