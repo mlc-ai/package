@@ -15,6 +15,10 @@ cmake -A x64 -Thost=x64 ^
       -DCMAKE_INSTALL_BINDIR=bin ^
       ..
 
+if %errorlevel% neq 0 exit %errorlevel%
+
 cmake --build . --parallel 3 --config Release -- /m
+
+if %errorlevel% neq 0 exit %errorlevel%
 
 cd ..\..
