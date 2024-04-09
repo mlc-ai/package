@@ -16,7 +16,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg_kind: ['nightly', 'stable']
+        pkg_kind: ['nightly']
         # matrix of build configs
         config:
           - gpu: 'none'

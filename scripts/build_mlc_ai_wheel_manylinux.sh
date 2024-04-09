@@ -118,6 +118,17 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_FLASHINFER ON\) >>config.cmake
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
 	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
+	echo target_compile_options\(prefill_kernels PRIVATE -Xcompiler=-fPIC --fatbin-options -compress-all\) >> 3rdparty/flashinfer/CMakeLists.txt
+	echo target_compile_options\(decode_kernels PRIVATE -Xcompiler=-fPIC --fatbin-options -compress-all\) >> 3rdparty/flashinfer/CMakeLists.txt
+	sed -i '62c\set (HEAD_DIMS 128)' 3rdparty/flashinfer/CMakeLists.txt
+	sed -i '63c\set (KV_LAYOUTS 1)' 3rdparty/flashinfer/CMakeLists.txt
+	sed -i '64c\set (POS_ENCODING_MODES 0 1)' 3rdparty/flashinfer/CMakeLists.txt
+	sed -i '65c\set (ALLOW_FP16_QK_REDUCTIONS "false")' 3rdparty/flashinfer/CMakeLists.txt
+	sed -i '59c\    constexpr bool ALLOW_FP16_QK_REDUCTION = false;                                             \\' 3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '138,142d' 3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '186,190d' 3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '152,156d' 3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '157,161d' 3rdparty/flashinfer/include/flashinfer/utils.cuh
 else
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 fi
