@@ -115,7 +115,7 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(FLASHINFER_ENABLE_BF16 OFF\) >>config.cmake
 	echo set\(FLASHINFER_GEN_GROUP_SIZES 1 4 6 8\) >>config.cmake
 	echo set\(FLASHINFER_GEN_HEAD_DIMS 128\) >>config.cmake
-	echo set\(FLASHINFER_GEN_KV_LAYOUTS 1\) >>config.cmake
+	echo set\(FLASHINFER_GEN_KV_LAYOUTS 0 1\) >>config.cmake
 	echo set\(FLASHINFER_GEN_POS_ENCODING_MODES 0 1\) >>config.cmake
 	echo set\(FLASHINFER_GEN_ALLOW_FP16_QK_REDUCTIONS "false"\) >>config.cmake
 	echo set\(FLASHINFER_GEN_CASUALS "false" "true"\) >>config.cmake
@@ -124,8 +124,7 @@ elif [[ ${GPU} == cuda* ]]; then
 	sed -i '30c\#define FLASHINFER_ALWAYS_DISALLOW_FP16_QK_REDUCTION 1' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
 	sed -i '180,184d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
 	sed -i '185,189d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
-	sed -i '161,165d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
-	sed -i '199,203d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '204,208d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
 fi
 
 # compile the mlc-llm
