@@ -122,9 +122,9 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
 	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
 	sed -i '30c\#define FLASHINFER_ALWAYS_DISALLOW_FP16_QK_REDUCTION 1' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
-	sed -i '180,184d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
-	sed -i '185,189d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
-	sed -i '204,208d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '179,183d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '184,188d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
+	sed -i '203,207d' 3rdparty/tvm/3rdparty/flashinfer/include/flashinfer/utils.cuh
 fi
 
 # compile the mlc-llm
