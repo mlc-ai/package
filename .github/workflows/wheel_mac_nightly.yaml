@@ -19,7 +19,9 @@ jobs:
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
-    runs-on: macos-latest
+    # do not use `macos-latest` to avoid running on arm
+    # details at https://github.com/actions/runner-images/
+    runs-on: macos-13
     defaults:
       run:
         shell: 'bash -l {0}'
