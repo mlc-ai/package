@@ -20,15 +20,15 @@ jobs:
         # matrix of build configs
         config:
           - gpu: 'none'
-            image: 'mlcaidev/package-cpu:7dc84a7'
+            image: 'mlcaidev/package-cpu:7a83f97'
           - gpu: 'cuda-12.1'
-            image: 'mlcaidev/package-cu121:7dc84a7'
+            image: 'mlcaidev/package-cu121:7a83f97'
           - gpu: 'cuda-12.2'
-            image: 'mlcaidev/package-cu122:7dc84a7'
+            image: 'mlcaidev/package-cu122:7a83f97'
           - gpu: 'rocm-5.6'
-            image: 'mlcaidev/package-rocm56:7dc84a7'
+            image: 'mlcaidev/package-rocm56:7a83f97'
           - gpu: 'rocm-5.7'
-            image: 'mlcaidev/package-rocm57:7dc84a7'
+            image: 'mlcaidev/package-rocm57:7a83f97'
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
