@@ -10,8 +10,8 @@ jobs:
       matrix:
         platform:
           - cpu
-          - rocm56
-          - rocm57
+          - rocm61
+          - rocm62
           - cu117
           - cu118
           - cu121
