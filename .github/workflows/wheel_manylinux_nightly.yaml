@@ -20,29 +20,21 @@ jobs:
         # matrix of build configs
         config:
           - gpu: 'none'
-            image: 'mlcaidev/package-cpu:7a83f97'
+            image: 'mlcaidev/package-cpu:16b1781'
           - gpu: 'cuda-12.1'
-            image: 'mlcaidev/package-cu121:7a83f97'
+            image: 'mlcaidev/package-cu121:16b1781'
           - gpu: 'cuda-12.2'
-            image: 'mlcaidev/package-cu122:7a83f97'
-          # - gpu: 'rocm-5.6'
-          #   image: 'mlcaidev/package-rocm56:7a83f97'
-          # - gpu: 'rocm-5.7'
-          #   image: 'mlcaidev/package-rocm57:7a83f97'
+            image: 'mlcaidev/package-cu122:16b1781'
+          - gpu: 'rocm-6.1'
+            image: 'mlcaidev/package-rocm61:16b1781'
+          - gpu: 'rocm-6.2'
+            image: 'mlcaidev/package-rocm62:16b1781'
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
-    - name: Reclaim disk space
-      run: |
-        df -h
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/hostedtoolcache/CodeQL
-        sudo rm -rf /usr/local/.ghcup
-        df -h
-
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
@@ -56,24 +48,32 @@ jobs:
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
       run: |
-        python scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Sync MLC LLM Package
       if: matrix.pkg_kind == 'nightly'
       run: |
-        python scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Build TVM Unity
+      uses: gacts/run-and-post-run@v1
       env:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
-      run: |
-        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+      with:
+        run: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+        post: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Build MLC-LLM
       if: matrix.pkg_kind == 'nightly'
+      uses: gacts/run-and-post-run@v1
       env:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
-      run: |
-        docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
+      with:
+        run: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
+        post: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
