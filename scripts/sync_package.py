@@ -167,8 +167,8 @@ def main():
             "cuda-11.8",
             "cuda-12.1",
             "cuda-12.2",
-            "rocm-5.6",
-            "rocm-5.7",
+            "rocm-6.1",
+            "rocm-6.2",
         ],
         help="GPU (CUDA/ROCm) version to be linked to the resultant binaries,"
         "or none, to disable CUDA/ROCm. Defaults to none.",

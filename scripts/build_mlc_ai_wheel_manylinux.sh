@@ -6,7 +6,7 @@ source /opt/rh/gcc-toolset-11/enable # GCC-11 is the hightest GCC version compat
 function usage() {
 	echo "Usage: $0 [--gpu GPU-VERSION]"
 	echo
-	echo -e "--gpu {none cuda-11.7 cuda-11.8 cuda-12.1 cuda-12.2 rocm-5.6 rocm-5.7}"
+	echo -e "--gpu {none cuda-11.7 cuda-11.8 cuda-12.1 cuda-12.2 rocm-6.1 rocm-6.2}"
 	echo -e "\tSpecify the GPU version (CUDA/ROCm) in the TVM (default: none)."
 }
 
@@ -44,7 +44,7 @@ function audit_mlc_ai_wheel() {
 TVM_PYTHON_DIR="/workspace/tvm/python"
 PYTHON_VERSIONS_CPU=("3.7" "3.8" "3.9" "3.10" "3.11" "3.12")
 PYTHON_VERSIONS_GPU=("3.7" "3.8" "3.9" "3.10" "3.11" "3.12")
-GPU_OPTIONS=("none" "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "rocm-5.6" "rocm-5.7")
+GPU_OPTIONS=("none" "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "rocm-6.1" "rocm-6.2")
 GPU="none"
 
 while [[ $# -gt 0 ]]; do
@@ -71,7 +71,7 @@ done
 if ! in_array "${GPU}" "${GPU_OPTIONS[*]}"; then
 	echo "Invalid GPU option: ${GPU}"
 	echo
-	echo 'GPU version can only be {"none", "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "rocm-5.6" "rocm-5.7"}'
+	echo 'GPU version can only be {"none", "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "rocm-6.1" "rocm-6.2"}'
 	exit -1
 fi
 
@@ -86,7 +86,7 @@ fi
 AUDITWHEEL_OPTS="--plat ${AUDITWHEEL_PLAT} -w repaired_wheels/"
 AUDITWHEEL_OPTS="--exclude libtinfo ${AUDITWHEEL_OPTS}"
 if [[ ${GPU} == rocm* ]]; then
-	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 --exclude librocm_smi64 --exclude librccl ${AUDITWHEEL_OPTS}"
+	AUDITWHEEL_OPTS="--exclude libamdhip64 --exclude libhsa-runtime64 --exclude librocm_smi64 --exclude librccl --exclude libhipblas --exclude libhipblaslt ${AUDITWHEEL_OPTS}"
 elif [[ ${GPU} == cuda* ]]; then
 	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc --exclude libcublas --exclude libcublasLt ${AUDITWHEEL_OPTS}"
 fi
@@ -105,9 +105,10 @@ elif [[ ${GPU} == cuda* ]]; then
 fi
 
 if [[ ${GPU} == rocm* ]]; then
-	echo set\(USE_LLVM \"/opt/rocm/llvm/bin/llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
+	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 	echo set\(USE_ROCM ON\) >>config.cmake
-	echo set\(USE_RCCL /opt/rocm/rccl/ \) >>config.cmake
+	echo set\(USE_HIPBLAS ON\) >>config.cmake
+	echo set\(USE_RCCL /opt/rocm/\) >>config.cmake
 elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 	echo set\(USE_CUDA ON\) >>config.cmake
@@ -135,7 +136,7 @@ git config --global --add safe.directory /workspace/tvm
 mkdir -p build
 cd build
 cmake ..
-make -j$(nproc)
+make -j12
 find . -type d -name 'CMakeFiles' -exec rm -rf {} +
 
 UNICODE_WIDTH=32 # Dummy value, irrelevant for Python 3
