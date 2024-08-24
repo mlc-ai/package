@@ -12,8 +12,6 @@ jobs:
           - cpu
           - rocm61
           - rocm62
-          - cu117
-          - cu118
           - cu121
           - cu122
 
