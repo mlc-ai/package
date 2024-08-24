@@ -105,7 +105,7 @@ elif [[ ${GPU} == cuda* ]]; then
 fi
 
 if [[ ${GPU} == rocm* ]]; then
-	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
+	echo set\(USE_LLVM \"/opt/rocm/llvm/bin/llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 	echo set\(USE_ROCM ON\) >>config.cmake
 	echo set\(USE_HIPBLAS ON\) >>config.cmake
 	echo set\(USE_RCCL /opt/rocm/\) >>config.cmake
