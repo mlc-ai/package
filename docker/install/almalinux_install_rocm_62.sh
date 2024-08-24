@@ -17,23 +17,5 @@ gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
 EOF
 done
 
-dnf install -y rocm-dev rocm-utils rccl \
-  hipblas \
-  hipblaslt \
-  hipcub-devel \
-  hipfft \
-  hiprand \
-  hipsolver \
-  hipsparse \
-  hipsparselt \
-  hiptensor \
-  miopen-hip \
-  rocalution \
-  rocblas \
-  rocfft \
-  rocrand \
-  rocsolver \
-  rocsparse \
-  rocthrust-devel \
-  roctracer \
-  rocwmma-devel
+dnf install -y rocm-hip-sdk
+dnf install -y rocm-llvm rocm-llvm-devel
