@@ -104,7 +104,7 @@ def update_conda(args, pkg, package_name):
 def name_with_gpu(args, package_name):
     """Update name with GPU version"""
     if args.gpu == "none":
-        return package_name
+        return package_name + "-cpu"
     elif args.gpu.startswith("rocm"):
         return package_name + "-rocm" + "".join(args.gpu[5:].split("."))
     else:
