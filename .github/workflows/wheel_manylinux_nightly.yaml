@@ -16,7 +16,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg_kind: ['nightly']
+        pkg_kind: ['nightly', 'stable']
         # matrix of build configs
         config:
           - gpu: 'none'
@@ -50,7 +50,6 @@ jobs:
       run: |
         python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Sync MLC LLM Package
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Build TVM Unity
@@ -64,7 +63,6 @@ jobs:
         post: |
           docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Build MLC-LLM
-      if: matrix.pkg_kind == 'nightly'
       uses: gacts/run-and-post-run@v1
       env:
         IMAGE: ${{ matrix.config.image }}
@@ -82,6 +80,6 @@ jobs:
       with:
         files: |
           tvm/python/repaired_wheels/*.whl
-          ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm/python/repaired_wheels/*.whl' || '' }}
+          mlc-llm/python/repaired_wheels/*.whl
         tag_name: v0.9.dev0
         prerelease: true

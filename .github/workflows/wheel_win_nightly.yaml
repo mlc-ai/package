@@ -44,7 +44,6 @@ jobs:
       run: |
         python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     - name: Sync MLC LLM Package
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
     # Use conda for LLVM dep
@@ -63,7 +62,6 @@ jobs:
       run: >-
         scripts/build_mlc_ai_lib_win.bat
     - name: Build MLC-LLM@Win
-      if: matrix.pkg_kind == 'nightly'
       run: >-
         scripts/build_mlc_llm_lib_win.bat
     # Build wheel for three python versions
@@ -80,7 +78,6 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py38
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -98,7 +95,6 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py39
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -116,7 +112,6 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py310
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -134,7 +129,6 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py311
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -152,7 +146,6 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py312
-      if: matrix.pkg_kind == 'nightly'
       run: |
         python --version
         cd mlc-llm/python
@@ -166,6 +159,6 @@ jobs:
       with:
         files: |
           tvm/python/dist/*.whl
-          ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm/python/dist/*.whl' || '' }}
+          mlc-llm/python/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true
