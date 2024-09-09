@@ -35,8 +35,8 @@ jobs:
         ln -s 3rdparty/tlcpack/conda conda
     - name: Checkout source
       run: |
-        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.15.1' || 'mlc' }}
-        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch main
+        git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.17.1' || 'mlc' }}
+        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.17.1' || 'main' }}
     - name: Build mlc-ai @ 3.8
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
@@ -68,33 +68,33 @@ jobs:
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
     - name: Build mlc-llm @ 3.8
-      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-8
     - name: Build mlc-llm @ 3.9
-      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-9
     - name: Build mlc-llm @ 3.10
-      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-10
     - name: Build mlc-llm @ 3.11
-      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-11
     - name: Build mlc-llm @ 3.12
-      if: matrix.pkg_kind == 'nightly'
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-12
     # Use system python instead of conda for upload
@@ -106,6 +106,6 @@ jobs:
       with:
         files: |
           tvm/python/dist/*.whl
-          ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm/python/dist/*.whl' || '' }}
+          mlc-llm/python/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true
