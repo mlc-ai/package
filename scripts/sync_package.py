@@ -167,6 +167,7 @@ def main():
             "cuda-11.8",
             "cuda-12.1",
             "cuda-12.2",
+            "cuda-12.3",
             "rocm-6.1",
             "rocm-6.2",
         ],
