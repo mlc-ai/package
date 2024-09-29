@@ -36,7 +36,6 @@ RUN bash /install/almalinux_install_conda.sh
 ENV PATH=/opt/conda/bin:${PATH}
 
 # Install Python
-RUN conda create -n py37 python=3.7 -y
 RUN conda create -n py38 python=3.8 -y
 RUN conda create -n py39 python=3.9 -y
 RUN conda create -n py310 python=3.10 -y

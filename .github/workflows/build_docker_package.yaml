@@ -12,8 +12,8 @@ jobs:
           - cpu
           - rocm61
           - rocm62
-          - cu121
           - cu122
+          - cu123
 
     runs-on: ubuntu-latest
     steps:

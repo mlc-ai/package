@@ -14,6 +14,13 @@ RUN bash /install/almalinux_install_cmake.sh
 COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
 RUN bash /install/almalinux_install_llvm.sh
 
+# install cuda
+COPY install/almalinux_install_cuda_123.sh /install/almalinux_install_cuda.sh
+RUN bash /install/almalinux_install_cuda.sh
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=${CUDA_HOME}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${PATH}
+
 # install vulkan sdk
 COPY install/almalinux_install_vulkan_sdk.sh /install/almalinux_install_vulkan_sdk.sh
 RUN bash /install/almalinux_install_vulkan_sdk.sh
