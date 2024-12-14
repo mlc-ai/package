@@ -13,3 +13,4 @@ dnf install cuda-12-2 -y
 
 NCCL_VERSION=$(dnf --showduplicates list libnccl | grep "cuda12.2" | tail -1 | awk '{print $2}')
 dnf install libnccl-$NCCL_VERSION libnccl-devel-$NCCL_VERSION libnccl-static-$NCCL_VERSION -y
+dnf install nvshmem -y
