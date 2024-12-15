@@ -127,6 +127,14 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(FLASHINFER_GEN_CASUALS "false" "true"\) >>config.cmake
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
 	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
+
+	if [ -d "/usr/include/nvshmem_12" ]; then
+		mkdir -p /workspace/nvshmem
+		cp -r /usr/include/nvshmem_12 /workspace/nvshmem/include
+		cp -r /usr/lib64/nvshmem/12 /workspace/nvshmem/lib
+		cp -r /usr/bin/nvshmem_12 /workspace/nvshmem/bin
+		echo set\(USE_NVSHMEM /workspace/nvshmem\) >>config.cmake
+	fi
 else
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 fi
