@@ -42,8 +42,8 @@ function audit_mlc_ai_wheel() {
 }
 
 TVM_PYTHON_DIR="/workspace/tvm/python"
-PYTHON_VERSIONS_CPU=("3.9" "3.10" "3.11" "3.12" "3.13")
-PYTHON_VERSIONS_GPU=("3.9" "3.10" "3.11" "3.12" "3.13")
+PYTHON_VERSIONS_CPU=("3.9" "3.10" "3.11" "3.12")
+PYTHON_VERSIONS_GPU=("3.9" "3.10" "3.11" "3.12")
 GPU_OPTIONS=("none" "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "rocm-6.1" "rocm-6.2")
 GPU="none"
 
