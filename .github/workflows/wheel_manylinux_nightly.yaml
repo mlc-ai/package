@@ -26,7 +26,7 @@ jobs:
           - gpu: 'cuda-12.3'
             image: 'mlcaidev/package-cu123:76cedcd'
           - gpu: 'cuda-12.4'
-            image: 'mlcaidev/package-cu124:70a4fb0'
+            image: 'mlcaidev/package-cu124:ffe4237'
           - gpu: 'rocm-6.1'
             image: 'mlcaidev/package-rocm61:76cedcd'
           - gpu: 'rocm-6.2'
