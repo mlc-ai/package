@@ -6,7 +6,7 @@ eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
 # Need to first
 # - create these enviroments,
 # - install dependencies in https://github.com/tlc-pack/tlcpack/blob/main/conda/build-environment.yaml for these env.
-declare -a conda_env_names=("wheel-3-8" "wheel-3-9" "wheel-3-10" "wheel-3-11")
+declare -a conda_env_names=("wheel-3-9" "wheel-3-10" "wheel-3-11" "wheel-3-12" "wheel-3-13")
 
 export DEPLOY_WHEEL=1
 

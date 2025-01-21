@@ -37,12 +37,6 @@ jobs:
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.18.1' || 'mlc' }}
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.18.1' || 'main' }}
-    - name: Build mlc-ai @ 3.8
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-8
     - name: Build mlc-ai @ 3.9
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
@@ -67,12 +61,12 @@ jobs:
         STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
-    - name: Build mlc-llm @ 3.8
+    - name: Build mlc-ai @ 3.13
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
         STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
-        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-8
+        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-13
     - name: Build mlc-llm @ 3.9
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
@@ -97,6 +91,12 @@ jobs:
         STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-12
+    - name: Build mlc-llm @ 3.13
+      env:
+        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
+        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
+      run: |
+        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-13
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'

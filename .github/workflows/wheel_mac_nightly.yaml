@@ -64,23 +64,6 @@ jobs:
       run: >-
         scripts/build_mlc_llm_lib_osx.sh
     # Build wheel for three python versions
-    - name: Setup@Py38
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py38
-        python-version: 3.8
-        auto-activate-base: false
-    - name: Wheel-Build@Py38
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py38
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
     - name: Setup@Py39
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -145,6 +128,23 @@ jobs:
         cd tvm/python
         python setup.py bdist_wheel
     - name: Wheel-Build-MLC-LLM@Py312
+      run: |
+        python --version
+        cd mlc-llm/python
+        python setup.py bdist_wheel
+    - name: Setup@Py313
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: build-Py313
+        python-version: '3.13'
+        auto-activate-base: false
+    - name: Wheel-Build@Py313
+      run: |
+        python --version
+        python -m pip install setuptools Cython wheel
+        cd tvm/python
+        python setup.py bdist_wheel
+    - name: Wheel-Build-MLC-LLM@Py313
       run: |
         python --version
         cd mlc-llm/python
