@@ -6,7 +6,7 @@ source /opt/rh/gcc-toolset-11/enable # GCC-11 is the hightest GCC version compat
 function usage() {
 	echo "Usage: $0 [--gpu GPU-VERSION]"
 	echo
-	echo -e "--gpu {none cuda-11.7 cuda-11.8 cuda-12.1 cuda-12.2 cuda-12.3 cuda-12.4 rocm-6.1 rocm-6.2}"
+	echo -e "--gpu {none cuda-11.7 cuda-11.8 cuda-12.1 cuda-12.2 cuda-12.3 cuda-12.4 cuda-12.8 rocm-6.1 rocm-6.2}"
 	echo -e "\tSpecify the GPU version (CUDA/ROCm) in the MLC-LLM (default: none)."
 }
 
@@ -44,7 +44,7 @@ function audit_mlc_llm_wheel() {
 MLC_LLM_PYTHON_DIR="/workspace/mlc-llm/python"
 PYTHON_VERSIONS_CPU=("3.9" "3.10" "3.11" "3.12")
 PYTHON_VERSIONS_GPU=("3.9" "3.10" "3.11" "3.12")
-GPU_OPTIONS=("none" "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "rocm-6.1" "rocm-6.2")
+GPU_OPTIONS=("none" "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "rocm-6.1" "rocm-6.2")
 GPU="none"
 
 while [[ $# -gt 0 ]]; do
@@ -71,7 +71,7 @@ done
 if ! in_array "${GPU}" "${GPU_OPTIONS[*]}"; then
 	echo "Invalid GPU option: ${GPU}"
 	echo
-	echo 'GPU version can only be {"none", "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "rocm-6.1" "rocm-6.2"}'
+	echo 'GPU version can only be {"none", "cuda-11.7" "cuda-11.8" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "rocm-6.1" "rocm-6.2"}'
 	exit -1
 fi
 

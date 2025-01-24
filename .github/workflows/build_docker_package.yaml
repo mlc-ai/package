@@ -9,7 +9,13 @@ jobs:
     strategy:
       matrix:
         platform:
+          - cpu
+          - rocm61
+          - rocm62
+          - cu122
+          - cu123
           - cu124
+          - cu128
 
     runs-on: ubuntu-latest
     steps:
