@@ -7,7 +7,7 @@ import subprocess
 # Modify the following two settings during release
 # -----------------------------------------------------------
 # Tag used for stable build.
-__stable_build__ = "v0.18.1"
+__stable_build__ = "v0.19.0"
 # -----------------------------------------------------------
 
 
