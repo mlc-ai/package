@@ -91,6 +91,8 @@ elif [[ ${GPU} == cuda* ]]; then
 	AUDITWHEEL_OPTS="--exclude libcuda --exclude libcudart --exclude libnvrtc --exclude libcublas --exclude libcublasLt ${AUDITWHEEL_OPTS}"
 fi
 
+pip install Cython
+
 # config the cmake
 cd /workspace/tvm
 
