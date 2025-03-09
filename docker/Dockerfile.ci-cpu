@@ -8,6 +8,14 @@ COPY install/ubuntu/core.sh /install/core.sh
 RUN bash /install/core.sh
 
 # Install Conda
+ENV PATH=/opt/conda/bin:${PATH}
 COPY install/ubuntu/conda.sh /install/conda.sh
-COPY install/conda_envs/ci-lint.yml /conda_envs/ci-lint.yml
+ADD install/conda_envs/ /install/conda/
 RUN bash /install/conda.sh
+
+# Install WASM
+COPY install/ubuntu/wasm.sh /install/wasm.sh
+RUN bash /install/wasm.sh
+ENV EMSDK=/emsdk
+ENV EMSDK_NODE=/emsdk/node/20.18.0_64bit/bin/node
+ENV PATH=/emsdk/:/emsdk/upstream/emscripten:/emsdk/node/20.18.0_64bit/bin:${PATH}

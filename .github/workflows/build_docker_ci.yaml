@@ -10,6 +10,7 @@ jobs:
       matrix:
         platform:
           - cpu
+          - cu128
 
     runs-on: ubuntu-latest
     steps:

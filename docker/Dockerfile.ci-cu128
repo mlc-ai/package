@@ -1,0 +1,11 @@
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
+
+# install core
+COPY install/ubuntu/core.sh /install/core.sh
+RUN bash /install/core.sh
+
+# Install Conda
+ENV PATH=/opt/conda/bin:${PATH}
+COPY install/ubuntu/conda.sh /install/conda.sh
+ADD install/conda_envs/ /install/conda/
+RUN bash /install/conda.sh
