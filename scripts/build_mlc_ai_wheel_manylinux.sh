@@ -24,6 +24,7 @@ function in_array() {
 function build_mlc_ai_wheel() {
 	python_dir=$1
 	PYTHON_BIN="${python_dir}/bin/python"
+	${PYTHON_BIN} -m pip install Cython --upgrade
 
 	cd "${TVM_PYTHON_DIR}" &&
 		${PYTHON_BIN} setup.py bdist_wheel
