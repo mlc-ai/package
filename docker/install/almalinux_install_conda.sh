@@ -13,5 +13,4 @@ rm /tmp/Miniconda3-latest-Linux-x86_64.sh
 /opt/conda/bin/conda config --set solver libmamba
 /opt/conda/bin/conda upgrade --all
 /opt/conda/bin/conda clean -ya
-/opt/conda/bin/conda install conda-build conda-verify
 chmod -R a+w /opt/conda/
