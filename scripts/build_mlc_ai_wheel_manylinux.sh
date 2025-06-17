@@ -104,7 +104,7 @@ echo set\(USE_VULKAN ON\) >>config.cmake
 if [[ ${GPU} == cuda-11.7 ]]; then
 	CUDA_ARCHS="80;86;87"
 elif [[ ${GPU} == cuda* ]]; then
-	CUDA_ARCHS="80;86;87;89;90;90a"
+	CUDA_ARCHS="80;86;89;90;90a"
 fi
 
 if [[ ${GPU} == rocm* ]]; then
