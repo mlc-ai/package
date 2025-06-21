@@ -1,0 +1,87 @@
+# GH actions.
+name: Wheel-Manylinux-Aarch64-Nightly
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build:
+    continue-on-error: true
+    strategy:
+      matrix:
+        pkg_kind: ["nightly", "stable"]
+        # matrix of build configs
+        config:
+          - gpu: "none"
+            image: "package-cpu:aarch64"
+            platform: "cpu"
+        platform:
+          - linux/arm64
+        exclude:
+          - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
+
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Reclaim disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/.ghcup
+          df -h
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+      - name: Build Docker image
+        run: |
+          set -eux
+          cd docker          
+          docker build --build-arg ARCH=aarch64 -t package-${{ matrix.config.platform }}:aarch64 -f Dockerfile.package-${{ matrix.config.platform }} .
+      - name: Setup script env
+        run: |
+          rm -rf conda
+          ln -s 3rdparty/tlcpack/conda conda
+      - name: Checkout source
+        run: |
+          git clone https://github.com/mlc-ai/relax tvm --recursive
+          git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
+      - name: Sync MLC AI Package
+        run: |
+          python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+      - name: Sync MLC LLM Package
+        run: |
+          python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+      - name: Build TVM Unity
+        uses: gacts/run-and-post-run@v1
+        env:
+          IMAGE: ${{ matrix.config.image }}
+          GPU: ${{ matrix.config.gpu }}
+          PLATFORM: ${{ matrix.platform }}
+        with:
+          run: |
+            docker/bash.sh --no-gpu $IMAGE $PLATFORM ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+          post: |
+            docker/bash.sh --no-gpu $IMAGE $PLATFORM ./scripts/cleanup_workspace.sh
+      - name: Build MLC-LLM
+        uses: gacts/run-and-post-run@v1
+        env:
+          IMAGE: ${{ matrix.config.image }}
+          GPU: ${{ matrix.config.gpu }}
+          PLATFORM: ${{ matrix.platform }}
+        with:
+          run: |
+            docker/bash.sh --no-gpu $IMAGE $PLATFORM ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
+          post: |
+            docker/bash.sh --no-gpu $IMAGE $PLATFORM ./scripts/cleanup_workspace.sh
+      - name: Wheel-Deploy
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
+        with:
+          files: |
+            tvm/python/repaired_wheels/*.whl
+            mlc-llm/python/repaired_wheels/*.whl
+          tag_name: v0.9.dev0
+          prerelease: true

@@ -22,7 +22,9 @@ else
 fi
 
 DOCKER_IMAGE_NAME=("$1")
+shift
 
+DOCKER_PLATFORM=("$1")
 
 if [ "$#" -eq 1 ]; then
     COMMAND="bash"
@@ -84,6 +86,7 @@ ${DOCKER_BINARY} run --rm --pid=host\
     -v ${WORKSPACE}:/workspace \
     -v ${SCRIPT_DIR}:/docker \
     -w /workspace \
+    --platform ${DOCKER_PLATFORM} \
     ${CUDA_ENV} \
     ${WHEEL_TEST} \
     ${DOCKER_EXTRA_PARAMS[@]} \

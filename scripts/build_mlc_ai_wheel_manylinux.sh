@@ -137,8 +137,13 @@ fi
 git config --global --add safe.directory /workspace/tvm
 mkdir -p build
 cd build
-cmake ..
-make -j12
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
+
+# Detect number of CPU cores for parallel compilation
+NUM_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+echo "Detected ${NUM_CORES} CPU cores, using -j${NUM_CORES} for compilation"
+make -j${NUM_CORES}
+
 find . -type d -name 'CMakeFiles' -exec rm -rf {} +
 
 UNICODE_WIDTH=32 # Dummy value, irrelevant for Python 3

@@ -1,6 +1,7 @@
 # Docker image: mlc-ai/package-vulkan
 
-FROM quay.io/pypa/manylinux_2_28_x86_64
+ARG ARCH
+FROM quay.io/pypa/manylinux_2_28_${ARCH}
 
 # install core
 COPY install/almalinux_install_core.sh /install/almalinux_install_core.sh
@@ -15,8 +16,9 @@ COPY install/almalinux_install_llvm.sh /install/almalinux_install_llvm.sh
 RUN bash /install/almalinux_install_llvm.sh
 
 # install cuda
+ARG ARCH
 COPY install/almalinux_install_cuda_121.sh /install/almalinux_install_cuda.sh
-RUN bash /install/almalinux_install_cuda.sh
+RUN bash /install/almalinux_install_cuda.sh ${ARCH}
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${PATH}
@@ -32,7 +34,7 @@ RUN bash /install/almalinux_install_patchelf.sh
 
 # Install Conda
 COPY install/almalinux_install_conda.sh /install/almalinux_install_conda.sh
-RUN bash /install/almalinux_install_conda.sh
+RUN bash /install/almalinux_install_conda.sh ${ARCH}
 ENV PATH=/opt/conda/bin:${PATH}
 
 # Install Python
@@ -48,7 +50,7 @@ RUN bash /install/almalinux_install_python_package.sh
 # Install auditwheel
 COPY install/almalinux_install_auditwheel.sh /install/almalinux_install_auditwheel.sh
 RUN bash /install/almalinux_install_auditwheel.sh
-ENV AUDITWHEEL_PLAT=manylinux_2_28_x86_64
+ENV AUDITWHEEL_PLAT=manylinux_2_28_${ARCH}
 
 # Install Rust
 COPY install/almalinux_install_rust.sh /install/almalinux_install_rust.sh

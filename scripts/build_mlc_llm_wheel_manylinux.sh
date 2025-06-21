@@ -121,8 +121,19 @@ fi
 # compile the mlc-llm
 mkdir -p build
 cd build
+
+# fix the -lamotic not found error for aarch64 build
+if [[ "$(uname -m)" == "aarch64" ]]; then
+	ln -sf /usr/lib64/libatomic.so.1.2.0 /usr/lib64/libatomic.so
+fi
+
 cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
-make -j12
+
+# Detect number of CPU cores for parallel compilation
+NUM_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+echo "Detected ${NUM_CORES} CPU cores, using -j${NUM_CORES} for compilation"
+make -j${NUM_CORES}
+
 find . -type d -name 'CMakeFiles' -exec rm -rf {} +
 
 UNICODE_WIDTH=32 # Dummy value, irrelevant for Python 3
