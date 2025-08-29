@@ -16,7 +16,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg_kind: ['nightly', 'stable']
+        pkg_kind: ['nightly']
         # matrix of build configs
         config:
           - gpu: 'none'
@@ -52,10 +52,10 @@ jobs:
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
       run: |
-        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
     - name: Sync MLC LLM Package
       run: |
-        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
     - name: Build TVM Unity
       uses: gacts/run-and-post-run@v1
       env:
@@ -83,7 +83,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
         files: |
-          tvm/python/repaired_wheels/*.whl
-          mlc-llm/python/repaired_wheels/*.whl
+          tvm/repaired_wheels/*.whl
+          mlc-llm/repaired_wheels/*.whl
         tag_name: v0.9.dev0
         prerelease: true

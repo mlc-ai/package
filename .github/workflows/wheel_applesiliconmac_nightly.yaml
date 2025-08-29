@@ -15,7 +15,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg_kind: ['nightly', 'stable']
+        pkg_kind: ['nightly']
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
@@ -37,60 +37,12 @@ jobs:
       run: |
         git clone https://github.com/mlc-ai/relax tvm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.19.0' || 'mlc' }}
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive --single-branch --branch ${{ matrix.pkg_kind == 'stable' && 'v0.19.0' || 'main' }}
-    - name: Build mlc-ai @ 3.9
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-9
-    - name: Build mlc-ai @ 3.10
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-10
-    - name: Build mlc-ai @ 3.11
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-11
-    - name: Build mlc-ai @ 3.12
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-12
     - name: Build mlc-ai @ 3.13
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
         STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
       run: |
         scripts/build_mlc_ai_wheel_single_python_apple_silicon.sh wheel-3-13
-    - name: Build mlc-llm @ 3.9
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-9
-    - name: Build mlc-llm @ 3.10
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-10
-    - name: Build mlc-llm @ 3.11
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-11
-    - name: Build mlc-llm @ 3.12
-      env:
-        CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
-        STABLE_BUILD: ${{ matrix.pkg_kind == 'stable' && 1 || 0 }}
-      run: |
-        scripts/build_mlc_llm_wheel_single_python_apple_silicon.sh wheel-3-12
     - name: Build mlc-llm @ 3.13
       env:
         CONDA_HOME: ${{ secrets.M1_MAC_CONDA_HOME }}
@@ -105,7 +57,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
         files: |
-          tvm/python/dist/*.whl
-          mlc-llm/python/dist/*.whl
+          tvm/dist/*.whl
+          mlc-llm/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true

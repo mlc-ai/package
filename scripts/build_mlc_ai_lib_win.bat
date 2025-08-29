@@ -1,24 +1,20 @@
 echo on
 
+python --version
+python -m pip install wheel
+
 cd tvm
-rd /s /q build
+if exist config.cmake del /f config.cmake
+
+if exist build rmdir /s /q build
 mkdir build
-cd build
 
-cmake -A x64 -Thost=x64 ^
-      -G "Visual Studio 17 2022" ^
-      -DUSE_LLVM="llvm-config --link-static" ^
-      -DZLIB_USE_STATIC_LIBS=ON ^
-      -DUSE_RPC=ON ^
-      -DUSE_VULKAN=ON ^
-      -DCMAKE_INSTALL_LIBDIR=lib ^
-      -DCMAKE_INSTALL_BINDIR=bin ^
-      ..
+echo set(USE_LLVM "llvm-config --link-static") >> config.cmake
+echo set(ZLIB_USE_STATIC_LIBS ON) >> config.cmake
+echo set(USE_RPC ON) >> config.cmake
+echo set(USE_VULKAN ON) >> config.cmake
+
+pip wheel --no-deps -w dist . -v
 
 if %errorlevel% neq 0 exit %errorlevel%
-
-cmake --build . --parallel 3 --config Release -- /m
-
-if %errorlevel% neq 0 exit %errorlevel%
-
-cd ..\..
+cd ..

@@ -15,7 +15,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        pkg_kind: ['nightly', 'stable']
+        pkg_kind: ['nightly']
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
@@ -41,14 +41,16 @@ jobs:
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
       run: |
-        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
     - name: Sync MLC LLM Package
       run: |
-        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }} --skip-conda
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
     # Use conda for LLVM dep
-    - uses: conda-incubator/setup-miniconda@v3
+    - name: Setup@Py313
+      uses: conda-incubator/setup-miniconda@v3
       with:
         activate-environment: tlcpack-build
+        python-version: '3.13'
         channel-priority: strict
         environment-file: conda/build-environment.yaml
         auto-activate-base: false
@@ -63,92 +65,6 @@ jobs:
     - name: Build MLC-LLM@MacOS
       run: >-
         scripts/build_mlc_llm_lib_osx.sh
-    # Build wheel for three python versions
-    - name: Setup@Py39
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py39
-        python-version: 3.9
-        auto-activate-base: false
-    - name: Wheel-Build@Py39
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py39
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
-    - name: Setup@Py310
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py310
-        python-version: '3.10'
-        auto-activate-base: false
-    - name: Wheel-Build@Py310
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py310
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
-    - name: Setup@Py311
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py311
-        python-version: '3.11'
-        auto-activate-base: false
-    - name: Wheel-Build@Py311
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py311
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
-    - name: Setup@Py312
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py312
-        python-version: '3.12'
-        auto-activate-base: false
-    - name: Wheel-Build@Py312
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py312
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
-    - name: Setup@Py313
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: build-Py313
-        python-version: '3.13'
-        auto-activate-base: false
-    - name: Wheel-Build@Py313
-      run: |
-        python --version
-        python -m pip install setuptools Cython wheel
-        cd tvm/python
-        python setup.py bdist_wheel
-    - name: Wheel-Build-MLC-LLM@Py313
-      run: |
-        python --version
-        cd mlc-llm/python
-        python setup.py bdist_wheel
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
@@ -157,7 +73,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.MLC_GITHUB_TOKEN }}
       with:
         files: |
-          tvm/python/dist/*.whl
-          mlc-llm/python/dist/*.whl
+          tvm/dist/*.whl
+          mlc-llm/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true
