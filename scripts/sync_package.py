@@ -1,8 +1,10 @@
-""" Synchronize name and the tvm version """
+"""Synchronize name and the tvm version"""
+
 import argparse
 import os
 import re
 import subprocess
+import sys
 
 # Modify the following two settings during release
 # -----------------------------------------------------------
@@ -61,7 +63,7 @@ def get_version_tag(args):
     - local_ver: includes major, minor, dev and last git hash
                  e.g. "0.8.dev1473+gb7488ef47".
     """
-    version_py = os.path.join(args.src, "version.py")
+    version_py = os.path.join(args.package, "version.py")
     libversion = {"__file__": version_py}
     exec(
         compile(open(version_py, "rb").read(), version_py, "exec"),
@@ -75,30 +77,6 @@ def get_version_tag(args):
         pub_ver, local_ver = libversion["git_describe_version"]()
 
     return pub_ver, local_ver
-
-
-def update_conda(args, pkg, package_name):
-    pub_ver, _ = get_version_tag(args)
-
-    # create initial yaml file
-    meta_yaml = os.path.join("conda", pkg, "recipe", "meta.yaml")
-    with open(meta_yaml, "w") as fo:
-        fo.write(open(os.path.join("conda", pkg, "recipe", "meta.in.yaml")).read())
-
-    update(
-        meta_yaml,
-        [
-            (r"(?<=default_pkg_name = ')[^\']+", package_name),
-            (r"(?<=version = ')[.0-9a-z]+", pub_ver),
-        ],
-        args.dry_run,
-    )
-
-    update(
-        os.path.join("conda", pkg, "build_config.yaml"),
-        [("(?<=pkg_name: ')[^']+", package_name)],
-        args.dry_run,
-    )
 
 
 def name_with_gpu(args, package_name):
@@ -117,7 +95,18 @@ def update_setup(args, pkg, package_name):
         (r'(?<=name=")[^\"]+', name_with_gpu(args, package_name)),
         (r"(?<=version=)[^\,]+", f'"{pub_ver}"'),
     ]
-    update(os.path.join(args.src, "python", "setup.py"), rewrites, args.dry_run)
+    update(os.path.join(args.package, "python", "setup.py"), rewrites, args.dry_run)
+
+
+def run_version_py(args):
+    # Run version.py to bump the version
+    version_py = os.path.join(args.package, "version.py")
+    subprocess.run([sys.executable, version_py, "--git-describe"])
+    # Update package name
+    rewrites = [
+        (r'(?m)(?<=(?<![^\n])name = ")[^\n"]+(?=")', name_with_gpu(args, args.package_name)),
+    ]
+    update(os.path.join(args.package, "pyproject.toml"), rewrites, args.dry_run)
 
 
 def main():
@@ -144,14 +133,6 @@ def main():
         ),
     )
     parser.add_argument(
-        "--src",
-        type=str,
-        metavar="DIR_NAME",
-        default="",
-        help="Set the directory in which sources will be checked out. "
-        "Defaults to package",
-    )
-    parser.add_argument(
         "--revision",
         type=str,
         default="origin/main",
@@ -163,8 +144,6 @@ def main():
         default="none",
         choices=[
             "none",
-            "cuda-11.7",
-            "cuda-11.8",
             "cuda-12.1",
             "cuda-12.2",
             "cuda-12.3",
@@ -183,28 +162,26 @@ def main():
         "For use when running in an existing checkout.",
     )
     parser.add_argument(
-        "--skip-conda",
+        "--use-setup-py",
         action="store_true",
-        help="Skip version string replacement in conda.",
+        help="Use python/setup.py instead of using scikit-build to build the package.",
     )
     args = parser.parse_args()
 
-    if args.src == "":
-        args.src = args.package
     package_name = args.package_name
 
     if not args.skip_checkout:
         if "nightly" not in args.package_name and not args.nightly:
             if __stable_build__ is None:
                 raise RuntimeError("Only nightly is supported")
-            checkout_source(args.src, __stable_build__)
+            checkout_source(args.package, __stable_build__)
         else:
-            checkout_source(args.src, args.revision)
+            checkout_source(args.package, args.revision)
 
-    if not args.skip_conda:
-        update_conda(args, args.package, package_name)
-
-    update_setup(args, args.package, package_name)
+    if args.use_setup_py:
+        update_setup(args, args.package, package_name)
+    else:
+        run_version_py(args)
 
 
 if __name__ == "__main__":

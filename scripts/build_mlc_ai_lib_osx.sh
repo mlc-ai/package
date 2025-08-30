@@ -3,22 +3,23 @@
 set -e
 set -u
 
-cd tvm
-rm -f config.cmake
-rm -rf build
-mkdir -p build
-cd build
-
 MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-10.15}
 
-cmake -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
-      -DUSE_RPC=ON \
-      -DUSE_CPP_RPC=OFF \
-      -DUSE_LLVM="llvm-config --link-static" \
-      -DHIDE_PRIVATE_SYMBOLS=ON \
-      -DUSE_METAL=ON \
-      ..
+python --version
+python -m pip install wheel
 
-make -j3
-cd ../..
+cd tvm
+rm -f config.cmake
+
+rm -rf build
+mkdir -p build
+
+echo set\(CMAKE_OSX_DEPLOYMENT_TARGET ${MACOSX_DEPLOYMENT_TARGET}\) >>config.cmake
+echo set\(HIDE_PRIVATE_SYMBOLS ON\) >>config.cmake
+echo set\(USE_RPC ON\) >>config.cmake
+echo set\(USE_CPP_RPC OFF\) >>config.cmake
+echo set\(USE_LLVM \"llvm-config --link-static\"\) >>config.cmake
+echo set\(USE_METAL ON\) >>config.cmake
+
+pip wheel --no-deps -w dist . -v
+cd ..
