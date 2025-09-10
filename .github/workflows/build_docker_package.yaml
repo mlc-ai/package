@@ -12,10 +12,9 @@ jobs:
           - cpu
           - rocm61
           - rocm62
-          - cu122
-          - cu123
           - cu124
           - cu128
+          - cu130
 
     runs-on: ubuntu-latest
     steps:

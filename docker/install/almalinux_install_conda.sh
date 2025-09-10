@@ -8,6 +8,8 @@ cd /tmp && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x
 chmod +x Miniconda3-latest-Linux-x86_64.sh
 /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 rm /tmp/Miniconda3-latest-Linux-x86_64.sh
+/opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+/opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 /opt/conda/bin/conda update --yes -n base -c defaults conda
 /opt/conda/bin/conda install -n base conda-libmamba-solver
 /opt/conda/bin/conda config --set solver libmamba
