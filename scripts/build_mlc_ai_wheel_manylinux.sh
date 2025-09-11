@@ -6,7 +6,7 @@ source /opt/rh/gcc-toolset-11/enable # GCC-11 is the hightest GCC version compat
 function usage() {
 	echo "Usage: $0 [--gpu GPU-VERSION]"
 	echo
-	echo -e "--gpu {none cuda-12.1 cuda-12.2 cuda-12.3 cuda-12.4 cuda-12.8 rocm-6.1 rocm-6.2}"
+	echo -e "--gpu {none cuda-12.1 cuda-12.2 cuda-12.3 cuda-12.4 cuda-12.8 cuda-13.0 rocm-6.1 rocm-6.2}"
 	echo -e "\tSpecify the GPU version (CUDA/ROCm) in the TVM (default: none)."
 }
 
@@ -22,7 +22,7 @@ function in_array() {
 }
 
 TVM_DIR="/workspace/tvm"
-GPU_OPTIONS=("none" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "rocm-6.1" "rocm-6.2")
+GPU_OPTIONS=("none" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "cuda-13.0" "rocm-6.1" "rocm-6.2")
 GPU="none"
 
 while [[ $# -gt 0 ]]; do
@@ -49,7 +49,7 @@ done
 if ! in_array "${GPU}" "${GPU_OPTIONS[*]}"; then
 	echo "Invalid GPU option: ${GPU}"
 	echo
-	echo 'GPU version can only be {"none", "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "rocm-6.1" "rocm-6.2"}'
+	echo 'GPU version can only be {"none", "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "cuda-13.0" "rocm-6.1" "rocm-6.2"}'
 	exit -1
 fi
 
@@ -77,6 +77,12 @@ echo set\(USE_VULKAN ON\) >>config.cmake
 if [[ ${GPU} == cuda* ]]; then
 	CUDA_ARCHS="80;86;89;90;90a"
 fi
+if [[ ${GPU} == cuda-12.8 || ${GPU} == cuda-13.0 ]]; then
+	CUDA_ARCHS="${CUDA_ARCHS};100;120"
+fi
+if [[ ${GPU} == cuda-13.0 ]]; then
+	CUDA_ARCHS="${CUDA_ARCHS};110"
+fi
 
 if [[ ${GPU} == rocm* ]]; then
 	echo set\(USE_LLVM \"/opt/rocm/llvm/bin/llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
@@ -93,7 +99,7 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake
 	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
 
-	for cuda_version in 13 12; do
+	for cuda_version in 12; do
 		if [ -d "/usr/include/nvshmem_${cuda_version}" ]; then
 			mkdir -p /workspace/nvshmem
 			cp -r /usr/include/nvshmem_${cuda_version} /workspace/nvshmem/include
