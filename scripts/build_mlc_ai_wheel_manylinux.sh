@@ -75,10 +75,10 @@ echo set\(USE_RPC ON\) >>config.cmake
 echo set\(USE_VULKAN ON\) >>config.cmake
 
 if [[ ${GPU} == cuda* ]]; then
-	CUDA_ARCHS="80;86;89;90;90a"
+	CUDA_ARCHS="80;89;90a"
 fi
 if [[ ${GPU} == cuda-12.8 || ${GPU} == cuda-13.0 ]]; then
-	CUDA_ARCHS="${CUDA_ARCHS};100;120"
+	CUDA_ARCHS="${CUDA_ARCHS};120"
 fi
 if [[ ${GPU} == cuda-13.0 ]]; then
 	CUDA_ARCHS="${CUDA_ARCHS};110"
