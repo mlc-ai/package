@@ -123,7 +123,11 @@ def list_wheels(repo):
     for release in repo.releases():
         tag = release.tag_name
         for asset in release.assets():
-            if asset.name.endswith(".whl") and url_is_valid(asset.browser_download_url):
+            if (
+                asset.name.endswith(".whl")
+                and url_is_valid(asset.browser_download_url)
+                and asset not in wheels
+            ):
                 wheels.append(asset)
     return wheels
 
