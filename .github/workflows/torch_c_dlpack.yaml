@@ -19,6 +19,9 @@ name: torch c dlpack
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - torch-c-dlpack
 
 jobs:
   build_wheels_windows:
@@ -56,7 +59,7 @@ jobs:
     permissions:
       id-token: write
       attestations: write
-    if: github.event_name == 'workflow_dispatch'   # <-- publish only on manual trigger
+    # if: github.event_name == 'workflow_dispatch'   # <-- publish only on manual trigger
     steps:
       - uses: actions/download-artifact@v4
         with:
