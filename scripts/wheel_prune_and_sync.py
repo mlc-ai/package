@@ -154,7 +154,7 @@ def update_wheel_page(keep_list, site_repo, dry_run=False):
 
     run_cmd(["git", "fetch"])
     run_cmd(["git", "checkout", "-B", "main", "origin/main"])
-    wheel_html_path = os.path.join(site_repo, "wheels.html")
+    wheel_html_path = os.path.join(site_repo, "index.html")
     if open(wheel_html_path, "r").read() != new_html:
         print(f"Wheel page changed, update {wheel_html_path}..")
         if not dry_run:
