@@ -1,0 +1,64 @@
+# GH actions.
+name: Wheel-Manylinux-Nightly-TIRX
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 6 * * *' # 6 AM UTC
+
+jobs:
+  Build:
+    strategy:
+      matrix:
+        pkg_kind: ['nightly']
+        # matrix of build configs
+        config:
+          - gpu: 'cuda-13.0'
+            image: 'mlcaidev/package-cu130:29b1305'
+        exclude:
+          - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
+
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Setup script env
+      run: |
+        rm -rf conda
+        ln -s 3rdparty/tlcpack/conda conda
+    - name: Checkout source
+      env:
+        GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
+      run: |
+        git clone https://$GITHUB_TOKEN@github.com/spectrometerHBH/tir tvm --recursive --branch tirx
+    - name: Sync TIRX Package
+      run: |
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-tirx-nightly' || 'mlc-ai-tirx' }} --revision origin/tirx ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
+    - name: Build TIRX
+      uses: gacts/run-and-post-run@v1
+      env:
+        IMAGE: ${{ matrix.config.image }}
+        GPU: ${{ matrix.config.gpu }}
+      with:
+        run: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+        post: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
+    - name: Wheel-Deploy
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
+      with:
+        files: |
+          tvm/repaired_wheels/*.whl
+        tag_name: v0.9.dev0
+        prerelease: true
