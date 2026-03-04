@@ -9,7 +9,8 @@ import sys
 # Modify the following two settings during release
 # -----------------------------------------------------------
 # Tag used for stable build.
-__stable_build__ = "v0.19.0"
+# The stable build version can be overridden by the MLC_STABLE_BUILD_VER environment variable.
+__stable_build__ = os.environ.get("MLC_STABLE_BUILD_VER", "v0.19.0")
 # -----------------------------------------------------------
 
 
