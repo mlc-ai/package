@@ -39,7 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       run: |
-        git clone https://$GITHUB_TOKEN@github.com/spectrometerHBH/tir tvm --recursive --branch tirx
+        git clone https://$GITHUB_TOKEN@github.com/spectrometerHBH/tir tvm --recursive
     - name: Sync TIRX Package
       env:
         MLC_STABLE_BUILD_VER: v0.0.1b2
