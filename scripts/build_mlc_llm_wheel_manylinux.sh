@@ -89,6 +89,8 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(CMAKE_CUDA_FLAGS \"--expt-relaxed-constexpr\"\) >>config.cmake
 fi
 
+# update rust
+dnf update rust -y
 # compile the mlc-llm
 git config --global --add safe.directory $MLC_LLM_DIR
 pip wheel --no-deps -w dist . -v
