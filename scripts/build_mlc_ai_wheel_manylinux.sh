@@ -24,6 +24,7 @@ function in_array() {
 TVM_DIR="/workspace/tvm"
 GPU_OPTIONS=("none" "cuda-12.1" "cuda-12.2" "cuda-12.3" "cuda-12.4" "cuda-12.8" "cuda-13.0" "rocm-6.1" "rocm-6.2")
 GPU="none"
+USE_CUTLASS="ON"
 
 while [[ $# -gt 0 ]]; do
 	arg="$1"
@@ -31,6 +32,10 @@ while [[ $# -gt 0 ]]; do
 	--gpu)
 		GPU=$2
 		shift
+		shift
+		;;
+	--no-cutlass)
+		USE_CUTLASS="OFF"
 		shift
 		;;
 	-h | --help)
@@ -93,7 +98,7 @@ elif [[ ${GPU} == cuda* ]]; then
 	echo set\(USE_LLVM \"llvm-config --ignore-libllvm --link-static\"\) >>config.cmake
 	echo set\(USE_CUDA ON\) >>config.cmake
 	echo set\(USE_CUBLAS ON\) >>config.cmake
-	echo set\(USE_CUTLASS ON\) >>config.cmake
+	echo set\(USE_CUTLASS ${USE_CUTLASS}\) >>config.cmake
 	echo set\(USE_THRUST ON\) >>config.cmake
 	echo set\(USE_NCCL ON\) >>config.cmake
 	echo set\(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHS}"\) >>config.cmake

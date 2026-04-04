@@ -53,7 +53,7 @@ jobs:
         GPU: ${{ matrix.config.gpu }}
       with:
         run: |
-          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU --no-cutlass
         post: |
           docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Wheel-Deploy
