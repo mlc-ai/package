@@ -42,10 +42,12 @@ jobs:
         git clone https://$GITHUB_TOKEN@github.com/spectrometerHBH/tir tvm --recursive
     - name: Sync TIRX Package
       env:
-        MLC_STABLE_BUILD_VER: v0.0.1b2
+        MLC_STABLE_BUILD_VER: ${{ matrix.pkg_kind == 'stable' && 'v0.0.1b2' || '' }}
       run: |
         python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-tirx-nightly' || 'mlc-ai-tirx' }} --revision origin/tirx ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
-        sed -i "s/^version = \"[^\"]*\"/version = \"${MLC_STABLE_BUILD_VER#v}\"/" tvm/pyproject.toml
+        if [ -n "$MLC_STABLE_BUILD_VER" ]; then
+          sed -i "s/^version = \"[^\"]*\"/version = \"${MLC_STABLE_BUILD_VER#v}\"/" tvm/pyproject.toml
+        fi
     - name: Build TIRX
       uses: gacts/run-and-post-run@v1
       env:
