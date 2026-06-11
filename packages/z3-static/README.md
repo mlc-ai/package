@@ -1,21 +1,21 @@
-# z3-staticlib
+# z3-static
 
-`z3-staticlib` is a Python package that carries native Z3 development artifacts
+`z3-static` is a Python package that carries native Z3 development artifacts
 for build systems. It does not provide Z3 Python bindings.
 
 The wheel contains:
 
 - Z3 C and C++ headers.
 - A PIC static Z3 library (`libz3.a` on Unix-like platforms, `.lib` on Windows).
-- Z3 CMake package files under `z3_staticlib/static/lib/cmake/z3`.
+- Z3 CMake package files under `z3_static/static/lib/cmake/z3`.
 - Z3 pkg-config metadata when upstream install provides it.
 
 Build systems can locate the package from Python:
 
 ```python
-import z3_staticlib
+import z3_static
 
-print(z3_staticlib.get_cmake_dir())
+print(z3_static.get_cmake_dir())
 ```
 
 ## Local Build

@@ -54,7 +54,7 @@ def _copy_tree(src: Path, dst: Path) -> None:
 def main() -> None:
     tag = os.environ.get("STATICLIB_Z3_TAG", "z3-4.16.0")
     package_dir = Path(
-        os.environ.get("STATICLIB_Z3_PACKAGE_DIR", Path.cwd() / "build/local-package/z3_staticlib")
+        os.environ.get("STATICLIB_Z3_PACKAGE_DIR", Path.cwd() / "build/local-package/z3_static")
     ).resolve()
     build_root = Path(os.environ.get("STATICLIB_Z3_BUILD_ROOT", Path.cwd() / "build/z3")).resolve()
     source_env = os.environ.get("STATICLIB_Z3_SOURCE_DIR") or None
