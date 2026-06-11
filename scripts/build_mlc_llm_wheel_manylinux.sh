@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 source /multibuild/manylinux_utils.sh
-source /opt/rh/gcc-toolset-13/enable # Keep in sync with z3-staticlib manylinux builds.
+source /opt/rh/gcc-toolset-13/enable # Keep in sync with z3-static manylinux builds.
 
 function usage() {
 	echo "Usage: $0 [--gpu GPU-VERSION]"
