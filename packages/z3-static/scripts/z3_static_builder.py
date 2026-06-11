@@ -51,6 +51,19 @@ def _copy_tree(src: Path, dst: Path) -> None:
         shutil.copytree(src, dst, dirs_exist_ok=True)
 
 
+def _normalize_metadata_library_dirs(static_dir: Path) -> None:
+    """Point staged CMake/pkg-config metadata at the normalized lib directory."""
+    metadata_files = [
+        *static_dir.glob("lib/cmake/z3/*.cmake"),
+        *static_dir.glob("lib/pkgconfig/*.pc"),
+    ]
+    for path in metadata_files:
+        text = path.read_text(encoding="utf-8")
+        normalized = text.replace("/lib64", "/lib")
+        if normalized != text:
+            path.write_text(normalized, encoding="utf-8")
+
+
 def main() -> None:
     tag = os.environ.get("STATICLIB_Z3_TAG", "z3-4.16.0")
     package_dir = Path(
@@ -106,6 +119,7 @@ def main() -> None:
     _copy_tree(install_dir / "lib", static_dir / "lib")
     _copy_tree(install_dir / "lib64", static_dir / "lib")
     _copy_tree(install_dir / "share", static_dir / "share")
+    _normalize_metadata_library_dirs(static_dir)
 
     license_src = source_dir / "LICENSE.txt"
     if not license_src.exists():
