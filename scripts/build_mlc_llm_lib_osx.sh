@@ -3,7 +3,7 @@
 set -e
 set -u
 
-MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-10.15}
+MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-14.0}
 
 python --version
 python -m pip install wheel

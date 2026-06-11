@@ -6,7 +6,7 @@ eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
 CONDA_ENV_NAME=$1
 deploy="${DEPLOY_WHEEL:-0}"
 stable="${STABLE_BUILD:-0}"
-MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-13.02}
+MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-14.0}
 
 source $CONDA_HOME/etc/profile.d/conda.sh
 
