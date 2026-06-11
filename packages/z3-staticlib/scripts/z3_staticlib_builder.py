@@ -57,7 +57,7 @@ def main() -> None:
         os.environ.get("STATICLIB_Z3_PACKAGE_DIR", Path.cwd() / "build/local-package/z3_staticlib")
     ).resolve()
     build_root = Path(os.environ.get("STATICLIB_Z3_BUILD_ROOT", Path.cwd() / "build/z3")).resolve()
-    source_env = os.environ.get("STATICLIB_Z3_SOURCE_DIR")
+    source_env = os.environ.get("STATICLIB_Z3_SOURCE_DIR") or None
 
     cmake = _tool("cmake")
     ninja = _tool("ninja")
@@ -92,7 +92,7 @@ def main() -> None:
         "-DZ3_BUILD_TEST_EXECUTABLES=OFF",
     ]
     if sys.platform == "darwin":
-        deployment_target = os.environ.get("MACOSX_DEPLOYMENT_TARGET", "14.0")
+        deployment_target = os.environ.get("MACOSX_DEPLOYMENT_TARGET") or "14.0"
         cmake_args.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={deployment_target}")
     _run(cmake_args)
     _run([cmake, "--build", str(build_dir), "--parallel"])

@@ -16,6 +16,17 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Stamp package version
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="${{ inputs.z3-tag }}"
+        version="${version#z3-}"
+        printf '%s\n' \
+          '"""Version generated from the upstream Z3 release tag."""' \
+          '' \
+          "__version__ = \"${version}\"" \
+          > packages/z3-staticlib/z3_staticlib/_version.py
     - name: Build wheel
       uses: pypa/cibuildwheel@298ed2fb2c105540f5ed055e8a6ad78d82dd3a7e # v3.3.1
       env:
@@ -44,8 +55,8 @@ runs:
           STATICLIB_Z3_TAG="${{ inputs.z3-tag }}"
           STATICLIB_Z3_ALLOW_SOURCE_BUILD=1
           STATICLIB_Z3_PLAT_NAME="${{ inputs.platform-tag }}"
-        CIBW_REPAIR_WHEEL_COMMAND_LINUX: python {project}/scripts/copy_wheel.py {wheel} {dest_dir}
-        CIBW_REPAIR_WHEEL_COMMAND_MACOS: python {project}/scripts/copy_wheel.py {wheel} {dest_dir}
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
+        CIBW_REPAIR_WHEEL_COMMAND_MACOS: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
         CIBW_TEST_REQUIRES: cmake
         CIBW_TEST_COMMAND: python {project}/scripts/smoke_test_staticlib.py
       with:

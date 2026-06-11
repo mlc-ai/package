@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "packaging", "cmake>=3.26", "ninja"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.11", "cmake>=3.26", "ninja", "packaging"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "z3-staticlib"
@@ -23,10 +23,12 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/mlc-ai/package"
 
-[tool.setuptools]
-packages = ["z3_staticlib"]
-include-package-data = true
+[tool.scikit-build]
+cmake.version = ">=3.26"
+wheel.py-api = "py3"
+wheel.packages = ["z3_staticlib"]
 
-[tool.setuptools.package-data]
-z3_staticlib = ["static/**/*"]
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "z3_staticlib/_version.py"
 
