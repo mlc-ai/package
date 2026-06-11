@@ -1,0 +1,34 @@
+[build-system]
+requires = ["scikit-build-core>=0.11", "cmake>=3.26", "ninja", "packaging"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "z3-staticlib"
+dynamic = ["version"]
+description = "Static Z3 development artifacts for native build systems"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+keywords = ["z3", "smt", "static-library", "cmake"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Build Tools",
+]
+
+[project.urls]
+Repository = "https://github.com/mlc-ai/package"
+
+[tool.scikit-build]
+cmake.version = ">=3.26"
+wheel.py-api = "py3"
+wheel.packages = ["z3_staticlib"]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "z3_staticlib/_version.py"
+
