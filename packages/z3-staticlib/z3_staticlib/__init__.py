@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from importlib import metadata
 from pathlib import Path
 
-__version__ = "4.16.0"
+try:
+    __version__ = metadata.version("z3-staticlib")
+except metadata.PackageNotFoundError:  # pragma: no cover
+    __version__ = "4.16.0"
 
 
 def get_prefix() -> str:

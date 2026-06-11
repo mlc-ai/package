@@ -11,6 +11,11 @@ from setuptools import setup
 from setuptools.command.build_py import build_py as _build_py
 
 
+def _version_from_tag() -> str:
+    tag = os.environ.get("STATICLIB_Z3_TAG", "z3-4.16.0")
+    return tag[3:] if tag.startswith("z3-") else tag
+
+
 class build_py(_build_py):
     """Stage the static Z3 artifacts before packaging Python files."""
 
@@ -62,5 +67,5 @@ else:
     cmdclass = {"build_py": build_py}
 
 
-setup(cmdclass=cmdclass)
+setup(cmdclass=cmdclass, version=_version_from_tag())
 

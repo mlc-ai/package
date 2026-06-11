@@ -30,6 +30,3 @@ include-package-data = true
 [tool.setuptools.package-data]
 z3_staticlib = ["static/**/*"]
 
-[tool.setuptools.dynamic]
-version = { attr = "z3_staticlib.__version__" }
-
