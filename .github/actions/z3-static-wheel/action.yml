@@ -1,5 +1,5 @@
 name: Build Z3 static wheel
-description: Build a z3-staticlib wheel for one platform
+description: Build a z3-static wheel for one platform
 inputs:
   build:
     description: cibuildwheel build selector
@@ -26,7 +26,7 @@ runs:
           '"""Version generated from the upstream Z3 release tag."""' \
           '' \
           "__version__ = \"${version}\"" \
-          > packages/z3-staticlib/z3_staticlib/_version.py
+          > packages/z3-static/z3_static/_version.py
     - name: Build wheel
       uses: pypa/cibuildwheel@298ed2fb2c105540f5ed055e8a6ad78d82dd3a7e # v3.3.1
       env:
@@ -60,6 +60,6 @@ runs:
         CIBW_TEST_REQUIRES: cmake
         CIBW_TEST_COMMAND: python {project}/scripts/smoke_test_staticlib.py
       with:
-        package-dir: packages/z3-staticlib
+        package-dir: packages/z3-static
         output-dir: wheelhouse
 

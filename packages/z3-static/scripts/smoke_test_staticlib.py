@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import z3_staticlib
+import z3_static
 
 
 def run(cmd: list[str], *, cwd: Path) -> None:
@@ -27,7 +27,7 @@ def main() -> None:
         (root / "CMakeLists.txt").write_text(
             """
 cmake_minimum_required(VERSION 3.20)
-project(z3_staticlib_smoke LANGUAGES CXX)
+project(z3_static_smoke LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Z3 CONFIG REQUIRED)
@@ -53,8 +53,8 @@ int main() {
 
         build = root / "build"
         env = os.environ.copy()
-        env["Z3_DIR"] = z3_staticlib.get_cmake_dir()
-        run([cmake, "-S", str(root), "-B", str(build), f"-DZ3_DIR={z3_staticlib.get_cmake_dir()}"], cwd=root)
+        env["Z3_DIR"] = z3_static.get_cmake_dir()
+        run([cmake, "-S", str(root), "-B", str(build), f"-DZ3_DIR={z3_static.get_cmake_dir()}"], cwd=root)
         run([cmake, "--build", str(build)], cwd=root)
         exe = build / ("smoke.exe" if sys.platform == "win32" else "smoke")
         run([str(exe)], cwd=root)
