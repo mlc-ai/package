@@ -58,7 +58,7 @@ runs:
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
         CIBW_REPAIR_WHEEL_COMMAND_MACOS: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
         CIBW_TEST_REQUIRES: cmake
-        CIBW_TEST_COMMAND: python {project}/scripts/smoke_test_staticlib.py
+        CIBW_TEST_COMMAND: python {project}/packages/z3-static/scripts/smoke_test_staticlib.py
       with:
         package-dir: packages/z3-static
         output-dir: wheelhouse
