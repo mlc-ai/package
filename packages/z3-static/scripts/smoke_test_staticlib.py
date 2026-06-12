@@ -55,8 +55,12 @@ int main() {
         env = os.environ.copy()
         env["Z3_DIR"] = z3_static.get_cmake_dir()
         run([cmake, "-S", str(root), "-B", str(build), f"-DZ3_DIR={z3_static.get_cmake_dir()}"], cwd=root)
-        run([cmake, "--build", str(build)], cwd=root)
-        exe = build / ("smoke.exe" if sys.platform == "win32" else "smoke")
+        if sys.platform == "win32":
+            run([cmake, "--build", str(build), "--config", "Release"], cwd=root)
+            exe = build / "Release" / "smoke.exe"
+        else:
+            run([cmake, "--build", str(build)], cwd=root)
+            exe = build / "smoke"
         run([str(exe)], cwd=root)
 
 
