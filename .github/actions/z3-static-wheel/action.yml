@@ -55,7 +55,11 @@ runs:
           STATICLIB_Z3_TAG="${{ inputs.z3-tag }}"
           STATICLIB_Z3_ALLOW_SOURCE_BUILD=1
           STATICLIB_Z3_PLAT_NAME="${{ inputs.platform-tag }}"
-        CIBW_REPAIR_WHEEL_COMMAND_LINUX: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
+          bash -c 'python -m pip install wheel &&
+          python -m wheel tags --remove --platform-tag "$STATICLIB_Z3_PLAT_NAME" "{wheel}" &&
+          mkdir -p "{dest_dir}" &&
+          cp "$(dirname "{wheel}")"/*.whl "{dest_dir}/"'
         CIBW_REPAIR_WHEEL_COMMAND_MACOS: bash -c 'mkdir -p "{dest_dir}" && cp "{wheel}" "{dest_dir}/"'
         CIBW_TEST_REQUIRES: cmake
         CIBW_TEST_COMMAND: python {project}/packages/z3-static/scripts/smoke_test_staticlib.py
