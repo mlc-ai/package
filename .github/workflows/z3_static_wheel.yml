@@ -62,6 +62,11 @@ jobs:
           arch: ${{ matrix.arch }}
           platform-tag: ${{ matrix.platform_tag }}
           z3-tag: ${{ inputs.z3_tag }}
+      - name: Retag Linux wheel
+        if: startsWith(matrix.platform_tag, 'manylinux_')
+        run: |
+          python -m pip install wheel
+          python -m wheel tags --remove --platform-tag "${{ matrix.platform_tag }}" wheelhouse/*.whl
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
