@@ -6,12 +6,11 @@ import re
 import subprocess
 import sys
 
-# Modify the following two settings during release
-# -----------------------------------------------------------
-# Tag used for stable build.
-# The stable build version can be overridden by the MLC_STABLE_BUILD_VER environment variable.
-__stable_build__ = os.environ.get("MLC_STABLE_BUILD_VER", "v0.19.0")
-# -----------------------------------------------------------
+# Tag used for stable build, taken from the MLC_STABLE_BUILD_VER environment
+# variable. There is intentionally no default: a stable build must specify the
+# tag explicitly (otherwise we error out below rather than silently build a
+# stale/wrong tag).
+__stable_build__ = os.environ.get("MLC_STABLE_BUILD_VER")
 
 
 def py_str(cstr):
@@ -174,8 +173,14 @@ def main():
 
     if not args.skip_checkout:
         if "nightly" not in args.package_name and not args.nightly:
-            if __stable_build__ is None:
-                raise RuntimeError("Only nightly is supported")
+            # `not` (rather than `is None`) so an unset OR empty-string env var both
+            # error out. CI sets `env: X: ${{ ... }}`, which yields "" (not unset)
+            # when the expression is empty, so `is None` would miss that case.
+            if not __stable_build__:
+                raise RuntimeError(
+                    "Stable build requires the MLC_STABLE_BUILD_VER environment variable "
+                    "to be set to the tag to build (e.g. v0.20.0)."
+                )
             checkout_source(args.package, __stable_build__)
         else:
             checkout_source(args.package, args.revision)

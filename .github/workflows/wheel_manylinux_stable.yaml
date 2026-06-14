@@ -38,6 +38,10 @@ jobs:
             image: 'mlcaidev/package-rocm62:655adb5'
 
     runs-on: [self-hosted, Linux, X64]
+    env:
+      # The stable checkout tag is driven by MLC_STABLE_BUILD_VER (see
+      # sync_package.py); --revision is honored only for nightly builds.
+      MLC_STABLE_BUILD_VER: ${{ github.event.inputs.tvm_ref }}
 
     steps:
     - uses: actions/checkout@v3
@@ -53,7 +57,7 @@ jobs:
         git clone https://github.com/mlc-ai/relax tvm --recursive
     - name: Sync MLC AI Package (stable @ tag)
       run: |
-        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name mlc-ai --revision ${{ github.event.inputs.tvm_ref }}
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name mlc-ai
     - name: Build TVM Unity
       uses: gacts/run-and-post-run@v1
       env:
