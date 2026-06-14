@@ -1,0 +1,76 @@
+# Manual (workflow_dispatch only) stable wheel build for mlc-ai on manylinux.
+#
+# Why a separate, manual workflow: the nightly workflows are pkg_kind:['nightly']
+# only (their `== 'stable'` branches are dead code), so no stable wheel is built
+# automatically. Stable releases should be deliberate, so they live here and are
+# triggered by hand against a specific mlc-ai/relax tag.
+#
+# Builds `mlc-ai` (per-GPU names: mlc-ai-cpu / mlc-ai-cuXXX / mlc-ai-rocmXX) from
+# the requested tag and deploys to the rolling wheels release. Each stable VERSION
+# is its own prune group, so it stays on the index permanently.
+#
+# Usage: Actions -> "Wheel-Manylinux-Stable" -> Run workflow -> tvm_ref = v0.20.0
+name: Wheel-Manylinux-Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      tvm_ref:
+        description: "mlc-ai/relax tag to build (e.g. v0.20.0)"
+        required: true
+
+jobs:
+  Build:
+    strategy:
+      matrix:
+        config:
+          - gpu: 'none'
+            image: 'mlcaidev/package-cpu:519d0b3'
+          - gpu: 'cuda-12.4'
+            image: 'mlcaidev/package-cu124:519d0b3'
+          - gpu: 'cuda-12.8'
+            image: 'mlcaidev/package-cu128:519d0b3'
+          - gpu: 'cuda-13.0'
+            image: 'mlcaidev/package-cu130:29b1305'
+          - gpu: 'rocm-6.1'
+            image: 'mlcaidev/package-rocm61:519d0b3'
+          - gpu: 'rocm-6.2'
+            image: 'mlcaidev/package-rocm62:519d0b3'
+
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Setup script env
+      run: |
+        rm -rf conda
+        ln -s 3rdparty/tlcpack/conda conda
+    - name: Checkout source
+      run: |
+        # full clone so the requested tag is available; sync_package.py checks it out
+        git clone https://github.com/mlc-ai/relax tvm --recursive
+    - name: Sync MLC AI Package (stable @ tag)
+      run: |
+        python3 scripts/sync_package.py --gpu ${{ matrix.config.gpu }} --package tvm --package-name mlc-ai --revision ${{ github.event.inputs.tvm_ref }}
+    - name: Build TVM Unity
+      uses: gacts/run-and-post-run@v1
+      env:
+        IMAGE: ${{ matrix.config.image }}
+        GPU: ${{ matrix.config.gpu }}
+      with:
+        run: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+        post: |
+          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
+    - name: Wheel-Deploy
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
+      with:
+        files: |
+          tvm/repaired_wheels/*.whl
+        tag_name: v0.9.dev0
+        prerelease: true
