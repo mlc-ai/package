@@ -21,7 +21,7 @@ jobs:
         # matrix of build configs
         config:
           - gpu: 'cuda-13.0'
-            image: 'mlcaidev/package-cu130:29b1305'
+            image: 'mlcaidev/package-cu130:655adb5'
         exclude:
           - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
 
