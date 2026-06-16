@@ -13,6 +13,10 @@ inputs:
   z3-tag:
     description: Upstream Z3 git tag
     required: true
+  version-suffix:
+    description: Python package version suffix
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -22,6 +26,7 @@ runs:
         set -euo pipefail
         version="${{ inputs.z3-tag }}"
         version="${version#z3-}"
+        version="${version}${{ inputs.version-suffix }}"
         printf '%s\n' \
           '"""Version generated from the upstream Z3 release tag."""' \
           '' \

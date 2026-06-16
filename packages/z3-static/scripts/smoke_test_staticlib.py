@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys
@@ -17,10 +16,24 @@ def run(cmd: list[str], *, cwd: Path) -> None:
     subprocess.check_call(cmd, cwd=cwd)
 
 
+def get_cmake_dir_from_config() -> str:
+    """Return the CMake directory reported by the z3_static.config CLI."""
+    output = subprocess.check_output(
+        [sys.executable, "-m", "z3_static.config", "--cmake-dir"], text=True
+    )
+    cmake_dir = output.strip()
+    if cmake_dir != z3_static.get_cmake_dir():
+        raise RuntimeError(
+            f"Unexpected z3_static.config --cmake-dir output: {cmake_dir}"
+        )
+    return cmake_dir
+
+
 def main() -> None:
     cmake = shutil.which("cmake")
     if not cmake:
         raise RuntimeError("cmake is required")
+    z3_cmake_dir = get_cmake_dir_from_config()
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -52,9 +65,10 @@ int main() {
         )
 
         build = root / "build"
-        env = os.environ.copy()
-        env["Z3_DIR"] = z3_static.get_cmake_dir()
-        run([cmake, "-S", str(root), "-B", str(build), f"-DZ3_DIR={z3_static.get_cmake_dir()}"], cwd=root)
+        run(
+            [cmake, "-S", str(root), "-B", str(build), f"-DZ3_DIR={z3_cmake_dir}"],
+            cwd=root,
+        )
         if sys.platform == "win32":
             run([cmake, "--build", str(build), "--config", "Release"], cwd=root)
             exe = build / "Release" / "smoke.exe"

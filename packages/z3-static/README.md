@@ -18,6 +18,24 @@ import z3_static
 print(z3_static.get_cmake_dir())
 ```
 
+Or from a build script:
+
+```bash
+python -m z3_static.config --cmake-dir
+```
+
+For CMake projects, pass the reported directory to `find_package`:
+
+```cmake
+find_package(Python COMPONENTS Interpreter REQUIRED)
+execute_process(
+  COMMAND "${Python_EXECUTABLE}" -m z3_static.config --cmake-dir
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE Z3_DIR
+)
+find_package(Z3 CONFIG REQUIRED)
+```
+
 ## Local Build
 
 Build a wheel from an upstream Z3 tag:
