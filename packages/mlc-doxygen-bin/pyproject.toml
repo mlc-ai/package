@@ -1,0 +1,69 @@
+[build-system]
+requires = [
+  "setuptools>=77",
+  "wheel>=0.43",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlc-doxygen-bin"
+version = "1.17.0"
+description = "Prebuilt Doxygen 1.17.0 command-line executable"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "GPL-2.0-only"
+authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
+]
+
+[project.urls]
+Doxygen = "https://github.com/doxygen/doxygen"
+Repository = "https://github.com/mlc-ai/package"
+
+[project.scripts]
+doxygen = "mlc_doxygen_bin.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mlc_doxygen_bin = [
+  "py.typed",
+  "*.json",
+  "bin/*",
+  "licenses/*",
+]
+
+[tool.cibuildwheel]
+# CIBW_BUILD selects the Python used to run the build. setup.py overrides the
+# output wheel tag to py3-none because this package exposes a native executable,
+# not a CPython ABI extension.
+build = "cp311-*"
+build-frontend = "build"
+build-verbosity = 1
+skip = "*-musllinux_*"
+before-build = "python -m pip install cmake ninja && python scripts/prepare_doxygen_v1_17_0.py"
+test-command = "python {project}/scripts/smoke_test_mlc_doxygen_bin.py"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "bash scripts/install_manylinux_build_tools.sh"
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.cibuildwheel.macos]
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.cibuildwheel.windows]
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
