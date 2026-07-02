@@ -1,0 +1,8 @@
+include README.md
+include setup.py
+recursive-include scripts *.py *.sh
+recursive-include src/mlc_z3_static *.py py.typed
+prune src/mlc_z3_static/static
+prune src/mlc_z3_static/shared
+prune src/mlc_z3_static/licenses
+exclude src/mlc_z3_static/*.json
