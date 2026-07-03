@@ -58,7 +58,7 @@ def download_source_archive(work_root: Path) -> Path:
     tmp = archive.with_suffix(".tmp")
     tmp.unlink(missing_ok=True)
     print(f"Downloading Doxygen {DOXYGEN_VERSION} source from {DOXYGEN_ARCHIVE_URL}", flush=True)
-    with urllib.request.urlopen(DOXYGEN_ARCHIVE_URL) as response, tmp.open("wb") as dest:
+    with urllib.request.urlopen(DOXYGEN_ARCHIVE_URL, timeout=60) as response, tmp.open("wb") as dest:
         shutil.copyfileobj(response, dest)
     actual = sha256(tmp)
     if actual != DOXYGEN_ARCHIVE_SHA256:
@@ -88,7 +88,7 @@ def safe_extract(archive: Path, source_root: Path) -> Path:
             target = (extract_dir / member.name).resolve()
             if target != base and base not in target.parents:
                 raise RuntimeError(f"Refusing to extract path outside destination: {member.name}")
-        extract_kwargs = {"filter": "data"} if sys.version_info >= (3, 12) else {}
+        extract_kwargs = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
         tar.extractall(extract_dir, **extract_kwargs)
 
     roots = [path for path in extract_dir.iterdir() if path.is_dir()]

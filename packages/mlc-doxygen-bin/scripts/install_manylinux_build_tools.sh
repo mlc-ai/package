@@ -32,7 +32,7 @@ cleanup() {
 trap cleanup EXIT
 
 cd "${work_dir}"
-curl -fsSL -o "flex-${flex_version}.tar.gz" "${flex_url}"
+curl -fsSL --connect-timeout 10 --retry 5 -o "flex-${flex_version}.tar.gz" "${flex_url}"
 echo "${flex_sha256}  flex-${flex_version}.tar.gz" | sha256sum -c -
 tar -xzf "flex-${flex_version}.tar.gz"
 cd "flex-${flex_version}"

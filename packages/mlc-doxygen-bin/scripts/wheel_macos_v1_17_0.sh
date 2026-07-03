@@ -60,12 +60,13 @@ check_tool_version() {
     exit 1
   fi
   python3 - "${tool}" "${actual}" "${minimum}" <<'PY'
+import re
 import sys
 
 tool, actual, minimum = sys.argv[1:]
 
 def parts(version):
-    return tuple(int(part) for part in version.split("."))
+    return tuple(int(part) for part in re.findall(r"\d+", version))
 
 if parts(actual) < parts(minimum):
     raise SystemExit(
