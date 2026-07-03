@@ -1,73 +1,42 @@
 # mlc-z3-static
 
-`mlc-z3-static` builds platform wheels containing Z3 4.16.0 development artifacts:
+`mlc-z3-static` is a Python package that carries native Z3 4.16.0 development
+artifacts for build systems. It does not provide Z3 Python bindings.
 
-- C and C++ headers.
-- A position-independent static `libz3`.
+The wheel contains:
+
+- Z3 C and C++ headers.
+- A position-independent static `libz3` (`libz3.a` on Unix-like platforms,
+  `.lib` on Windows).
 - A shared `libz3`.
-- CMake and pkg-config metadata for each library flavor.
+- Relocatable CMake and pkg-config metadata for each library flavor, under
+  `mlc_z3_static/<kind>/lib/cmake/z3` and `mlc_z3_static/<kind>/lib/pkgconfig`
+  for `kind` in `static` and `shared`.
 
-The package does not provide Z3 Python bindings. It is intended for native
-build systems that want to consume pinned Z3 libraries from a Python wheel.
-
-## Build Wheels
-
-From this directory:
-
-```bash
-scripts/wheel_macos_v4_16_0.sh
-```
-
-```bash
-scripts/wheel_manylinux_2_28_v4_16_0.sh
-```
-
-The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
-Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
-host CIBW runner or post-build verifier.
-
-The manylinux script defaults to the host architecture. Set
-`MLC_Z3_STATIC_ARCH=x86_64` or `MLC_Z3_STATIC_ARCH=aarch64` to choose explicitly.
-
-On macOS, local CIBW builds require an official python.org CPython installation.
-The script defaults to the newest installed python.org CPython only as the build
-interpreter. The output wheel is still Python-agnostic and must be tagged
-`py3-none-<platform>`. Override `CIBW_BUILD` to force a specific installed build
-interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
-
-Both scripts run `cibuildwheel==3.3.1` through `uv tool run`. During CIBW's
-`before-build` phase, `scripts/prepare_z3_v4_16_0.py` downloads the source
-archive for the pinned Z3 commit, verifies its SHA-256 digest, builds static
-and shared installs, and copies both prefixes into `src/mlc_z3_static`.
-
-After CIBW finishes, each script verifies the produced wheel from a clean
-temporary virtual environment by calling:
-
-```bash
-scripts/wheel_verify.sh wheelhouse/<wheel-file>.whl
-```
-
-The verifier installs the wheel, configures a small CMake project against
-`mlc_z3_static.get_cmake_prefix_path("static")`, links to `z3::libz3`, runs the
-executable, and checks that the executable does not link against a dynamic
-`libz3`.
+The package is built with scikit-build-core: building a wheel runs
+`scripts/prepare_z3_v4_16_0.py`, which downloads the pinned Z3 source archive,
+verifies its SHA-256 digest, and builds both library flavors. Source builds are
+opt-in (`MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1`) to avoid accidental long Z3
+builds when pip cannot find a matching prebuilt wheel.
 
 ## Python Helpers
+
+Build systems can locate the packaged artifacts from Python:
 
 ```python
 import mlc_z3_static
 
-print(mlc_z3_static.get_include_dir("static"))
-print(mlc_z3_static.get_library_path("static"))
-print(mlc_z3_static.get_library_path("shared"))
+print(mlc_z3_static.get_cmake_dir("static"))
 print(mlc_z3_static.get_cmake_prefix_path("shared"))
+print(mlc_z3_static.get_static_library_path())
+print(mlc_z3_static.get_shared_library_path())
 ```
 
-Each flavor has its own relocatable CMake prefix:
+Or from a build script through the configuration CLI:
 
 ```bash
-cmake -S . -B build \
-  -DCMAKE_PREFIX_PATH="$(python -c 'import mlc_z3_static as z; print(z.get_cmake_prefix_path("static"))')"
+python -m mlc_z3_static.config --cmake-dir
+python -m mlc_z3_static.config --prefix --kind shared
 ```
 
 ## Downstream CMake Usage
@@ -78,17 +47,13 @@ Install the wheel into the Python environment used by the downstream build:
 python -m pip install mlc-z3-static==4.16.0
 ```
 
-Configure the downstream CMake project with the packaged static Z3 prefix:
+Point CMake at the packaged static Z3 and use Z3's exported target:
 
 ```bash
-MLC_Z3_STATIC_PREFIX="$(python -c 'import mlc_z3_static as z; print(z.get_cmake_prefix_path("static"))')"
-
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="${MLC_Z3_STATIC_PREFIX}"
+  -DZ3_DIR="$(python -m mlc_z3_static.config --cmake-dir)"
 ```
-
-Then use Z3's exported CMake target:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -101,20 +66,72 @@ target_link_libraries(my_z3_consumer PRIVATE z3::libz3)
 target_compile_features(my_z3_consumer PRIVATE cxx_std_20)
 ```
 
-Use the static prefix explicitly when you want static linking. The package also
-contains a shared-library prefix, available through:
+Or resolve the directory from inside CMake:
 
-```bash
-python -c 'import mlc_z3_static as z; print(z.get_cmake_prefix_path("shared"))'
+```cmake
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" -m mlc_z3_static.config --cmake-dir
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE Z3_DIR
+)
+find_package(Z3 CONFIG REQUIRED)
 ```
 
 Z3 is implemented in C++, so even C-only consumers should enable CXX in the
 CMake project and let CMake link through a C++ linker when using the static
-archive. To avoid accidentally finding a system Z3 first, pass the package
-prefix before other entries in `CMAKE_PREFIX_PATH` or pass the exact CMake
-package directory:
+archive. Use `--kind shared` (or `get_cmake_prefix_path("shared")`) to link the
+shared flavor instead; each flavor has its own relocatable CMake prefix. See
+`example_project/` for a complete uv-managed consumer.
+
+## Local Build
+
+Build a wheel directly:
 
 ```bash
-cmake -S . -B build \
-  -DZ3_DIR="$(python -c 'import mlc_z3_static as z; print(z.get_cmake_dir("static"))')"
+MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 python -m build --wheel
 ```
+
+Use an existing Z3 checkout instead of downloading the pinned archive:
+
+```bash
+MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 \
+MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 \
+python -m build --wheel
+```
+
+## Build Release Wheels
+
+From this directory:
+
+```bash
+scripts/wheel_manylinux_2_28_v4_16_0.sh
+```
+
+```bash
+scripts/wheel_macos_v4_16_0.sh
+```
+
+The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
+Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
+host CIBW runner or post-build verifier. Both run `cibuildwheel==3.3.1`, retag
+Linux wheels as `manylinux_2_28`, and verify each produced wheel from a clean
+temporary virtual environment with:
+
+```bash
+scripts/wheel_verify.sh wheelhouse/<wheel-file>.whl
+```
+
+The verifier installs the wheel, configures a small CMake project against
+`mlc_z3_static.get_cmake_prefix_path("static")`, links to `z3::libz3`, runs the
+executable, and checks that the executable does not link against a dynamic
+`libz3`.
+
+The manylinux script defaults to the host architecture. Set
+`MLC_Z3_STATIC_ARCH=x86_64` or `MLC_Z3_STATIC_ARCH=aarch64` to choose explicitly.
+
+On macOS, local CIBW builds require an official python.org CPython installation.
+The script defaults to the newest installed python.org CPython only as the build
+interpreter. The output wheel is still Python-agnostic and tagged
+`py3-none-<platform>`. Override `CIBW_BUILD` to force a specific installed build
+interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.

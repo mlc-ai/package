@@ -3,6 +3,10 @@ name: Publish mlc-z3-static wheels
 on:
   workflow_dispatch:
     inputs:
+      version_suffix:
+        description: Python package version suffix, such as .post1
+        required: false
+        default: ""
       publish:
         description: Publish to PyPI
         type: boolean
@@ -44,8 +48,30 @@ jobs:
             build: cp311-macosx_x86_64
             arch: x86_64
             platform_tag: macosx_14_0_x86_64
+          - name: Windows AMD64
+            os: windows-2022
+            build: cp311-win_amd64
+            arch: AMD64
+            platform_tag: win_amd64
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp version suffix
+        if: inputs.version_suffix != ''
+        shell: bash
+        run: |
+          python - "${{ inputs.version_suffix }}" <<'EOF'
+          import re
+          import sys
+          from pathlib import Path
+
+          suffix = sys.argv[1]
+          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
+          text = path.read_text(encoding="utf-8")
+          path.write_text(
+              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
+              encoding="utf-8",
+          )
+          EOF
       - name: Build wheel
         # cibuildwheel must run from the package directory: the commands in
         # [tool.cibuildwheel] reference scripts/ relative to it.
@@ -55,15 +81,23 @@ jobs:
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_ARCHS_LINUX: ${{ matrix.arch }}
           CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_ARCHS_WINDOWS: ${{ matrix.arch }}
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_ENVIRONMENT_LINUX: >-
-            MLC_Z3_STATIC_PLAT_NAME="${{ matrix.platform_tag }}"
-            CMAKE_BUILD_PARALLEL_LEVEL="4"
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
           CIBW_ENVIRONMENT_MACOS: >-
-            MLC_Z3_STATIC_PLAT_NAME="${{ matrix.platform_tag }}"
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             MACOSX_DEPLOYMENT_TARGET="14.0"
-            CMAKE_BUILD_PARALLEL_LEVEL="4"
+          CIBW_ENVIRONMENT_WINDOWS: >-
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
         run: pipx run cibuildwheel==3.3.1 --output-dir wheelhouse .
+      - name: Retag Linux wheel
+        # scikit-build-core tags Linux wheels linux_<arch>; retag to manylinux_2_28.
+        if: startsWith(matrix.platform_tag, 'manylinux_')
+        working-directory: packages/mlc-z3-static
+        run: |
+          python -m pip install wheel
+          python -m wheel tags --remove --platform-tag "${{ matrix.platform_tag }}" wheelhouse/*.whl
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
@@ -76,6 +110,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp version suffix
+        if: inputs.version_suffix != ''
+        run: |
+          python - "${{ inputs.version_suffix }}" <<'EOF'
+          import re
+          import sys
+          from pathlib import Path
+
+          suffix = sys.argv[1]
+          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
+          text = path.read_text(encoding="utf-8")
+          path.write_text(
+              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
+              encoding="utf-8",
+          )
+          EOF
       - name: Build sdist
         working-directory: packages/mlc-z3-static
         run: pipx run build --sdist

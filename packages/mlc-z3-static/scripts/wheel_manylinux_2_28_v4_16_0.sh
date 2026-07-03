@@ -37,11 +37,19 @@ export CIBW_ARCHS_LINUX="${CIBW_ARCHS_LINUX:-${MLC_Z3_STATIC_ARCH}}"
 export CIBW_MANYLINUX_X86_64_IMAGE="${CIBW_MANYLINUX_X86_64_IMAGE:-manylinux_2_28}"
 export CIBW_MANYLINUX_AARCH64_IMAGE="${CIBW_MANYLINUX_AARCH64_IMAGE:-manylinux_2_28}"
 export CIBW_BUILD_VERBOSITY="${CIBW_BUILD_VERBOSITY:-1}"
-export CIBW_ENVIRONMENT="${CIBW_ENVIRONMENT:-MLC_Z3_STATIC_PLAT_NAME='${MLC_Z3_STATIC_PLAT_NAME}' CMAKE_BUILD_PARALLEL_LEVEL='${CMAKE_BUILD_PARALLEL_LEVEL}'}"
+export CIBW_ENVIRONMENT="${CIBW_ENVIRONMENT:-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD='1' CMAKE_BUILD_PARALLEL_LEVEL='${CMAKE_BUILD_PARALLEL_LEVEL}'}"
 
 scripts/cibuildwheel_run.sh linux wheelhouse .
 
+# scikit-build-core tags Linux wheels linux_<arch>; retag to manylinux_2_28.
 shopt -s nullglob
+linux_wheels=(wheelhouse/*-py3-none-linux_"${MLC_Z3_STATIC_ARCH}".whl)
+if [[ "${#linux_wheels[@]}" -gt 0 ]]; then
+  : "${UV:=uv}"
+  "${UV}" tool run --isolated --from wheel wheel tags \
+    --remove --platform-tag "${MLC_Z3_STATIC_PLAT_NAME}" "${linux_wheels[@]}"
+fi
+
 wheels=(wheelhouse/*-py3-none-"${MLC_Z3_STATIC_PLAT_NAME}".whl)
 if [[ "${#wheels[@]}" -eq 0 ]]; then
   echo "No ${MLC_Z3_STATIC_PLAT_NAME} wheels found in wheelhouse" >&2

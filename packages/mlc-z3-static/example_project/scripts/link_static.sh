@@ -12,7 +12,7 @@ fi
 
 "${UV}" sync --extra build
 
-mlc_z3_static_prefix="$("${UV}" run python -c 'import mlc_z3_static as z; print(z.get_cmake_prefix_path("static"))')"
+mlc_z3_static_prefix="$("${UV}" run python -m mlc_z3_static.config --prefix)"
 
 "${UV}" run --extra build cmake -S . -B build \
   -G Ninja \

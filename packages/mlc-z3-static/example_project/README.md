@@ -19,10 +19,11 @@ uv run python -m mlc_z3_static_example
 scripts/link_static.sh
 ```
 
-The script resolves the installed Z3 static CMake prefix through Python:
+The script resolves the installed Z3 static CMake prefix through the
+configuration CLI:
 
 ```bash
-uv run python -c 'import mlc_z3_static as z; print(z.get_cmake_prefix_path("static"))'
+uv run python -m mlc_z3_static.config --prefix
 ```
 
 Then it configures CMake with that prefix so `find_package(Z3 CONFIG REQUIRED)`

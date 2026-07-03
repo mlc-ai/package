@@ -1,22 +1,22 @@
 [build-system]
-requires = [
-  "setuptools>=77",
-  "wheel>=0.43",
-]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.11", "cmake>=3.26", "ninja"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "mlc-z3-static"
-version = "4.16.0"
+dynamic = ["version"]
 description = "Prebuilt Z3 4.16.0 static and shared libraries, headers, and CMake metadata"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+keywords = ["z3", "smt", "static-library", "cmake"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: C++",
   "Topic :: Software Development :: Build Tools",
 ]
@@ -25,34 +25,39 @@ classifiers = [
 Repository = "https://github.com/mlc-ai/package"
 Z3 = "https://github.com/Z3Prover/z3"
 
-[tool.setuptools]
-package-dir = { "" = "src" }
-include-package-data = true
-zip-safe = false
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-mlc_z3_static = [
-  "py.typed",
-  "*.json",
-  "licenses/*",
-  "shared/**/*",
-  "static/**/*",
+[tool.scikit-build]
+cmake.version = ">=3.26"
+wheel.py-api = "py3"
+wheel.packages = ["src/mlc_z3_static"]
+sdist.exclude = [
+  "build",
+  "dist",
+  "wheelhouse",
+  "example_project/build",
+  "example_project/.venv",
+  "src/mlc_z3_static/static",
+  "src/mlc_z3_static/shared",
+  "src/mlc_z3_static/licenses",
+  "src/mlc_z3_static/staticlib.json",
 ]
 
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "src/mlc_z3_static/_version.py"
+
 [tool.cibuildwheel]
-# CIBW_BUILD selects the Python used to run the build. setup.py overrides the
-# output wheel tag to py3-none because this package exposes native development
+# CIBW_BUILD selects the Python used to run the build. scikit-build-core tags
+# the output wheel py3-none because this package exposes native development
 # artifacts, not a CPython ABI extension.
 build = "cp311-*"
 build-frontend = "build"
 build-verbosity = 1
 skip = "*-musllinux_* pp*"
-before-build = "python -m pip install cmake ninja && python scripts/prepare_z3_v4_16_0.py"
 test-requires = ["cmake", "ninja"]
 test-command = "python {project}/scripts/smoke_test_mlc_z3_static.py"
+
+[tool.cibuildwheel.environment]
+MLC_Z3_STATIC_ALLOW_SOURCE_BUILD = "1"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"

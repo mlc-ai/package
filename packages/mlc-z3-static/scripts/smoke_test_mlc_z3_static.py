@@ -30,8 +30,18 @@ def runtime_env(kind: str) -> dict[str, str]:
         key = "PATH"
     else:
         key = "LD_LIBRARY_PATH"
-    env[key] = lib_dir + os.pathsep + env.get(key, "")
+    existing = env.get(key)
+    env[key] = f"{lib_dir}{os.pathsep}{existing}" if existing else lib_dir
     return env
+
+
+def check_config_cli(kind: str) -> None:
+    output = subprocess.check_output(
+        [sys.executable, "-m", "mlc_z3_static.config", "--cmake-dir", "--kind", kind], text=True
+    )
+    cmake_dir = output.strip()
+    if cmake_dir != mlc_z3_static.get_cmake_dir(kind):
+        raise RuntimeError(f"Unexpected mlc_z3_static.config --cmake-dir output: {cmake_dir}")
 
 
 def build_consumer(root: Path, kind: str) -> None:
@@ -117,6 +127,9 @@ def main() -> None:
     print(f"Z3 commit: {mlc_z3_static.Z3_COMMIT}")
     print(f"Z3 static library: {mlc_z3_static.get_static_library_path()}")
     print(f"Z3 shared library: {mlc_z3_static.get_shared_library_path()}")
+
+    check_config_cli("static")
+    check_config_cli("shared")
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
