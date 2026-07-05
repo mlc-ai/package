@@ -22,7 +22,9 @@ def runtime_env(kind: str) -> dict[str, str]:
     if kind != "shared":
         return env
 
-    lib_dir = mlc_z3_static.get_library_dir("shared")
+    # Use the directory that actually contains the shared library: on Windows
+    # the DLL is installed under shared/bin, not shared/lib.
+    lib_dir = str(Path(mlc_z3_static.get_shared_library_path()).parent)
     system = platform.system()
     if system == "Darwin":
         key = "DYLD_LIBRARY_PATH"
@@ -118,7 +120,12 @@ int main() {
     run(configure_cmd)
     run(["cmake", "--build", str(build), "--config", "Release"])
 
-    exe = build / ("mlc_z3_static_smoke.exe" if platform.system() == "Windows" else "mlc_z3_static_smoke")
+    if platform.system() == "Windows":
+        # The Visual Studio generator is multi-config and places binaries in a
+        # per-configuration subdirectory.
+        exe = build / "Release" / "mlc_z3_static_smoke.exe"
+    else:
+        exe = build / "mlc_z3_static_smoke"
     run([str(exe)], env=runtime_env(kind))
 
 
