@@ -1,7 +1,6 @@
-# This workflow prunes the conda and pip nightly repo
-# to remove old nightly builds (to keep the storage cost minimal).
-# We also synchronize the wheel release page in the main website
-# to list all the latest wheel uploded.
+# This workflow prunes the pip nightly wheel repo to remove old nightly builds
+# (to keep the storage cost minimal). We also synchronize the wheel release page
+# in the main website to list all the latest wheels uploaded.
 name: Prune-Nightly
 
 
@@ -21,30 +20,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-python@v5
       with:
-        submodules: 'recursive'
-    - name: Setup script env
-      run: |
-        mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
-        ln -s 3rdparty/tlcpack/conda tlc-conda
-        ln -s 3rdparty/tlcpack/docker docker
-        ln -s 3rdparty/tlcpack/common common
-    - uses: actions/cache@v4
-      env:
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('tlc-conda/build-environment.yaml') }}
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: tlcpack-build
-        channel-priority: strict
-        environment-file: tlc-conda/build-environment.yaml
-        auto-activate-base: false
-    - name: Conda info
-      run: |
-        conda info
-        conda list
+        python-version: '3.12'
     - name: Wheel-Site-Checkout
       if: github.ref == 'refs/heads/main'
       env:
@@ -57,7 +35,6 @@ jobs:
         cd ..
     - name: Wheel-Prune-Sync
       if: github.ref == 'refs/heads/main'
-      shell: bash -l {0}
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       run: >-

@@ -1,10 +1,24 @@
 # GH actions.
-name: Wheel-Windows-Nightly
+#
+# Unified wheel build for mlc-ai and mlc-llm on Windows (nightly + stable).
+#
+# Triggers:
+#   * schedule          -> nightly build (mlc-ai-nightly-* / mlc-llm-nightly-*).
+#   * pull_request      -> nightly build for CI only; deploy is skipped.
+#   * workflow_dispatch -> stable release build (mlc-ai-* / mlc-llm-*) from the
+#                          `tag` input, checked out via MLC_STABLE_BUILD_VER
+#                          (see sync_package.py). The tag must exist in both
+#                          mlc-ai/relax and mlc-ai/mlc-llm.
+#
+# Usage (stable): Actions -> "Wheel-Windows" -> Run workflow -> tag = v0.20.0
+name: Wheel-Windows
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Stable release tag to build; must exist in both mlc-ai/relax and mlc-ai/mlc-llm (e.g. v0.20.0)"
+        required: true
   pull_request:
     branches:
       - main
@@ -13,16 +27,17 @@ on:
 
 jobs:
   Build:
-    strategy:
-      matrix:
-        pkg_kind: ['nightly']
-        exclude:
-          - pkg_kind: ${{ github.event_name == 'schedule' && 'stable' || '' }}
-
     runs-on: windows-latest
     defaults:
       run:
         shell: 'cmd /C call {0}'
+    env:
+      # 'stable' on a manual (workflow_dispatch) run, 'nightly' otherwise
+      # (scheduled nightly build or pull_request CI).
+      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && 'stable' || 'nightly' }}
+      # Empty for nightly; the requested tag for stable. sync_package.py checks this
+      # tag out for stable builds and errors out if it is empty on a stable build.
+      MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     steps:
     - name: Git config
@@ -42,10 +57,10 @@ jobs:
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
       run: |
-        python3 scripts/sync_package.py --package tvm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
+        python3 scripts/sync_package.py --package tvm --package-name ${{ env.PKG_KIND == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ env.PKG_KIND == 'nightly' && '--skip-checkout' || '' }}
     - name: Sync MLC LLM Package
       run: |
-        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ matrix.pkg_kind == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ matrix.pkg_kind == 'nightly' && '--skip-checkout' || '' }}
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ env.PKG_KIND == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ env.PKG_KIND == 'nightly' && '--skip-checkout' || '' }}
     # Use conda for LLVM dep
     - name: Setup@Py313
       uses: conda-incubator/setup-miniconda@v3
