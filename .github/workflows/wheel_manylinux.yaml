@@ -6,14 +6,16 @@
 #   * schedule          -> nightly build. Package names mlc-ai-nightly-* /
 #                          mlc-llm-nightly-*, built from the tip of origin/mlc (tvm)
 #                          and origin/main (mlc-llm).
+#   * push (main)       -> nightly build + deploy, so the nightly wheels track the
+#                          latest main.
 #   * pull_request      -> nightly build for CI only. The deploy step is skipped
 #                          (guarded by `github.ref == 'refs/heads/main'`).
-#   * workflow_dispatch -> stable release build. Package names mlc-ai-* / mlc-llm-*,
-#                          built from the `tag` input. The same tag is checked out in
-#                          both mlc-ai/relax and mlc-ai/mlc-llm (via MLC_STABLE_BUILD_VER,
-#                          see sync_package.py), so it must exist in both repos. Each
-#                          stable VERSION is its own prune group, so it stays on the
-#                          index permanently.
+#   * workflow_dispatch -> stable release build when a `tag` is given: package names
+#                          mlc-ai-* / mlc-llm-*, the tag checked out in both
+#                          mlc-ai/relax and mlc-ai/mlc-llm (via MLC_STABLE_BUILD_VER,
+#                          see sync_package.py), and each stable VERSION is its own
+#                          prune group so it stays on the index permanently. Run it
+#                          with an empty tag to kick a nightly build on demand.
 #
 # Usage (stable): Actions -> "Wheel-Manylinux" -> Run workflow -> tag = v0.20.0
 name: Wheel-Manylinux
@@ -22,8 +24,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Stable release tag to build; must exist in both mlc-ai/relax and mlc-ai/mlc-llm (e.g. v0.20.0)"
-        required: true
+        description: "Stable release tag to build (e.g. v0.20.0); must exist in both mlc-ai/relax and mlc-ai/mlc-llm. Leave empty to run a nightly build."
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -49,9 +55,10 @@ jobs:
 
     runs-on: [self-hosted, Linux, X64]
     env:
-      # 'stable' on a manual (workflow_dispatch) run, 'nightly' otherwise
-      # (scheduled nightly build or pull_request CI).
-      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && 'stable' || 'nightly' }}
+      # 'stable' only for a manual (workflow_dispatch) run that supplies a tag;
+      # nightly otherwise (schedule, push to main, pull_request, or a tagless
+      # manual run).
+      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && 'stable' || 'nightly' }}
       # Empty for nightly; the requested tag for stable. sync_package.py checks this
       # tag out for stable builds and errors out if it is empty on a stable build.
       MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
@@ -65,7 +72,14 @@ jobs:
         rm -rf conda
         ln -s 3rdparty/tlcpack/conda conda
     - name: Checkout source
+      env:
+        IMAGE: ${{ matrix.config.image }}
       run: |
+        # Self-hosted runners persist the workspace between runs; a prior or
+        # cancelled build leaves root-owned files under tvm/ and mlc-llm/ that
+        # actions/checkout's git clean cannot remove. Delete them as root (inside
+        # the build image) before cloning, or `git clone` fails on the stale dir.
+        docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
         git clone https://github.com/mlc-ai/relax tvm --recursive
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
