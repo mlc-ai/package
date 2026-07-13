@@ -7,11 +7,13 @@
 #
 # Triggers:
 #   * schedule          -> nightly build (mlc-ai-nightly-* / mlc-llm-nightly-*).
+#   * push (main)       -> nightly build + deploy (tracks latest main).
 #   * pull_request      -> nightly build for CI only; deploy is skipped.
 #   * workflow_dispatch -> stable release build (mlc-ai-* / mlc-llm-*) from the
 #                          `tag` input, checked out via MLC_STABLE_BUILD_VER
-#                          (see sync_package.py). The tag must exist in both
-#                          mlc-ai/relax and mlc-ai/mlc-llm.
+#                          (see sync_package.py); the tag must exist in both
+#                          mlc-ai/relax and mlc-ai/mlc-llm. Leave the tag empty
+#                          to run a nightly build on demand.
 #
 # Usage (stable): Actions -> "Wheel-AppleSiliconMac" -> Run workflow -> tag = v0.20.0
 name: Wheel-AppleSiliconMac
@@ -20,8 +22,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Stable release tag to build; must exist in both mlc-ai/relax and mlc-ai/mlc-llm (e.g. v0.20.0)"
-        required: true
+        description: "Stable release tag to build (e.g. v0.20.0); must exist in both mlc-ai/relax and mlc-ai/mlc-llm. Leave empty to run a nightly build."
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -35,9 +41,10 @@ jobs:
       run:
         shell: 'bash -l {0}'
     env:
-      # 'stable' on a manual (workflow_dispatch) run, 'nightly' otherwise
-      # (scheduled nightly build or pull_request CI).
-      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && 'stable' || 'nightly' }}
+      # 'stable' only for a manual (workflow_dispatch) run that supplies a tag;
+      # nightly otherwise (schedule, push to main, pull_request, or a tagless
+      # manual run).
+      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && 'stable' || 'nightly' }}
       # Empty for nightly; the requested tag for stable. sync_package.py checks this
       # tag out for stable builds and errors out if it is empty on a stable build.
       MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}

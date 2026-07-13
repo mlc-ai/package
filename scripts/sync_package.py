@@ -29,7 +29,12 @@ def checkout_source(src, tag):
             raise RuntimeError(msg)
 
     run_cmd(["git", "checkout", "-f", tag])
-    run_cmd(["git", "submodule", "update"])
+    # --init --recursive so nested submodules are synced to the tag too: e.g.
+    # mlc-llm pins 3rdparty/tvm, which pins its own 3rdparty/tvm-ffi. A plain
+    # `submodule update` moves 3rdparty/tvm to the tag but leaves the nested
+    # tvm-ffi at whatever the initial clone had, so tvm gets built against a
+    # mismatched tvm-ffi.
+    run_cmd(["git", "submodule", "update", "--init", "--recursive"])
     print("git checkout %s" % tag)
 
 
