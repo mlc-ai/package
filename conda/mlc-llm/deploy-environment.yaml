@@ -1,9 +1,0 @@
-# deploy environment
-name: mlc-llm
-
-channels:
-  - conda-forge
-  - mlc-ai
-
-dependencies:
-  - mlc-llm-nightly

@@ -1,0 +1,95 @@
+# GH actions.
+#
+# Unified wheel build for mlc-ai and mlc-llm on Apple Silicon macOS (nightly + stable).
+#
+# Runs on GitHub-hosted Apple Silicon runners (macos-latest); no self-hosted runner
+# or pre-installed conda is required (conda is set up in-job).
+#
+# Triggers:
+#   * schedule          -> nightly build (mlc-ai-nightly-* / mlc-llm-nightly-*).
+#   * pull_request      -> nightly build for CI only; deploy is skipped.
+#   * workflow_dispatch -> stable release build (mlc-ai-* / mlc-llm-*) from the
+#                          `tag` input, checked out via MLC_STABLE_BUILD_VER
+#                          (see sync_package.py). The tag must exist in both
+#                          mlc-ai/relax and mlc-ai/mlc-llm.
+#
+# Usage (stable): Actions -> "Wheel-AppleSiliconMac" -> Run workflow -> tag = v0.20.0
+name: Wheel-AppleSiliconMac
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Stable release tag to build; must exist in both mlc-ai/relax and mlc-ai/mlc-llm (e.g. v0.20.0)"
+        required: true
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 8 * * *' # 8 AM UTC -> 4 AM EDT
+
+jobs:
+  Build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: 'bash -l {0}'
+    env:
+      # 'stable' on a manual (workflow_dispatch) run, 'nightly' otherwise
+      # (scheduled nightly build or pull_request CI).
+      PKG_KIND: ${{ github.event_name == 'workflow_dispatch' && 'stable' || 'nightly' }}
+      # Empty for nightly; the requested tag for stable. sync_package.py checks this
+      # tag out for stable builds and errors out if it is empty on a stable build.
+      MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Setup script env
+      run: |
+        mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
+        rm -rf conda
+        ln -s 3rdparty/tlcpack/conda conda
+    - name: Checkout source
+      run: |
+        git clone https://github.com/mlc-ai/relax tvm --recursive
+        git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
+    - name: Sync MLC AI Package
+      run: |
+        python3 scripts/sync_package.py --package tvm --package-name ${{ env.PKG_KIND == 'nightly' && 'mlc-ai-nightly' || 'mlc-ai' }} --revision origin/mlc ${{ env.PKG_KIND == 'nightly' && '--skip-checkout' || '' }}
+    - name: Sync MLC LLM Package
+      run: |
+        python3 scripts/sync_package.py --package mlc-llm --package-name ${{ env.PKG_KIND == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ env.PKG_KIND == 'nightly' && '--skip-checkout' || '' }}
+    # Use conda for LLVM dep
+    - name: Setup@Py313
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: tlcpack-build
+        python-version: '3.13'
+        channel-priority: strict
+        environment-file: conda/build-environment.yaml
+        auto-activate-base: false
+    - name: Conda info
+      run: |
+        conda info
+        conda list
+        python --version
+    - name: Build@MacOS
+      run: >-
+        scripts/build_mlc_ai_lib_osx.sh
+    - name: Build MLC-LLM@MacOS
+      run: >-
+        scripts/build_mlc_llm_lib_osx.sh
+    # Use system python instead of conda for upload
+    - name: Wheel-Deploy
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
+      with:
+        files: |
+          tvm/dist/*.whl
+          mlc-llm/dist/*.whl
+        tag_name: v0.9.dev0
+        prerelease: true

@@ -53,32 +53,6 @@ def update(file_name, rewrites, dry_run=False):
                 output_file.write(l)
 
 
-def get_version_tag(args):
-    """
-    Collect version strings using version.py.
-
-    Return a tuple with two version strings:
-    - pub_ver: includes major, minor and dev with the number of
-               changes since last release, e.g. "0.8.dev1473".
-    - local_ver: includes major, minor, dev and last git hash
-                 e.g. "0.8.dev1473+gb7488ef47".
-    """
-    version_py = os.path.join(args.package, "version.py")
-    libversion = {"__file__": version_py}
-    exec(
-        compile(open(version_py, "rb").read(), version_py, "exec"),
-        libversion,
-        libversion,
-    )
-    pub_ver = libversion["__version__"]
-    local_ver = pub_ver
-
-    if "git_describe_version" in libversion:
-        pub_ver, local_ver = libversion["git_describe_version"]()
-
-    return pub_ver, local_ver
-
-
 def name_with_gpu(args, package_name):
     """Update name with GPU version"""
     if args.gpu == "none":
@@ -87,15 +61,6 @@ def name_with_gpu(args, package_name):
         return package_name + "-rocm" + "".join(args.gpu[5:].split("."))
     else:
         return package_name + "-cu" + "".join(args.gpu[5:].split("."))
-
-
-def update_setup(args, pkg, package_name):
-    pub_ver, _ = get_version_tag(args)
-    rewrites = [
-        (r'(?<=name=")[^\"]+', name_with_gpu(args, package_name)),
-        (r"(?<=version=)[^\,]+", f'"{pub_ver}"'),
-    ]
-    update(os.path.join(args.package, "python", "setup.py"), rewrites, args.dry_run)
 
 
 def run_version_py(args):
@@ -125,14 +90,6 @@ def main():
         "--package-name", type=str, required=True, help="The output package name"
     )
     parser.add_argument(
-        "--nightly",
-        action="store_true",
-        help=(
-            "Whether force build nightly package. "
-            + "Otherwise nightly will only be trigged by package name"
-        ),
-    )
-    parser.add_argument(
         "--revision",
         type=str,
         default="origin/main",
@@ -144,10 +101,6 @@ def main():
         default="none",
         choices=[
             "none",
-            "cuda-12.1",
-            "cuda-12.2",
-            "cuda-12.3",
-            "cuda-12.4",
             "cuda-12.8",
             "cuda-13.0",
             "rocm-6.1",
@@ -162,17 +115,10 @@ def main():
         help="Run the syncronization process without checking out new source."
         "For use when running in an existing checkout.",
     )
-    parser.add_argument(
-        "--use-setup-py",
-        action="store_true",
-        help="Use python/setup.py instead of using scikit-build to build the package.",
-    )
     args = parser.parse_args()
 
-    package_name = args.package_name
-
     if not args.skip_checkout:
-        if "nightly" not in args.package_name and not args.nightly:
+        if "nightly" not in args.package_name:
             # `not` (rather than `is None`) so an unset OR empty-string env var both
             # error out. CI sets `env: X: ${{ ... }}`, which yields "" (not unset)
             # when the expression is empty, so `is None` would miss that case.
@@ -185,10 +131,7 @@ def main():
         else:
             checkout_source(args.package, args.revision)
 
-    if args.use_setup_py:
-        update_setup(args, args.package, package_name)
-    else:
-        run_version_py(args)
+    run_version_py(args)
 
 
 if __name__ == "__main__":
