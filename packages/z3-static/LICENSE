@@ -1,5 +1,0 @@
-This package is distributed under the MIT License.
-
-The packaged Z3 artifacts are distributed under the upstream Z3 MIT License,
-which is included in the wheel as z3_static/static/LICENSE.Z3.
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 source /multibuild/manylinux_utils.sh
-source /opt/rh/gcc-toolset-13/enable # Keep in sync with z3-static manylinux builds.
+source /opt/rh/gcc-toolset-13/enable # Keep in sync with mlc-z3-static manylinux builds.
 source "$(dirname "${BASH_SOURCE[0]}")/manylinux_build_common.sh"
 
 MLC_LLM_DIR="/workspace/mlc-llm"

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlc-z3-static-example-project"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "mlc-z3-static==4.16.0",
+]
+
+[project.optional-dependencies]
+build = [
+  "cmake>=3.26",
+  "ninja>=1.11",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

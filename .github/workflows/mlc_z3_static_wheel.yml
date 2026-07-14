@@ -1,12 +1,8 @@
-name: Publish Z3 static wheels
+name: Publish mlc-z3-static wheels
 
 on:
   workflow_dispatch:
     inputs:
-      z3_tag:
-        description: Upstream Z3 tag
-        required: true
-        default: z3-4.16.0
       version_suffix:
         description: Python package version suffix, such as .post1
         required: false
@@ -59,24 +55,54 @@ jobs:
             platform_tag: win_amd64
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp version suffix
+        if: inputs.version_suffix != ''
+        shell: bash
+        run: |
+          python - "${{ inputs.version_suffix }}" <<'EOF'
+          import re
+          import sys
+          from pathlib import Path
+
+          suffix = sys.argv[1]
+          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
+          text = path.read_text(encoding="utf-8")
+          path.write_text(
+              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
+              encoding="utf-8",
+          )
+          EOF
       - name: Build wheel
-        uses: ./.github/actions/z3-static-wheel
-        with:
-          build: ${{ matrix.build }}
-          arch: ${{ matrix.arch }}
-          platform-tag: ${{ matrix.platform_tag }}
-          z3-tag: ${{ inputs.z3_tag }}
-          version-suffix: ${{ inputs.version_suffix }}
+        # cibuildwheel must run from the package directory: the commands in
+        # [tool.cibuildwheel] reference scripts/ relative to it.
+        working-directory: packages/mlc-z3-static
+        shell: bash
+        env:
+          CIBW_BUILD: ${{ matrix.build }}
+          CIBW_ARCHS_LINUX: ${{ matrix.arch }}
+          CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_ARCHS_WINDOWS: ${{ matrix.arch }}
+          CIBW_BUILD_VERBOSITY: "1"
+          CIBW_ENVIRONMENT_LINUX: >-
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
+          CIBW_ENVIRONMENT_MACOS: >-
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
+            MACOSX_DEPLOYMENT_TARGET="14.0"
+          CIBW_ENVIRONMENT_WINDOWS: >-
+            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
+        run: pipx run cibuildwheel==3.3.1 --output-dir wheelhouse .
       - name: Retag Linux wheel
+        # scikit-build-core tags Linux wheels linux_<arch>; retag to manylinux_2_28.
         if: startsWith(matrix.platform_tag, 'manylinux_')
+        working-directory: packages/mlc-z3-static
         run: |
           python -m pip install wheel
           python -m wheel tags --remove --platform-tag "${{ matrix.platform_tag }}" wheelhouse/*.whl
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: z3-static-wheel-${{ matrix.platform_tag }}
-          path: wheelhouse/*.whl
+          name: mlc-z3-static-wheel-${{ matrix.platform_tag }}
+          path: packages/mlc-z3-static/wheelhouse/*.whl
           if-no-files-found: error
 
   build_sdist:
@@ -84,23 +110,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build sdist
-        working-directory: packages/z3-static
+      - name: Stamp version suffix
+        if: inputs.version_suffix != ''
         run: |
-          python -m pip install build
-          version="${{ inputs.z3_tag }}"
-          version="${version#z3-}${{ inputs.version_suffix }}"
-          printf '%s\n' \
-            '"""Version generated from the upstream Z3 release tag."""' \
-            '' \
-            "__version__ = \"${version}\"" \
-            > z3_static/_version.py
-          python -m build --sdist
+          python - "${{ inputs.version_suffix }}" <<'EOF'
+          import re
+          import sys
+          from pathlib import Path
+
+          suffix = sys.argv[1]
+          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
+          text = path.read_text(encoding="utf-8")
+          path.write_text(
+              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
+              encoding="utf-8",
+          )
+          EOF
+      - name: Build sdist
+        working-directory: packages/mlc-z3-static
+        run: pipx run build --sdist
       - name: Upload sdist artifact
         uses: actions/upload-artifact@v4
         with:
-          name: z3-static-sdist
-          path: packages/z3-static/dist/*.tar.gz
+          name: mlc-z3-static-sdist
+          path: packages/mlc-z3-static/dist/*.tar.gz
           if-no-files-found: error
 
   publish:
@@ -116,7 +149,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: z3-static-*
+          pattern: mlc-z3-static-*
           path: dist
           merge-multiple: true
       - name: List distributions
@@ -136,4 +169,3 @@ jobs:
         with:
           packages-dir: dist
           repository-url: ${{ inputs.repository_url }}
-
