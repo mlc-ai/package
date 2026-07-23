@@ -3,7 +3,8 @@
 set -e
 set -u
 
-MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-14.0}
+# export so `pip wheel` tags the wheel with the deployment target, not the host macOS version
+export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-14.0}
 
 python --version
 python -m pip install wheel

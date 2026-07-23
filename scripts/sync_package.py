@@ -69,9 +69,19 @@ def name_with_gpu(args, package_name):
 
 
 def run_version_py(args):
-    # Run version.py to bump the version
     version_py = os.path.join(args.package, "version.py")
-    subprocess.run([sys.executable, version_py, "--git-describe"])
+    if __stable_build__ and "nightly" not in args.package_name:
+        # stable version comes from the requested tag; the tag's version.py may predate fixes
+        rewrites = [
+            (r'(?m)(?<=(?<![^\n])version = ")[^\n"]+(?=")', __stable_build__.lstrip("v")),
+        ]
+        update(os.path.join(args.package, "pyproject.toml"), rewrites, args.dry_run)
+    elif os.path.exists(version_py):
+        # check=True so wheels never ship the placeholder version from pyproject.toml
+        subprocess.run([sys.executable, version_py, "--git-describe"], check=True)
+    else:
+        # tvm stamps its own version at build time
+        print("%s not found; skipping version bump for %s" % (version_py, args.package))
     # Update package name
     rewrites = [
         (r'(?m)(?<=(?<![^\n])name = ")[^\n"]+(?=")', name_with_gpu(args, args.package_name)),
