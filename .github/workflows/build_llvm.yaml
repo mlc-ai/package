@@ -1,0 +1,177 @@
+# Build a minimal static LLVM (+ zlib/zstd + liborc_rt) from source, per arch,
+# inside manylinux_2_28, and publish the install prefix as a compressed Release
+# asset. Consumed by apache/tvm-ffi's orcjit addon, which needs an LLVM built
+# under the manylinux GLIBCXX/CXXABI floor (see scripts/build_llvm_manylinux.sh).
+#
+# Rare, manual: run when bumping the pinned LLVM. The asset is permanent storage
+# (a Release, not actions/cache), so tvm-ffi CI only ever downloads it -- turning
+# a ~50m from-source build into a ~30s download on every run.
+#
+# Source is fully caller-controlled: llvm_repo + llvm_ref accept any repo/tag/
+# branch/SHA, so a patched fork can be built by pointing at it. Keep
+# artifact_version distinct for patched builds (e.g. 22.1.0-mypatch1) so the
+# release tag and asset name never collide with an upstream build; consumers
+# select it via the same version string.
+name: Build LLVM (manylinux)
+
+on:
+  # Lives on the unmerged `build-llvm` branch (same pattern as torch_c_dlpack):
+  # a push to that branch runs it with the defaults below, and workflow_dispatch
+  # (from the branch's Actions page) overrides them. Dispatching a workflow that
+  # is not on the default branch only works from the UI/branch ref, hence push.
+  push:
+    branches:
+      - build-llvm
+  workflow_dispatch:
+    inputs:
+      llvm_repo:
+        description: llvm-project repo to build (use a fork for local patches)
+        required: false
+        default: llvm/llvm-project
+      llvm_ref:
+        description: Tag, branch, or full SHA to build (e.g. llvmorg-22.1.0, main, <sha>)
+        required: true
+        default: llvmorg-22.1.0
+      artifact_version:
+        description: >
+          Version label for the asset name and release tag (llvm-<label>). Use a
+          distinct label for patched builds, e.g. 22.1.0-mypatch1.
+        required: true
+        default: "22.1.0"
+      zlib_version:
+        description: zlib release (tag v<version>)
+        required: false
+        default: "1.3.1"
+      zstd_version:
+        description: zstd release (tag v<version>)
+        required: false
+        default: "1.5.6"
+      publish:
+        description: Upload the tarball to a GitHub Release
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+# On a push event `inputs.*` is empty, so resolve every knob here once: dispatch
+# inputs win, otherwise these defaults (a plain upstream 22.1.0 build).
+env:
+  LLVM_REPO: ${{ inputs.llvm_repo || 'llvm/llvm-project' }}
+  LLVM_REF: ${{ inputs.llvm_ref || 'llvmorg-22.1.0' }}
+  ARTIFACT_VERSION: ${{ inputs.artifact_version || '22.1.0' }}
+  ZLIB_VERSION: ${{ inputs.zlib_version || '1.3.1' }}
+  ZSTD_VERSION: ${{ inputs.zstd_version || '1.5.6' }}
+
+jobs:
+  build_llvm:
+    name: LLVM ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, arch: x86_64}
+          - {os: ubuntu-24.04-arm, arch: aarch64}
+    steps:
+      # This repo supplies the build script; it must be checked out too.
+      - name: Check out this repo (build script)
+        uses: actions/checkout@v4
+        with:
+          path: package
+          fetch-depth: 1
+          clean: false
+
+      # Sources via checkout on the HOST (bind-mounted into the build container).
+      # clean: false so each checkout keeps the others.
+      # fetch-depth: 0 so an arbitrary branch/SHA resolves, not just a tag;
+      # filter: blob:none keeps that affordable on a tree this size.
+      - name: Check out llvm-project
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.LLVM_REPO }}
+          ref: ${{ env.LLVM_REF }}
+          path: llvm-project
+          fetch-depth: 0
+          filter: blob:none
+          clean: false
+
+      - name: Check out zlib
+        uses: actions/checkout@v4
+        with:
+          repository: madler/zlib
+          ref: v${{ env.ZLIB_VERSION }}
+          path: zlib
+          fetch-depth: 1
+          clean: false
+
+      - name: Check out zstd
+        uses: actions/checkout@v4
+        with:
+          repository: facebook/zstd
+          ref: v${{ env.ZSTD_VERSION }}
+          path: zstd
+          fetch-depth: 1
+          clean: false
+
+      # Build inside the manylinux image via docker run, mounting the workspace
+      # (sources + script) and an output dir. The prefix is built under the
+      # gcc-toolset so the ABI stays under the manylinux floor.
+      - name: Build LLVM into a tarball (docker)
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="llvm-${ARTIFACT_VERSION}-linux-${{ matrix.arch }}.tar.zst"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -w /work \
+            "quay.io/pypa/manylinux_2_28_${{ matrix.arch }}" \
+            bash /work/package/scripts/build_llvm_manylinux.sh \
+              --arch "${{ matrix.arch }}" \
+              --llvm-src /work/llvm-project \
+              --zlib-src /work/zlib \
+              --zstd-src /work/zstd \
+              --prefix /opt/llvm \
+              --out "/work/out/$out"
+          # docker wrote as root; hand the tarball back to the runner for upload.
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/out"
+          ls -l "$GITHUB_WORKSPACE/out/$out"
+          echo "LLVM_TARBALL=out/$out" >> "$GITHUB_ENV"
+
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvm-${{ env.ARTIFACT_VERSION }}-linux-${{ matrix.arch }}
+          path: ${{ env.LLVM_TARBALL }}
+          if-no-files-found: error
+
+  # Publish both arches in a SINGLE job so the two parallel builds never race on
+  # creating the llvm-<version> release/tag. Publishes to a dedicated, stable tag
+  # so the asset is permanent and immune to the .whl-only nightly pruner.
+  # `env` is not available in a job-level `if:`, so gate on the input directly.
+  # On a push event inputs.publish is empty -> never publishes, which is what we
+  # want: a push builds and uploads artifacts, publishing is an explicit dispatch.
+  publish:
+    name: Publish LLVM release
+    needs: [build_llvm]
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tarball artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: llvm-${{ env.ARTIFACT_VERSION }}-linux-*
+          path: dist
+          merge-multiple: true
+      - name: List distributions
+        run: ls -l dist
+      - name: Publish to Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
+        with:
+          tag_name: llvm-${{ env.ARTIFACT_VERSION }}
+          prerelease: true
+          files: dist/*.tar.zst
