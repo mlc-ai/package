@@ -28,6 +28,12 @@ on:
   pull_request:
     branches:
       - main
+    # Self-contained per-package projects and repo config do not affect the
+    # nightly TVM/MLC-LLM wheel pipelines; skip them for such changes.
+    paths-ignore:
+      - 'packages/**'
+      - '.github/**'
+      - '.gitignore'
   schedule:
     - cron: '0 6 * * *' # 6 AM UTC
 

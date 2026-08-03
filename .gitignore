@@ -136,3 +136,12 @@ dmypy.json
 
 common
 # wheel
+
+# Native artifact packages: cibuildwheel output and staged package payloads
+wheelhouse/
+packages/*/src/*/static/
+packages/*/src/*/shared/
+packages/*/src/*/bin/
+packages/*/src/*/licenses/
+packages/*/src/*/staticlib.json
+packages/*/src/*/doxygen.json
