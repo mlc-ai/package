@@ -13,7 +13,7 @@
 #   bash scripts/build_llvm_manylinux.sh \
 #     --arch x86_64 \
 #     --llvm-src /work/llvm-project --zlib-src /work/zlib --zstd-src /work/zstd \
-#     --out /out/llvm-22.1.0-linux-x86_64.tar.zst
+#     --out /out/llvm-23.1.1-linux-x86_64.tar.zst
 #
 # The source tree is whatever the caller checked out -- an upstream tag, a branch,
 # a specific SHA, or a patched fork. This script never assumes the source matches a
