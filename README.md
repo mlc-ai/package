@@ -12,7 +12,13 @@ Python and native kernel files are unchanged from the upstream build. The wheels
 include the FlashKDA MIT license and the CUTLASS BSD-3-Clause license.
 SHA256SUMS records the distribution hashes.
 
-The builds used `FLASH_KDA_CUDA_ARCHS=100a` and `pip wheel --no-build-isolation
---no-deps .` in an environment containing the matching PyTorch version and
-CUDA Toolkit. The CUTLASS license notice was added to the wheel metadata after
-building; the Python and compiled kernel contents were preserved byte for byte.
+To rebuild for this target, install the matching PyTorch version and CUDA Toolkit,
+check out the upstream commit with its submodules, then run:
+
+```bash
+FLASH_KDA_CUDA_ARCHS=100a python -m pip wheel --no-build-isolation --no-deps .
+```
+
+The distributed wheels add the CUTLASS license notice to the wheel metadata.
+Their Python and compiled kernel contents match the original upstream builds
+byte for byte.
