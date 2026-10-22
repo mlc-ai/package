@@ -13,6 +13,12 @@ license-files = ["LICENSE"]
 authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
 keywords = ["llvm", "static-library", "cmake", "compiler"]
 
+[project.optional-dependencies]
+all = ["mlc-llvm-static-extra-targets==23.1.1.dev1"]
+
+[project.scripts]
+llvm-config = "mlc_llvm_static._llvm_config:main"
+
 [project.urls]
 Repository = "https://github.com/mlc-ai/package"
 LLVM = "https://llvm.org/"

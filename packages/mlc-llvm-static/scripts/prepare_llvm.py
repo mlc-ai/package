@@ -17,7 +17,7 @@ import zipfile
 from pathlib import Path
 
 LLVM_VERSION = "23.1.1"
-DEFAULT_TARGETS = "Native"
+DEFAULT_TARGETS = "all"
 SOURCES = {
     "llvm": {
         "version": LLVM_VERSION,
@@ -142,9 +142,12 @@ def build_dependencies(work: Path, prefix: Path) -> None:
 
 
 def build_llvm(source: Path, work: Path, prefix: Path) -> None:
+    from split_sdk import distribution_options, record_build
+
     build = work / "build-llvm"
-    configure(source / "llvm", build, prefix, [
+    options = [
         f"-DCMAKE_PREFIX_PATH={prefix}", f"-DLLVM_TARGETS_TO_BUILD={os.environ.get('MLC_LLVM_STATIC_TARGETS', DEFAULT_TARGETS)}",
+        "-DLLVM_DISTRIBUTIONS=",
         "-DLLVM_DISTRIBUTION_COMPONENTS=llvm-headers;llvm-libraries;cmake-exports;llvm-config",
         # Define tool install targets so llvm-config can be a distribution
         # component; install-distribution builds only the selected components.
@@ -165,7 +168,12 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         "-DLLVM_ENABLE_HTTPLIB=OFF", "-DLLVM_ENABLE_LIBPFM=OFF",
         "-DLLVM_ENABLE_DIA_SDK=OFF", "-DLLVM_ENABLE_BINDINGS=OFF",
         "-DLLVM_ENABLE_ICU=OFF", "-DLLVM_ENABLE_ICONV=OFF",
-    ])
+    ]
+    configure(source / "llvm", build, prefix, options)
+    # Configure once to obtain LLVM's actual component graph, then assign the
+    # backend libraries to upstream's separate CMake export sets. No LLVM
+    # objects have been compiled at this point.
+    configure(source / "llvm", build, prefix, options + distribution_options(build))
     # Upstream llvm-config embeds the absolute zstd archive location in
     # LLVM_SYSTEM_LIBS when zstd is static. Emit a library name instead, using
     # the SDK's --ldflags search path, so a relocated SDK cannot retain it.
@@ -181,7 +189,9 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         flag = library.name if os.name == "nt" else "-l" + library.stem.removeprefix("lib")
         normalized = normalized.replace(library.as_posix(), flag)
     variables.write_text(text[:line.start()] + normalized + text[line.end():], encoding="utf-8")
-    install(build, "install-distribution")
+    install(build, "install-base-distribution")
+    install(build, "install-extra-distribution")
+    record_build(build, prefix)
     if platform.system() == "Linux":
         triple = run([prefix / "bin" / "llvm-config", "--host-target"], capture=True)
         build = work / "build-orc"
@@ -215,6 +225,16 @@ def validate_native_archive(path: Path) -> None:
 
 
 def validate_prefix(prefix: Path) -> dict:
+    manifest = prefix / "share/mlc-llvm-static/base.json"
+    if manifest.is_file():
+        details = json.loads(manifest.read_text(encoding="utf-8"))
+        if details.get("schema_version") != 2 or details.get("llvm_version") != LLVM_VERSION:
+            raise RuntimeError("Unsupported staged LLVM SDK metadata")
+        for relative, expected in details["files"].items():
+            path = (prefix / relative).resolve()
+            if not path.is_relative_to(prefix.resolve()) or not path.is_file() or sha256(path) != expected["sha256"]:
+                raise RuntimeError(f"Staged SDK artifact is missing or changed: {relative}")
+        return details
     executable = prefix / "bin" / ("llvm-config.exe" if os.name == "nt" else "llvm-config")
     for path in (executable, prefix / "include" / "llvm" / "IR" / "Module.h",
                  prefix / "lib" / "cmake" / "llvm" / "LLVMConfig.cmake"):
@@ -261,7 +281,7 @@ def cached_prefix(work: Path) -> Path | None:
     if os.environ.get("MLC_LLVM_STATIC_USE_CACHE") != "1":
         return None
     cache = Path(__file__).resolve().parents[1] / ".sdk-cache"
-    wheels = sorted(cache.glob("*.whl"))
+    wheels = sorted(cache.glob("all-sdk.zip")) or sorted(cache.glob("*.whl"))
     if not wheels:
         return None
     root = work / "cached-sdk"

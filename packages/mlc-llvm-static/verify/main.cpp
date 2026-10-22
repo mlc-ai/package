@@ -17,7 +17,10 @@
 #define EXPORT __attribute__((visibility("default")))
 #endif
 
+bool mlc_llvm_check_dependencies();
+
 extern "C" EXPORT int mlc_llvm_probe() {
+  if (!mlc_llvm_check_dependencies()) return -8;
   if (llvm::InitializeNativeTarget() || llvm::InitializeNativeTargetAsmPrinter()) return -1;
   auto jit = llvm::orc::LLJITBuilder().create();
   if (!jit) {

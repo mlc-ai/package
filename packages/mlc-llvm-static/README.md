@@ -8,13 +8,25 @@ The SDK contains:
 
 - PIC LLVM static libraries with native objects, without LTO bitcode.
 - LLVM headers, including the matching generated configuration headers.
-- Relocatable LLVM CMake exports and the matching `llvm-config` executable.
+- Relocatable LLVM CMake exports and a Python `llvm-config` compatibility frontend.
 - Static zlib 1.3.1 and zstd 1.5.7, with their headers and license notices.
 - The matching ORC runtime archive on Linux.
 
-The first release matches the existing native-target LLVM archives: X86 on
-x86_64/AMD64 hosts and AArch64 on arm64/aarch64 hosts. Additional code-generation
-backends are explicit build overrides, rather than part of the initial release.
+The base wheel contains X86 on x86_64/AMD64 hosts and AArch64 on arm64/aarch64
+hosts. The exact-version `mlc-llvm-static-extra-targets` wheel adds all other
+standard LLVM backends. Both are partitioned from one All-target build and own
+disjoint files in the same `static/lib` directory. Build fingerprints reject
+mismatched base/add-on artifacts, including different builds of the same version.
+Experimental LLVM backends are excluded.
+
+Installing the add-on selects the All profile automatically; removing it
+restores Native without overwriting base-owned files. Set
+`MLC_LLVM_STATIC_PROFILE=native` or `all` for an explicit profile. CMake users
+can also set `-DMLC_LLVM_STATIC_PROFILE=native` or `all`. Generated target
+initialization headers, target-availability macros, CMake exports, and the
+configuration frontend use the same selection. Archives remain host-specific:
+an x86_64 wheel's AArch64 backend is x86_64 code that generates AArch64 objects.
+Cross-platform linking still needs a suitable linker, sysroot, and target runtime.
 Other LLVM tools, Clang, LLD, MLIR, and shared LLVM libraries are excluded.
 Optional compilers and vendor toolchains remain separate dependencies.
 Optional DIA SDK, libpfm, ICU, iconv, and language-binding integrations are
@@ -23,6 +35,12 @@ disabled to keep the SDK independent of packages installed on its build host.
 The wheel is a **build dependency**. Statically linked downstream wheels do not
 need to depend on this SDK at runtime.
 
+See the [dependency audit](DEPENDENCIES.md) for optional-feature consequences,
+platform libraries, transitive linking, and requirements for additional backends.
+libxml2 is needed for LLVM's Windows manifest merger, which this profile disables;
+it is not required by the selected IR/code-generation/ORC paths. Host system and
+C++ runtimes remain downstream dependencies.
+
 ## Install and locate
 
 Install the wheel matching your platform, using a downloaded file or its GitHub
@@ -30,6 +48,8 @@ release asset URL:
 
 ```bash
 python -m pip install /path/to/mlc_llvm_static-<version>-py3-none-<platform>.whl
+# Optional: add every standard code-generation backend from the same build.
+python -m pip install /path/to/mlc_llvm_static_extra_targets-<version>-py3-none-<platform>.whl
 python -m mlc_llvm_static.config --prefix
 python -m mlc_llvm_static.config --cmake-dir
 python -m mlc_llvm_static.config --llvm-config
@@ -43,6 +63,21 @@ print(llvm.get_cmake_dir())
 print(llvm.get_llvm_config())
 print(llvm.metadata()["targets"])
 ```
+
+The package metadata also defines `mlc-llvm-static[all]` to install the exact
+matching add-on when both distributions are available from an index. During
+GitHub-release validation, install their wheel paths/URLs explicitly. Neither
+distribution is published to PyPI by this project workflow.
+
+The frontend supports `--profile=native|all|auto` and normal static LLVM queries,
+including components, compiler flags, library paths/order, and system libraries.
+It reads a build-generated component graph and requires Python 3.10+ at build
+time. The upstream executable is retained only in the build/cache for comparison.
+On Unix, `static/bin/llvm-config` is a standalone Python script; on Windows,
+`get_llvm_config()` locates pip's console launcher in the Python environment.
+For a copied SDK prefix on either platform, run
+`python /copied/prefix/bin/llvm-config.py`. A copied Windows SDK is not a
+standalone executable toolchain.
 
 Pass `LLVM_DIR` explicitly so a system or Conda LLVM installation does not
 accidentally supply different headers, libraries, or exports:
@@ -70,11 +105,11 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 
 ## Builds and GitHub verification
 
-The `Build LLVM static SDK wheels` workflow builds and verifies Linux x86_64,
-Linux aarch64, macOS arm64 (14.0+), and Windows AMD64 wheels. Linux builds run in
-manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`). It runs for relevant
+The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
+families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows AMD64.
+Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`). It runs for relevant
 pull requests and can also be dispatched manually. `publish_release=true`
-creates a **new draft prerelease** containing all four verified wheels and
+creates a **new draft prerelease** containing all eight verified wheels and
 `SHA256SUMS`. It does not overwrite an existing release or publish to PyPI.
 
 Verification installs the wheel and copies its SDK to a new directory containing
@@ -83,16 +118,22 @@ and absence of unrequested tools/shared libraries. A shared consumer then parses
 LLVM IR, optimizes it, writes bitcode, and JIT-executes a function returning 42.
 The consumer must not depend on dynamic LLVM, zlib, or zstd. Linux also checks
 the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline.
-CI caches the compiled SDK by platform, package version, and build-recipe files.
-Verification-only changes repackage and recheck that SDK without recompiling
-LLVM. A cached SDK is always verified before it becomes a release artifact.
+The probe also round-trips both compression formats, reads compressed ELF DWARF,
+and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
+CI caches the raw All-target SDK by platform and a fingerprint of the compilation
+and graph-generation recipe. Frontend, packaging, and verification changes reuse
+that build. The packager compares native-component library queries with upstream
+`llvm-config`. Wheel verification covers Native and All, explicit Native with
+the add-on present, and add-on uninstall. It initializes every selected backend
+and emits/parses x86_64, AArch64, RISC-V, and WebAssembly objects for All.
 
 Use remote build machines for LLVM compilation. Source builds are explicitly
 opt-in to avoid a lengthy accidental build when a wheel is unavailable:
 
 ```bash
 MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1 CMAKE_BUILD_PARALLEL_LEVEL=8 \
-  python -m build --wheel
+  python scripts/build_wheels.py --output wheelhouse
+python scripts/verify_split_wheels.py wheelhouse
 ```
 
 The source archive digests are pinned in `scripts/prepare_llvm.py`. Useful build
@@ -101,10 +142,11 @@ overrides:
 - `MLC_LLVM_STATIC_SOURCE_CACHE`: reusable directory of downloaded source archives.
 - `MLC_LLVM_STATIC_LLVM_SOURCE_DIR`, `MLC_LLVM_STATIC_ZLIB_SOURCE_DIR`, and
   `MLC_LLVM_STATIC_ZSTD_SOURCE_DIR`: explicit source trees for development.
-- `MLC_LLVM_STATIC_TARGETS`: semicolon-separated targets (default `Native`);
-  use a distinct package version when adding other backends.
-- `MLC_LLVM_STATIC_PREFIX`: package an SDK already produced by this build script.
-  Its parent must also contain the generated `licenses/` and `staticlib.json`.
+- `MLC_LLVM_STATIC_BUILD_WORK`: node-local directory for source extraction and
+  LLVM objects, keeping slow shared filesystems out of compilation.
+- `MLC_LLVM_STATIC_PREFIX`: repackage a raw All-target SDK produced by this
+  recipe, or a staged Native SDK when invoking the base wheel's build backend.
+  Its parent must contain the matching `licenses/` and `staticlib.json`.
 
 Build settings are Release, assertions off, RTTI on, exceptions off, PIC on, and
 LTO off. `staticlib.json` records source hashes, selected targets, build settings,

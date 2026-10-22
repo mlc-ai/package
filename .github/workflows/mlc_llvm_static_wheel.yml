@@ -4,15 +4,16 @@ on:
   pull_request:
     paths:
       - "packages/mlc-llvm-static/**"
+      - "packages/mlc-llvm-static-extra-targets/**"
       - ".github/workflows/mlc_llvm_static_wheel.yml"
   workflow_dispatch:
     inputs:
       package_version:
         description: Package version (LLVM is pinned to 23.1.1)
-        default: "23.1.1.dev0"
+        default: "23.1.1.dev1"
         required: true
       publish_release:
-        description: Upload verified wheels to a new draft GitHub prerelease
+        description: Upload both wheel families to a new draft GitHub prerelease
         default: false
         type: boolean
 
@@ -20,11 +21,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: llvm-sdk-cache-${{ github.workflow }}-${{ github.ref }}
+  group: llvm-sdk-split-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  PACKAGE_VERSION: ${{ inputs.package_version || '23.1.1.dev0' }}
+  PACKAGE_VERSION: ${{ inputs.package_version || '23.1.1.dev1' }}
 
 jobs:
   checks:
@@ -36,38 +37,33 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install pytest build
       - run: python -m pytest packages/mlc-llvm-static/tests -q
-      - name: Build source distribution
-        working-directory: packages/mlc-llvm-static
-        run: python -m build --sdist
+      - name: Build both source distributions
+        run: |
+          python -m build --sdist packages/mlc-llvm-static
+          python -m build --sdist packages/mlc-llvm-static-extra-targets
 
   build_wheels:
     needs: checks
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 180
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Linux x86_64
             os: ubuntu-latest
-            build: cp311-manylinux_x86_64
-            arch: x86_64
             tag: manylinux_2_28_x86_64
+            image: quay.io/pypa/manylinux_2_28_x86_64:latest
           - name: Linux aarch64
             os: ubuntu-24.04-arm
-            build: cp311-manylinux_aarch64
-            arch: aarch64
             tag: manylinux_2_28_aarch64
+            image: quay.io/pypa/manylinux_2_28_aarch64:latest
           - name: macOS arm64
             os: macos-15
-            build: cp311-macosx_arm64
-            arch: arm64
             tag: macosx_14_0_arm64
           - name: Windows AMD64
             os: windows-2022
-            build: cp311-win_amd64
-            arch: AMD64
             tag: win_amd64
     steps:
       - uses: actions/checkout@v4
@@ -77,82 +73,64 @@ jobs:
       - name: Initialize MSVC for Ninja
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
-      - name: Stamp package version
-        working-directory: packages/mlc-llvm-static
+      - name: Stamp both package versions
         shell: bash
         run: |
           python - <<'PY'
-          import os
-          import re
+          import os, re
           from pathlib import Path
-
           version = os.environ["PACKAGE_VERSION"]
           if not re.fullmatch(r"23\.1\.1(?:(?:a|b|rc)\d+|\.post\d+|\.dev\d+)?", version):
               raise SystemExit("Package version must be based on LLVM 23.1.1")
-          path = Path("src/mlc_llvm_static/_version.py")
-          text = path.read_text()
-          path.write_text(re.sub(r'__version__ = "[^"]+"', f'__version__ = "{version}"', text))
+          for name in ("mlc-llvm-static", "mlc-llvm-static-extra-targets"):
+              project = Path("packages") / name
+              metadata = project / "pyproject.toml"
+              metadata.write_text(re.sub(r"(mlc-llvm-static(?:-extra-targets)?==)[^\"\]]+", lambda m: m[1] + version, metadata.read_text()))
+              path = project / ("src/mlc_llvm_static/_version.py" if name == "mlc-llvm-static" else "version.py")
+              path.write_text(re.sub(r'__version__ = "[^"]+"', f'__version__ = "{version}"', path.read_text()))
           PY
-      - name: Restore compiled SDK
+      - name: Fingerprint compiled SDK recipe
+        id: recipe
+        shell: bash
+        run: python packages/mlc-llvm-static/scripts/cache_key.py >> "$GITHUB_OUTPUT"
+      - name: Restore compiled All-target SDK
         id: sdk_cache
         uses: actions/cache/restore@v4
         with:
           path: packages/mlc-llvm-static/.sdk-cache
-          key: llvm-sdk-${{ matrix.tag }}-${{ env.PACKAGE_VERSION }}-${{ hashFiles('packages/mlc-llvm-static/scripts/prepare_llvm.py', 'packages/mlc-llvm-static/CMakeLists.txt', 'packages/mlc-llvm-static/pyproject.toml', 'packages/mlc-llvm-static/src/mlc_llvm_static/_version.py') }}
-      - name: Build and verify wheel
+          key: llvm-all-sdk-${{ matrix.tag }}-${{ steps.recipe.outputs.key }}
+      - name: Build and verify Linux wheels in manylinux
+        if: runner.os == 'Linux'
         working-directory: packages/mlc-llvm-static
-        shell: bash
         env:
-          CIBW_BUILD: ${{ matrix.build }}
-          CIBW_ARCHS_LINUX: ${{ matrix.arch }}
-          CIBW_ARCHS_MACOS: ${{ matrix.arch }}
-          CIBW_ARCHS_WINDOWS: ${{ matrix.arch }}
-          CIBW_ENVIRONMENT: >-
-            MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1
-            MLC_LLVM_STATIC_USE_CACHE=1
-            CMAKE_BUILD_PARALLEL_LEVEL=4
-          CIBW_ENVIRONMENT_MACOS: >-
-            MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1
-            MLC_LLVM_STATIC_USE_CACHE=1
-            CMAKE_BUILD_PARALLEL_LEVEL=3
-            MACOSX_DEPLOYMENT_TARGET=14.0
+          IMAGE: ${{ matrix.image }}
+          PLATFORM_TAG: ${{ matrix.tag }}
         run: |
-          python -m pip install cibuildwheel==3.3.1
-          python -m cibuildwheel --output-dir wheelhouse .
-      - name: Set the verified platform tag
-        if: runner.os != 'Windows'
+          docker run --rm -v "$GITHUB_WORKSPACE:/project" -w /project/packages/mlc-llvm-static \
+            -e PLATFORM_TAG -e MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1 \
+            -e MLC_LLVM_STATIC_USE_CACHE=1 -e CMAKE_BUILD_PARALLEL_LEVEL=4 \
+            "$IMAGE" bash -c '
+              export PATH="/opt/python/cp311-cp311/bin:$PATH"
+              python -m pip install build scikit-build-core cmake ninja wheel
+              python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
+              python scripts/verify_split_wheels.py wheelhouse
+            '
+      - name: Build and verify macOS and Windows wheels
+        if: runner.os != 'Linux'
         working-directory: packages/mlc-llvm-static
         shell: bash
         env:
           PLATFORM_TAG: ${{ matrix.tag }}
+          MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD: "1"
+          MLC_LLVM_STATIC_USE_CACHE: "1"
+          CMAKE_BUILD_PARALLEL_LEVEL: "3"
+          MACOSX_DEPLOYMENT_TARGET: "14.0"
         run: |
-          python -m pip install wheel
-          python -m wheel tags --remove --platform-tag "$PLATFORM_TAG" wheelhouse/*.whl
-      - name: Keep compiled SDK for verification retries
-        if: always()
-        id: collect_cache
-        working-directory: packages/mlc-llvm-static
-        shell: bash
-        run: |
-          python - <<'PY'
-          import os
-          import shutil
-          from pathlib import Path
-
-          cache = Path(".sdk-cache")
-          wheels = list(Path("wheelhouse").glob("*.whl"))
-          if wheels:
-              cache.mkdir(exist_ok=True)
-              for previous in cache.glob("*.whl"):
-                  previous.unlink()
-              for wheel in wheels:
-                  shutil.copy2(wheel, cache / wheel.name)
-          if any(cache.glob("*.whl")):
-              with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-                  output.write("ready=true\n")
-          PY
-      - name: Save compiled SDK
-        if: always() && steps.collect_cache.outputs.ready == 'true' && steps.sdk_cache.outputs.cache-hit != 'true'
+          python -m pip install build scikit-build-core cmake ninja wheel
+          python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
+          python scripts/verify_split_wheels.py wheelhouse
+      - name: Save compiled SDK even if packaging or validation failed
+        if: always() && steps.sdk_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: packages/mlc-llvm-static/.sdk-cache
@@ -176,7 +154,7 @@ jobs:
           pattern: mlc-llvm-static-*
           path: dist
           merge-multiple: true
-      - name: Create draft prerelease with verified wheels and checksums
+      - name: Create draft prerelease with eight verified wheels and checksums
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -184,25 +162,24 @@ jobs:
           python - <<'PY'
           import hashlib
           from pathlib import Path
-
           wheels = sorted(Path("dist").glob("*.whl"))
-          if len(wheels) != 4:
-              raise SystemExit(f"Expected all four verified wheels, found {len(wheels)}")
+          if len(wheels) != 8:
+              raise SystemExit(f"Expected two wheel families for four platforms, found {len(wheels)}")
           Path("dist/SHA256SUMS").write_text("".join(
-              hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name + "\n"
-              for path in wheels
-          ))
+              hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name + "\n" for path in wheels))
           PY
           cat > release-notes.md <<'EOF'
-          Experimental LLVM 23.1.1 static SDK for downstream verification.
+          Experimental LLVM 23.1.1 static SDK with a Native base and All-target add-on.
 
-          Includes static LLVM libraries, headers, CMake metadata, llvm-config,
-          static zlib/zstd, and the Linux ORC runtime. Other LLVM tools are excluded.
-          The SDK includes the native CPU backend for each wheel's host platform.
+          Install mlc_llvm_static for your host platform for native code generation.
+          Install the matching mlc_llvm_static_extra_targets wheel to enable all
+          standard LLVM backends. Both wheels own disjoint files in one SDK prefix
+          and must come from the same SDK build. llvm-config is a Python frontend.
 
-          Each wheel passed payload integrity, relocation, static-link, and ORC JIT
-          checks. Install the wheel matching your platform with pip or a direct URL.
-          No distributions are uploaded to PyPI by this workflow.
+          Includes static zlib/zstd and the Linux host ORC runtime. Clang, linkers,
+          other LLVM tools, target sysroots, and experimental backends are excluded.
+          Validation covers both profiles, cross-target object generation, static
+          dependencies, relocation, and removal of the add-on. No PyPI upload.
           EOF
           gh release create "mlc-llvm-static-v${PACKAGE_VERSION}" dist/* \
             --target "$GITHUB_SHA" --draft --prerelease \

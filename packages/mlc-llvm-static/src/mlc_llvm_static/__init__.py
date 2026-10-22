@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import sysconfig
 from pathlib import Path
 from typing import Any
 
@@ -44,9 +45,23 @@ def get_library_dir() -> str:
 
 
 def get_llvm_config() -> str:
-    name = "llvm-config.exe" if os.name == "nt" else "llvm-config"
-    return _require(f"static/bin/{name}", executable=True)
+    if os.name == "nt":
+        path = Path(sysconfig.get_path("scripts")) / "llvm-config.exe"
+        if not path.is_file():
+            raise FileNotFoundError(f"The pip-installed llvm-config launcher is missing: {path}")
+        return str(path)
+    return _require("static/bin/llvm-config", executable=True)
 
 
-def metadata() -> dict[str, Any]:
-    return json.loads(Path(_require("staticlib.json")).read_text(encoding="utf-8"))
+def metadata(profile: str | None = None) -> dict[str, Any]:
+    from ._llvm_config import Configuration
+
+    config = Configuration(Path(get_prefix()), profile)
+    result = dict(config.base)
+    result["files"] = dict(result["files"])
+    if config.profile == "all":
+        result["files"].update(config.extra["files"])
+    result["targets"] = config.targets
+    result["profile"] = config.profile
+    result["archive_count"] = sum(name.endswith((".a", ".lib")) for name in result["files"])
+    return result
