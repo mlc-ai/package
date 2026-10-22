@@ -249,5 +249,17 @@ validation requirements:
 
 The published experimental wheels' earlier four-platform and downstream checks
 are recorded in [PR 115](https://github.com/mlc-ai/package/pull/115).
-The new dependency probes require their own validation; those earlier results
-do not establish their behavior on untested platforms.
+
+The [dependency validation run](https://github.com/mlc-ai/package/actions/runs/39806951525)
+passes on Linux x86_64/aarch64, macOS arm64, and Windows AMD64 against the
+existing `23.1.1.dev0` release wheels. Every platform passes 34 Python regression
+tests and both CMake-target and raw `llvm-config` link routes after relocation
+into a path containing spaces. Both routes execute the codec/error-path,
+compressed ELF/DWARF, export/dependency, and JIT checks; Linux additionally
+enforces the manylinux ABI ceilings. The isolated validation workflow downloads
+the pinned release assets and verifies SHA-256 checksums before installation.
+It does not compile LLVM or publish packages.
+
+These results validate the released native SDK profile. The concurrent
+Native/All split and Python frontend need their own artifact-based checks
+before their behavior can be considered verified.
