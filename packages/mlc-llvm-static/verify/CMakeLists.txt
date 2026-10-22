@@ -45,11 +45,17 @@ option(MLC_LLVM_USE_CONFIG_FLAGS "Link using llvm-config output instead of impor
 if(MLC_LLVM_USE_CONFIG_FLAGS)
   execute_process(
     COMMAND "${LLVM_TOOLS_BINARY_DIR}/llvm-config${CMAKE_EXECUTABLE_SUFFIX}"
-      --quote-paths --link-static --ldflags --libfiles --system-libs
+      --quote-paths --link-static --libfiles --system-libs
       Core OrcJIT Support native IRReader BitWriter Linker Passes Object DebugInfoDWARF
     OUTPUT_VARIABLE flags OUTPUT_STRIP_TRAILING_WHITESPACE
     COMMAND_ERROR_IS_FATAL ANY)
   separate_arguments(libraries NATIVE_COMMAND "${flags}")
+  execute_process(
+    COMMAND "${LLVM_TOOLS_BINARY_DIR}/llvm-config${CMAKE_EXECUTABLE_SUFFIX}"
+      --quote-paths --link-static --ldflags
+    OUTPUT_VARIABLE flags OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY)
+  separate_arguments(config_link_options NATIVE_COMMAND "${flags}")
 endif()
 add_library(mlc_llvm_probe SHARED main.cpp dependencies.cpp)
 target_include_directories(mlc_llvm_probe SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
@@ -57,6 +63,7 @@ separate_arguments(definitions NATIVE_COMMAND "${LLVM_DEFINITIONS}")
 target_compile_options(mlc_llvm_probe PRIVATE ${definitions})
 target_compile_features(mlc_llvm_probe PRIVATE cxx_std_17)
 target_link_libraries(mlc_llvm_probe PRIVATE ${libraries})
+target_link_options(mlc_llvm_probe PRIVATE ${config_link_options})
 
 # Static archives do not make their symbols private in a downstream DSO.
 # Exercise the export controls required when another LLVM can share a process.
