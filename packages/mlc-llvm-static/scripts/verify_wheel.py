@@ -14,14 +14,26 @@ import sys
 import tempfile
 from pathlib import Path
 
-import mlc_llvm_static as sdk
-
-
 def run(command: list[str | Path], *, capture: bool = False) -> str:
     command = [str(item) for item in command]
     print("+ " + shlex.join(command), flush=True)
     result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE if capture else None)
     return result.stdout.strip() if capture else ""
+
+
+def dynamic_sdk_dependencies(output: str) -> list[str]:
+    """Read library basenames from ldd, otool, or dumpbin output."""
+    pattern = re.compile(
+        r"^(?:lib)?(?:LLVM[^/\\]*|zlib[^/\\]*|zstd[^/\\]*|z(?:\.\d+)*)"
+        r"\.(?:so(?:\.\d+)*|dylib|dll)$", re.IGNORECASE,
+    )
+    dependencies = []
+    for line in output.splitlines():
+        candidate = line.strip().split(" => ", 1)[0].split(" (", 1)[0]
+        name = candidate.replace("\\", "/").rsplit("/", 1)[-1].rstrip(":")
+        if pattern.fullmatch(name):
+            dependencies.append(name)
+    return dependencies
 
 
 def verify_linux_abi(path: Path) -> None:
@@ -40,6 +52,8 @@ def verify_linux_abi(path: Path) -> None:
 
 
 def main() -> None:
+    import mlc_llvm_static as sdk
+
     metadata = sdk.metadata()
     original = Path(sdk.get_prefix())
     for relative, record in metadata["files"].items():
@@ -95,7 +109,7 @@ def main() -> None:
             dependencies = run(["otool", "-L", library], capture=True)
         else:
             dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
-        if re.search(r"(?:lib)?(?:LLVM|zstd|zlib)[^\s]*\.(?:so|dylib|dll)", dependencies, re.IGNORECASE):
+        if dynamic_sdk_dependencies(dependencies):
             raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
         probe = ctypes.CDLL(str(library))
         probe.mlc_llvm_probe.restype = ctypes.c_int
