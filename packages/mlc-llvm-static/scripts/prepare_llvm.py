@@ -179,9 +179,11 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
     variables.write_text(text[:line.start()] + normalized + text[line.end():], encoding="utf-8")
     install(build, "install-distribution")
     if platform.system() == "Linux":
+        triple = run([prefix / "bin" / "llvm-config", "--host-target"], capture=True)
         build = work / "build-orc"
         configure(source / "compiler-rt", build, prefix / "lib" / "clang" / "23", [
             f"-DLLVM_CMAKE_DIR={prefix / 'lib' / 'cmake' / 'llvm'}",
+            f"-DCMAKE_C_COMPILER_TARGET={triple}", f"-DCMAKE_CXX_COMPILER_TARGET={triple}",
             "-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON", "-DCOMPILER_RT_INCLUDE_TESTS=OFF",
             "-DCOMPILER_RT_BUILD_BUILTINS=OFF", "-DCOMPILER_RT_BUILD_SANITIZERS=OFF",
             "-DCOMPILER_RT_BUILD_XRAY=OFF", "-DCOMPILER_RT_BUILD_LIBFUZZER=OFF",
