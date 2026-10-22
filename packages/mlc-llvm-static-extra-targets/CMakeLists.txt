@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
 project(mlc_llvm_static_extra_targets LANGUAGES NONE)
-set(payload "$ENV{MLC_LLVM_STATIC_EXTRA_PAYLOAD}")
+file(TO_CMAKE_PATH "$ENV{MLC_LLVM_STATIC_EXTRA_PAYLOAD}" payload)
 if(NOT EXISTS "${payload}/static/share/mlc-llvm-static/extra.json")
   message(FATAL_ERROR "Build both SDK wheels with mlc-llvm-static/scripts/build_wheels.py; a matching extra-targets payload is required.")
 endif()
