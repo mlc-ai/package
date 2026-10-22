@@ -1,0 +1,51 @@
+[build-system]
+requires = ["scikit-build-core>=0.11", "cmake>=3.31", "ninja"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "mlc-llvm-static"
+dynamic = ["version"]
+description = "Relocatable LLVM static development libraries, headers, and CMake metadata"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0 WITH LLVM-exception AND Zlib AND BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+keywords = ["llvm", "static-library", "cmake", "compiler"]
+
+[project.urls]
+Repository = "https://github.com/mlc-ai/package"
+LLVM = "https://llvm.org/"
+
+[tool.scikit-build]
+cmake.version = ">=3.31"
+wheel.py-api = "py3"
+wheel.packages = ["src/mlc_llvm_static"]
+build-dir = "build/{wheel_tag}"
+sdist.exclude = ["build", "dist", "wheelhouse", "src/mlc_llvm_static/static", "src/mlc_llvm_static/licenses", "src/mlc_llvm_static/staticlib.json"]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "src/mlc_llvm_static/_version.py"
+
+[tool.cibuildwheel]
+# The interpreter runs the build; the payload has no Python ABI dependency.
+build = "cp311-*"
+skip = "*-musllinux_* *-manylinux_i686 *-win32 pp*"
+build-verbosity = 1
+test-requires = ["cmake>=3.31", "ninja"]
+test-command = "python {project}/scripts/verify_wheel.py"
+
+[tool.cibuildwheel.environment]
+MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD = "1"
+CMAKE_BUILD_PARALLEL_LEVEL = "2"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+# These archives are linked into a consumer by verify_wheel.py. auditwheel
+# cannot establish a static archive's downstream ABI by inspecting the wheel.
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.cibuildwheel.macos]
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
