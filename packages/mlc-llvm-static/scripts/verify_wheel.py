@@ -45,7 +45,8 @@ def exported_symbols(output: str, system: str) -> set[str]:
 
 def verify_linux_abi(path: Path) -> None:
     # Symbol ceilings from auditwheel's manylinux_2_28 policy for both release
-    # architectures. Inspect linked consumers, not just archive filenames.
+    # architectures. Check both the packaged
+    # llvm-config executable and a linked consumer, not just archive filenames.
     if platform.system() != "Linux":
         return
     output = run(["readelf", "--version-info", path], capture=True)
@@ -81,16 +82,16 @@ def main() -> None:
         root = Path(temporary)
         prefix = root / "relocated SDK with spaces"
         shutil.copytree(original, prefix)
-        command = [sys.executable, prefix / "bin/llvm-config.py"]
-        if any(path.name not in ("llvm-config", "llvm-config.py") for path in (prefix / "bin").iterdir()):
-            raise RuntimeError("SDK unexpectedly contains compiled LLVM tools")
-        if run([*command, "--version"], capture=True) != sdk.LLVM_VERSION:
+        executable = prefix / "bin" / Path(sdk.get_llvm_config()).name
+        if sorted(path.name for path in (prefix / "bin").iterdir()) != [executable.name]:
+            raise RuntimeError("SDK unexpectedly contains LLVM tools other than llvm-config")
+        if run([executable, "--version"], capture=True) != sdk.LLVM_VERSION:
             raise RuntimeError("LLVM version mismatch")
         for flag, expected in (("--prefix", prefix), ("--includedir", prefix / "include"),
                                ("--libdir", prefix / "lib"), ("--cmakedir", prefix / "lib/cmake/llvm")):
-            if Path(run([*command, flag], capture=True)).resolve() != expected.resolve():
+            if Path(run([executable, flag], capture=True)).resolve() != expected.resolve():
                 raise RuntimeError(f"llvm-config {flag} is not relocatable")
-        system_libs = run([*command, "--link-static", "--system-libs"], capture=True)
+        system_libs = run([executable, "--link-static", "--system-libs"], capture=True)
         if str(original) in system_libs or any(token.startswith(("/private/", "/tmp/", "/project/")) for token in shlex.split(system_libs)):
             raise RuntimeError(f"llvm-config retained build-time system library paths: {system_libs}")
         for path in prefix.rglob("*"):
@@ -99,6 +100,7 @@ def main() -> None:
         for path in (prefix / "lib" / "pkgconfig").glob("*.pc"):
             if "prefix=${pcfiledir}/../.." not in path.read_text(encoding="utf-8"):
                 raise RuntimeError(f"pkg-config metadata is not relocatable: {path}")
+        verify_linux_abi(executable)
         source = Path(__file__).resolve().parents[1] / "verify"
         for link_mode in ("cmake", "llvm-config"):
             build = root / link_mode
