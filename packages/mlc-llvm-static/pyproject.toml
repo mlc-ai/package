@@ -22,7 +22,7 @@ cmake.version = ">=3.31"
 wheel.py-api = "py3"
 wheel.packages = ["src/mlc_llvm_static"]
 build-dir = "build/{wheel_tag}"
-sdist.exclude = ["build", "dist", "wheelhouse", "src/mlc_llvm_static/static", "src/mlc_llvm_static/licenses", "src/mlc_llvm_static/staticlib.json"]
+sdist.exclude = ["build", "dist", "wheelhouse", ".sdk-cache", "src/mlc_llvm_static/static", "src/mlc_llvm_static/licenses", "src/mlc_llvm_static/staticlib.json"]
 
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
@@ -48,4 +48,7 @@ manylinux-aarch64-image = "manylinux_2_28"
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
 
 [tool.cibuildwheel.macos]
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.cibuildwheel.windows]
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"

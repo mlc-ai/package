@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: llvm-sdk-cache-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -93,6 +93,12 @@ jobs:
           text = path.read_text()
           path.write_text(re.sub(r'__version__ = "[^"]+"', f'__version__ = "{version}"', text))
           PY
+      - name: Restore compiled SDK
+        id: sdk_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/mlc-llvm-static/.sdk-cache
+          key: llvm-sdk-${{ matrix.tag }}-${{ env.PACKAGE_VERSION }}-${{ hashFiles('packages/mlc-llvm-static/scripts/prepare_llvm.py', 'packages/mlc-llvm-static/CMakeLists.txt', 'packages/mlc-llvm-static/pyproject.toml', 'packages/mlc-llvm-static/src/mlc_llvm_static/_version.py') }}
       - name: Build and verify wheel
         working-directory: packages/mlc-llvm-static
         shell: bash
@@ -103,9 +109,11 @@ jobs:
           CIBW_ARCHS_WINDOWS: ${{ matrix.arch }}
           CIBW_ENVIRONMENT: >-
             MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1
+            MLC_LLVM_STATIC_USE_CACHE=1
             CMAKE_BUILD_PARALLEL_LEVEL=4
           CIBW_ENVIRONMENT_MACOS: >-
             MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1
+            MLC_LLVM_STATIC_USE_CACHE=1
             CMAKE_BUILD_PARALLEL_LEVEL=3
             MACOSX_DEPLOYMENT_TARGET=14.0
         run: |
@@ -120,6 +128,35 @@ jobs:
         run: |
           python -m pip install wheel
           python -m wheel tags --remove --platform-tag "$PLATFORM_TAG" wheelhouse/*.whl
+      - name: Keep compiled SDK for verification retries
+        if: always()
+        id: collect_cache
+        working-directory: packages/mlc-llvm-static
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import shutil
+          from pathlib import Path
+
+          cache = Path(".sdk-cache")
+          wheels = list(Path("wheelhouse").glob("*.whl"))
+          if wheels:
+              cache.mkdir(exist_ok=True)
+              for previous in cache.glob("*.whl"):
+                  previous.unlink()
+              for wheel in wheels:
+                  shutil.copy2(wheel, cache / wheel.name)
+          if any(cache.glob("*.whl")):
+              with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+                  output.write("ready=true\n")
+          PY
+      - name: Save compiled SDK
+        if: always() && steps.collect_cache.outputs.ready == 'true' && steps.sdk_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: packages/mlc-llvm-static/.sdk-cache
+          key: ${{ steps.sdk_cache.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@v4
         with:
           name: mlc-llvm-static-${{ matrix.tag }}

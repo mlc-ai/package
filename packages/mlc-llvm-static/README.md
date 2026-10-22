@@ -83,6 +83,9 @@ and absence of unrequested tools/shared libraries. A shared consumer then parses
 LLVM IR, optimizes it, writes bitcode, and JIT-executes a function returning 42.
 The consumer must not depend on dynamic LLVM, zlib, or zstd. Linux also checks
 the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline.
+CI caches the compiled SDK by platform, package version, and build-recipe files.
+Verification-only changes repackage and recheck that SDK without recompiling
+LLVM. A cached SDK is always verified before it becomes a release artifact.
 
 Use remote build machines for LLVM compilation. Source builds are explicitly
 opt-in to avoid a lengthy accidental build when a wheel is unavailable:

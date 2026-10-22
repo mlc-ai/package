@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import tarfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 LLVM_VERSION = "23.1.1"
@@ -255,6 +256,38 @@ def relocate_pkgconfig(prefix: Path) -> None:
         path.write_text(text, encoding="utf-8")
 
 
+def cached_prefix(work: Path) -> Path | None:
+    """Restore a CI wheel cached under its exact build-recipe/platform key."""
+    if os.environ.get("MLC_LLVM_STATIC_USE_CACHE") != "1":
+        return None
+    cache = Path(__file__).resolve().parents[1] / ".sdk-cache"
+    wheels = sorted(cache.glob("*.whl"))
+    if not wheels:
+        return None
+    root = work / "cached-sdk"
+    if root.exists():
+        shutil.rmtree(root)
+    root.mkdir(parents=True)
+    with zipfile.ZipFile(wheels[0]) as archive:
+        for item in archive.infolist():
+            if item.is_dir() or not item.filename.startswith((
+                "mlc_llvm_static/static/", "mlc_llvm_static/licenses/",
+                "mlc_llvm_static/staticlib.json",
+            )):
+                continue
+            target = (root / item.filename).resolve()
+            if not target.is_relative_to(root.resolve()):
+                raise RuntimeError(f"Invalid cached SDK path: {item.filename}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(item) as source, target.open("wb") as destination:
+                shutil.copyfileobj(source, destination)
+            mode = (item.external_attr >> 16) & 0o777
+            if mode:
+                target.chmod(mode)
+    print(f"Reusing compiled SDK from {wheels[0].name}", flush=True)
+    return root / "mlc_llvm_static" / "static"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -264,7 +297,7 @@ def main() -> None:
     prefix = output / "static"
     output.mkdir(parents=True, exist_ok=True)
     work.mkdir(parents=True, exist_ok=True)
-    supplied = os.environ.get("MLC_LLVM_STATIC_PREFIX")
+    supplied = os.environ.get("MLC_LLVM_STATIC_PREFIX") or cached_prefix(work)
     if supplied:
         supplied = Path(supplied).resolve()
         package = supplied.parent

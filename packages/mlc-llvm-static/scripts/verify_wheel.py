@@ -2,7 +2,6 @@
 """Exercise the installed wheel after relocating its SDK, including ORC JIT."""
 from __future__ import annotations
 
-import ctypes
 import hashlib
 import os
 import platform
@@ -111,10 +110,17 @@ def main() -> None:
             dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
         if dynamic_sdk_dependencies(dependencies):
             raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
-        probe = ctypes.CDLL(str(library))
-        probe.mlc_llvm_probe.restype = ctypes.c_int
-        if probe.mlc_llvm_probe() != 42:
-            raise RuntimeError("LLVM consumer did not generate and JIT-execute the expected result")
+        # A child process releases the DLL before TemporaryDirectory cleanup on
+        # Windows, where a loaded DLL cannot be deleted.
+        run([sys.executable, "-c", """
+import ctypes
+import sys
+probe = ctypes.CDLL(sys.argv[1])
+probe.mlc_llvm_probe.restype = ctypes.c_int
+result = probe.mlc_llvm_probe()
+if result != 42:
+    raise SystemExit(f"LLVM consumer returned {result}, expected 42")
+""", library])
     print(f"Verified LLVM {sdk.LLVM_VERSION}: {metadata['archive_count']} archives; targets: {metadata['targets']}")
 
 
