@@ -23,7 +23,8 @@ def run(command: list[str | Path], *, capture: bool = False) -> str:
 def dynamic_sdk_dependencies(output: str) -> list[str]:
     """Read library basenames from ldd, otool, or dumpbin output."""
     pattern = re.compile(
-        r"^(?:lib)?(?:LLVM[^/\\]*|zlib[^/\\]*|zstd[^/\\]*|z(?:\.\d+)*)"
+        r"^(?:lib)?(?:LLVM[^/\\]*|zlib[^/\\]*|zstd[^/\\]*|z(?:\.\d+)*|"
+        r"(?:xml2|edit|ffi|z3|curl|(?:cpp-)?httplib|pfm|icu[^/\\]*|iconv|tinfo|ncurses[^/\\]*|msdia)[^/\\]*)"
         r"\.(?:so(?:\.\d+)*|dylib|dll)$", re.IGNORECASE,
     )
     dependencies = []
@@ -35,10 +36,16 @@ def dynamic_sdk_dependencies(output: str) -> list[str]:
     return dependencies
 
 
+def exported_symbols(output: str, system: str) -> set[str]:
+    """Read nm -D --format=posix, nm -gUj, or dumpbin /EXPORTS output."""
+    if system == "Windows":
+        return set(re.findall(r"^\s*\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)", output, re.MULTILINE))
+    return {line.split()[0] for line in output.splitlines() if line.strip()}
+
+
 def verify_linux_abi(path: Path) -> None:
     # Symbol ceilings from auditwheel's manylinux_2_28 policy for both release
-    # architectures. Check both the packaged
-    # llvm-config executable and a linked consumer, not just archive filenames.
+    # architectures. Inspect linked consumers, not just archive filenames.
     if platform.system() != "Linux":
         return
     output = run(["readelf", "--version-info", path], capture=True)
@@ -55,6 +62,10 @@ def main() -> None:
 
     metadata = sdk.metadata()
     original = Path(sdk.get_prefix())
+    if run([sdk.get_llvm_config(), "--version"], capture=True) != sdk.LLVM_VERSION:
+        raise RuntimeError("The installed llvm-config launcher returned an incorrect version")
+    if Path(run([sdk.get_llvm_config(), "--prefix"], capture=True)).resolve() != original.resolve():
+        raise RuntimeError("The installed llvm-config launcher resolved a different SDK")
     for relative, record in metadata["files"].items():
         path = original / relative
         if not path.is_file():
@@ -74,16 +85,17 @@ def main() -> None:
         root = Path(temporary)
         prefix = root / "relocated SDK with spaces"
         shutil.copytree(original, prefix)
-        executable = prefix / "bin" / Path(sdk.get_llvm_config()).name
-        if sorted(path.name for path in (prefix / "bin").iterdir()) != [executable.name]:
-            raise RuntimeError("SDK unexpectedly contains LLVM tools other than llvm-config")
-        if run([executable, "--version"], capture=True) != sdk.LLVM_VERSION:
+        command = [sys.executable, prefix / "bin/llvm-config.py"]
+        if any(path.is_file() and path.name not in ("llvm-config", "llvm-config.py")
+               for path in (prefix / "bin").iterdir()):
+            raise RuntimeError("SDK unexpectedly contains compiled LLVM tools")
+        if run([*command, "--version"], capture=True) != sdk.LLVM_VERSION:
             raise RuntimeError("LLVM version mismatch")
         for flag, expected in (("--prefix", prefix), ("--includedir", prefix / "include"),
                                ("--libdir", prefix / "lib"), ("--cmakedir", prefix / "lib/cmake/llvm")):
-            if Path(run([executable, flag], capture=True)).resolve() != expected.resolve():
+            if Path(run([*command, flag], capture=True)).resolve() != expected.resolve():
                 raise RuntimeError(f"llvm-config {flag} is not relocatable")
-        system_libs = run([executable, "--link-static", "--system-libs"], capture=True)
+        system_libs = run([*command, "--link-static", "--system-libs"], capture=True)
         if str(original) in system_libs or any(token.startswith(("/private/", "/tmp/", "/project/")) for token in shlex.split(system_libs)):
             raise RuntimeError(f"llvm-config retained build-time system library paths: {system_libs}")
         for path in prefix.rglob("*"):
@@ -92,27 +104,44 @@ def main() -> None:
         for path in (prefix / "lib" / "pkgconfig").glob("*.pc"):
             if "prefix=${pcfiledir}/../.." not in path.read_text(encoding="utf-8"):
                 raise RuntimeError(f"pkg-config metadata is not relocatable: {path}")
-        verify_linux_abi(executable)
         source = Path(__file__).resolve().parents[1] / "verify"
-        build = root / "build"
-        run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
-             "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
-             f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}"])
-        run(["cmake", "--build", build, "--parallel", "2"])
-        library = next(path for path in build.rglob("*mlc_llvm_probe*")
-                       if path.suffix in (".dll", ".so", ".dylib"))
-        verify_linux_abi(library)
-        if platform.system() == "Linux":
-            dependencies = run(["ldd", library], capture=True)
-        elif platform.system() == "Darwin":
-            dependencies = run(["otool", "-L", library], capture=True)
-        else:
-            dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
-        if dynamic_sdk_dependencies(dependencies):
-            raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
-        # A child process releases the DLL before TemporaryDirectory cleanup on
-        # Windows, where a loaded DLL cannot be deleted.
-        run([sys.executable, "-c", """
+        for link_mode in ("cmake", "llvm-config"):
+            build = root / link_mode
+            run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
+                 "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
+                 f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}",
+                 f"-DMLC_LLVM_USE_CONFIG_FLAGS={'ON' if link_mode == 'llvm-config' else 'OFF'}"])
+            run(["cmake", "--build", build, "--parallel", "2"])
+            library = next(path for path in build.rglob("*mlc_llvm_probe*")
+                           if path.suffix in (".dll", ".so", ".dylib"))
+            verify_linux_abi(library)
+            if platform.system() == "Linux":
+                dependencies = run(["ldd", library], capture=True)
+            elif platform.system() == "Darwin":
+                dependencies = run(["otool", "-L", library], capture=True)
+            else:
+                dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
+            if dynamic_sdk_dependencies(dependencies):
+                raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
+            system = platform.system()
+            if system == "Linux":
+                symbols = run(["nm", "-D", "--defined-only", "--format=posix", library], capture=True)
+            elif system == "Darwin":
+                symbols = run(["nm", "-gUj", library], capture=True)
+            else:
+                symbols = run(["dumpbin", "/EXPORTS", library], capture=True)
+            expected = "_mlc_llvm_probe" if system == "Darwin" else "mlc_llvm_probe"
+            allowed = {expected}
+            if system == "Windows":
+                # LLVM_ALWAYS_EXPORT in OrcTargetProcess/JITLoaderGDB.cpp
+                # embeds /EXPORT directives in these static archive members.
+                allowed.update({"__jit_debug_descriptor", "__jit_debug_register_code"})
+            exports = exported_symbols(symbols, system)
+            if expected not in exports or exports - allowed:
+                raise RuntimeError(f"Consumer exposes unexpected symbols:\n{symbols}")
+            # A child process releases the DLL before TemporaryDirectory cleanup on
+            # Windows, where a loaded DLL cannot be deleted.
+            run([sys.executable, "-c", """
 import ctypes
 import sys
 probe = ctypes.CDLL(sys.argv[1])
@@ -120,7 +149,7 @@ probe.mlc_llvm_probe.restype = ctypes.c_int
 result = probe.mlc_llvm_probe()
 if result != 42:
     raise SystemExit(f"LLVM consumer returned {result}, expected 42")
-""", library])
+            """, library])
     print(f"Verified LLVM {sdk.LLVM_VERSION}: {metadata['archive_count']} archives; targets: {metadata['targets']}")
 
 

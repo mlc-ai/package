@@ -12,8 +12,8 @@ endif()
 
 set(stage "${CMAKE_BINARY_DIR}/staged/mlc_llvm_static")
 add_custom_target(stage_mlc_llvm_static ALL
-  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare_llvm.py"
-    --output "${stage}" --work-root "${CMAKE_BINARY_DIR}/llvm-build"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/build_wheels.py"
+    --stage-native "${stage}" --work-root "${CMAKE_BINARY_DIR}/llvm-build"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   COMMENT "Preparing the LLVM static development SDK"
   VERBATIM)
