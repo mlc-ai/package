@@ -169,6 +169,13 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         "-DLLVM_ENABLE_DIA_SDK=OFF", "-DLLVM_ENABLE_BINDINGS=OFF",
         "-DLLVM_ENABLE_ICU=OFF", "-DLLVM_ENABLE_ICONV=OFF",
     ]
+    # Some excluded tool directories define exported libraries of their own
+    # (e.g. LLVMExegesisX86). Prevent those from leaking backend dependencies
+    # into the base export set. Keep only the build-time reference executable.
+    for tool in sorted((source / "llvm/tools").iterdir()):
+        if tool.is_dir() and (tool / "CMakeLists.txt").is_file():
+            name = tool.name.upper().replace("-", "_")
+            options.append(f"-DLLVM_TOOL_{name}_BUILD={'ON' if tool.name == 'llvm-config' else 'OFF'}")
     configure(source / "llvm", build, prefix, options)
     # Configure once to obtain LLVM's actual component graph, then assign the
     # backend libraries to upstream's separate CMake export sets. No LLVM

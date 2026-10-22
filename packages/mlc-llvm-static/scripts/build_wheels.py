@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -55,14 +56,24 @@ def stage(native: Path, work: Path) -> Path | None:
     from mlc_llvm_static._llvm_config import Configuration
     config = Configuration(native / "static", "native")
     executable = raw / "static/bin" / ("llvm-config.exe" if os.name == "nt" else "llvm-config")
-    for component in sorted(config.components):
-        if component in ("all", "all-targets"):
-            continue
-        expected = subprocess.check_output([str(executable), "--link-static", "--libnames", component], text=True).strip()
-        actual = config.query(["--link-static", "--libnames", component]).strip()
-        if actual != expected:
-            raise RuntimeError(f"Python llvm-config differs from upstream for {component}: {actual!r} != {expected!r}")
-    print(f"Compared {len(config.components) - 2} native component queries with upstream llvm-config", flush=True)
+    for profile in ("native", "all"):
+        reference = copy.copy(config)
+        # The raw prefix contains every archive; this comparison does not need
+        # to mutate either installed payload or install the add-on prematurely.
+        reference.prefix = raw / "static"
+        reference.profile = profile
+        reference.components = config.base["profiles"][profile]["components"]
+        reference.libraries = config.base["profiles"][profile]["libraries"]
+        count = 0
+        for component in sorted(reference.components):
+            if profile == "native" and component in ("all", "all-targets"):
+                continue
+            expected = subprocess.check_output([str(executable), "--link-static", "--libnames", component], text=True).strip()
+            actual = reference.query(["--link-static", "--libnames", component]).strip()
+            if actual != expected:
+                raise RuntimeError(f"Python llvm-config differs from upstream for {profile}/{component}: {actual!r} != {expected!r}")
+            count += 1
+        print(f"Compared {count} {profile} component queries with upstream llvm-config", flush=True)
     return extra
 
 
