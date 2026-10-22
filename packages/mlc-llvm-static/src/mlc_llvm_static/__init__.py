@@ -1,9 +1,9 @@
 """Locate the installed LLVM development SDK; importing never downloads files."""
 from __future__ import annotations
 
-import json
 import os
 import sysconfig
+from importlib.metadata import distribution
 from pathlib import Path
 from typing import Any
 
@@ -46,11 +46,24 @@ def get_library_dir() -> str:
 
 def get_llvm_config() -> str:
     if os.name == "nt":
-        path = Path(sysconfig.get_path("scripts")) / "llvm-config.exe"
-        if not path.is_file():
-            raise FileNotFoundError(f"The pip-installed llvm-config launcher is missing: {path}")
-        return str(path)
+        return _windows_launcher()
     return _require("static/bin/llvm-config", executable=True)
+
+
+def _windows_launcher() -> str:
+    # RECORD knows the actual installation scheme, including pip --user.
+    # Looking only in sysconfig's default Scripts directory misses user installs;
+    # searching PATH could accidentally return a different LLVM distribution.
+    installed = distribution("mlc-llvm-static")
+    for record in installed.files or []:
+        if record.name.lower() == "llvm-config.exe":
+            path = Path(installed.locate_file(record)).resolve()
+            if path.is_file():
+                return str(path)
+    path = Path(sysconfig.get_path("scripts")) / "llvm-config.exe"
+    if not path.is_file():
+        raise FileNotFoundError(f"The pip-installed llvm-config launcher is missing: {path}")
+    return str(path)
 
 
 def metadata(profile: str | None = None) -> dict[str, Any]:
