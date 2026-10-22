@@ -158,7 +158,7 @@ jobs:
 
           Includes static LLVM libraries, headers, CMake metadata, llvm-config,
           static zlib/zstd, and the Linux ORC runtime. Other LLVM tools are excluded.
-          Targets: X86, AArch64, ARM, NVPTX, AMDGPU, Hexagon, RISCV, WebAssembly.
+          The SDK includes the native CPU backend for each wheel's host platform.
 
           Each wheel passed payload integrity, relocation, static-link, and ORC JIT
           checks. Install the wheel matching your platform with pip or a direct URL.

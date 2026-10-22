@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 
 LLVM_VERSION = "23.1.1"
-DEFAULT_TARGETS = "X86;AArch64;ARM;NVPTX;AMDGPU;Hexagon;RISCV;WebAssembly"
+DEFAULT_TARGETS = "Native"
 SOURCES = {
     "llvm": {
         "version": LLVM_VERSION,
@@ -245,6 +245,13 @@ def validate_prefix(prefix: Path) -> dict:
     }
 
 
+def relocate_pkgconfig(prefix: Path) -> None:
+    for path in (prefix / "lib" / "pkgconfig").glob("*.pc"):
+        text = path.read_text(encoding="utf-8")
+        text = re.sub(r"^prefix=.*$", "prefix=${pcfiledir}/../..", text, flags=re.MULTILINE)
+        path.write_text(text, encoding="utf-8")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -276,6 +283,7 @@ def main() -> None:
     build_dependencies(work, prefix)
     source = source_tree("llvm", work)
     build_llvm(source, work, prefix)
+    relocate_pkgconfig(prefix)
     details = validate_prefix(prefix)
     licenses = output / "licenses"
     licenses.mkdir(exist_ok=True)

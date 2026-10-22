@@ -12,9 +12,11 @@ The SDK contains:
 - Static zlib 1.3.1 and zstd 1.5.7, with their headers and license notices.
 - The matching ORC runtime archive on Linux.
 
-Targets in release builds: X86, AArch64, ARM, NVPTX, AMDGPU, Hexagon, RISCV, and
-WebAssembly. Other LLVM tools, Clang, LLD, MLIR, and shared LLVM libraries are
-excluded. Optional compilers and vendor toolchains remain separate dependencies.
+The first release matches the existing native-target LLVM archives: X86 on
+x86_64/AMD64 hosts and AArch64 on arm64/aarch64 hosts. Additional code-generation
+backends are explicit build overrides, rather than part of the initial release.
+Other LLVM tools, Clang, LLD, MLIR, and shared LLVM libraries are excluded.
+Optional compilers and vendor toolchains remain separate dependencies.
 
 The wheel is a **build dependency**. Statically linked downstream wheels do not
 need to depend on this SDK at runtime.
@@ -94,8 +96,8 @@ overrides:
 - `MLC_LLVM_STATIC_SOURCE_CACHE`: reusable directory of downloaded source archives.
 - `MLC_LLVM_STATIC_LLVM_SOURCE_DIR`, `MLC_LLVM_STATIC_ZLIB_SOURCE_DIR`, and
   `MLC_LLVM_STATIC_ZSTD_SOURCE_DIR`: explicit source trees for development.
-- `MLC_LLVM_STATIC_TARGETS`: semicolon-separated targets (for example `Native`)
-  for development builds; use a distinct package version for altered payloads.
+- `MLC_LLVM_STATIC_TARGETS`: semicolon-separated targets (default `Native`);
+  use a distinct package version when adding other backends.
 - `MLC_LLVM_STATIC_PREFIX`: package an SDK already produced by this build script.
   Its parent must also contain the generated `licenses/` and `staticlib.json`.
 
