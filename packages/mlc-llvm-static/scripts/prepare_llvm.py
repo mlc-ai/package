@@ -152,6 +152,7 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         "-DLLVM_INCLUDE_EXAMPLES=OFF", "-DLLVM_INCLUDE_DOCS=OFF",
         "-DLLVM_TOOL_LTO_BUILD=OFF", "-DLLVM_TOOL_REMARKS_SHLIB_BUILD=OFF",
         "-DBUILD_SHARED_LIBS=OFF", "-DLLVM_BUILD_LLVM_DYLIB=OFF",
+        "-DLLVM_BUILD_LLVM_C_DYLIB=OFF",
         "-DLLVM_LINK_LLVM_DYLIB=OFF", "-DLLVM_ENABLE_PIC=ON",
         "-DLLVM_ENABLE_LTO=OFF", "-DLLVM_ENABLE_ASSERTIONS=OFF",
         "-DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF", "-DLLVM_ENABLE_RTTI=ON",
@@ -160,7 +161,9 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         "-DLLVM_ENABLE_ZSTD=FORCE_ON", "-DLLVM_USE_STATIC_ZSTD=ON", "-DLLVM_ENABLE_LIBXML2=OFF",
         "-DLLVM_ENABLE_LIBEDIT=OFF", "-DLLVM_ENABLE_FFI=OFF",
         "-DLLVM_ENABLE_Z3_SOLVER=OFF", "-DLLVM_ENABLE_CURL=OFF",
-        "-DLLVM_ENABLE_HTTPLIB=OFF",
+        "-DLLVM_ENABLE_HTTPLIB=OFF", "-DLLVM_ENABLE_LIBPFM=OFF",
+        "-DLLVM_ENABLE_DIA_SDK=OFF", "-DLLVM_ENABLE_BINDINGS=OFF",
+        "-DLLVM_ENABLE_ICU=OFF", "-DLLVM_ENABLE_ICONV=OFF",
     ])
     # Upstream llvm-config embeds the absolute zstd archive location in
     # LLVM_SYSTEM_LIBS when zstd is static. Emit a library name instead, using

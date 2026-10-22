@@ -17,6 +17,8 @@ x86_64/AMD64 hosts and AArch64 on arm64/aarch64 hosts. Additional code-generatio
 backends are explicit build overrides, rather than part of the initial release.
 Other LLVM tools, Clang, LLD, MLIR, and shared LLVM libraries are excluded.
 Optional compilers and vendor toolchains remain separate dependencies.
+Optional DIA SDK, libpfm, ICU, iconv, and language-binding integrations are
+disabled to keep the SDK independent of packages installed on its build host.
 
 The wheel is a **build dependency**. Statically linked downstream wheels do not
 need to depend on this SDK at runtime.
