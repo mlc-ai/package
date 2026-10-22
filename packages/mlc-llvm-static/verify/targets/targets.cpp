@@ -1,4 +1,5 @@
 #include <llvm/ADT/SmallVector.h>
+#include <llvm/Config/Targets.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IRReader/IRReader.h>
@@ -12,6 +13,20 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
+
+#if defined(MLC_LLVM_EXPECT_ALL_PROFILE)
+#if !LLVM_HAS_X86_TARGET || !LLVM_HAS_AARCH64_TARGET || !LLVM_HAS_RISCV_TARGET
+#error All-profile target-availability headers are inconsistent
+#endif
+#elif defined(MLC_LLVM_EXPECT_NATIVE_X86)
+#if !LLVM_HAS_X86_TARGET || LLVM_HAS_AARCH64_TARGET || LLVM_HAS_RISCV_TARGET
+#error Native X86 target-availability headers are inconsistent
+#endif
+#elif defined(MLC_LLVM_EXPECT_NATIVE_AArch64)
+#if LLVM_HAS_X86_TARGET || !LLVM_HAS_AARCH64_TARGET || LLVM_HAS_RISCV_TARGET
+#error Native AArch64 target-availability headers are inconsistent
+#endif
+#endif
 
 int main(int argc, char** argv) {
   // These expand the selected generated headers. A profile/library mismatch
@@ -47,6 +62,10 @@ int main(int argc, char** argv) {
         llvm::MemoryBufferRef(llvm::StringRef(bytes.data(), bytes.size()), "cross-object"));
     if (!object) { llvm::logAllUnhandledErrors(object.takeError(), llvm::errs()); return 5; }
     if ((*object)->getArch() != triple.getArch()) return 6;
+    if (triple.isOSBinFormatELF() && !(*object)->isELF()) return 8;
+    if (triple.isOSBinFormatCOFF() && !(*object)->isCOFF()) return 9;
+    if (triple.isOSBinFormatMachO() && !(*object)->isMachO()) return 10;
+    if (triple.isOSBinFormatWasm() && !(*object)->isWasm()) return 11;
     llvm::outs() << "Verified object generation: " << triple.str() << '\n';
   }
   return argc > 1 ? 0 : 7;

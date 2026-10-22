@@ -136,6 +136,7 @@ def test_split_removes_reference_executable_and_keeps_disjoint_ownership(tmp_pat
     import shutil
     shutil.copytree(prefix, raw / "static")
     static = raw / "static"
+    (static / "share/mlc-llvm-static/base.json").unlink()
     config = static / "lib/cmake/llvm"
     config.mkdir(parents=True)
     (config / "LLVMConfig.cmake").write_text(
@@ -172,3 +173,5 @@ def test_split_removes_reference_executable_and_keeps_disjoint_ownership(tmp_pat
     assert "LLVMReferenceExports" not in (native / "static/lib/cmake/llvm/LLVMConfig.cmake").read_text()
     assert not (native / "static/bin/llvm-config.exe").exists()
     assert Configuration(native / "static").targets == ["X86"]
+    from prepare_llvm import validate_prefix
+    validate_prefix(native / "static")

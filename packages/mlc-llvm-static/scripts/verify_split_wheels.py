@@ -24,7 +24,8 @@ def targets(profile: str):
     config = Configuration(Path(prefix), profile)
     triples = [config.base["host_target"]] if profile == "native" else [
         "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu",
-        "riscv64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+        "riscv64-unknown-linux-gnu", "wasm32-unknown-unknown",
+        "x86_64-pc-windows-msvc", "aarch64-apple-macosx14.0.0"]
     with tempfile.TemporaryDirectory(prefix="llvm-cross-profile-") as directory:
         build = Path(directory)
         run(["cmake", "-S", Path(__file__).resolve().parents[1] / "verify/targets", "-B", build,
@@ -32,6 +33,8 @@ def targets(profile: str):
              f"-DLLVM_DIR={sdk.get_cmake_dir()}", f"-DMLC_LLVM_STATIC_PROFILE={profile}"], env=env)
         run(["cmake", "--build", build, "--parallel", "2"], env=env)
         program = build / ("mlc_llvm_targets.exe" if os.name == "nt" else "mlc_llvm_targets")
+        from verify_wheel import verify_linux_abi
+        verify_linux_abi(program)
         run([program, *triples], env=env)
 
 

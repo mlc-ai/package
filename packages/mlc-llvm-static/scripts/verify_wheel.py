@@ -62,6 +62,10 @@ def main() -> None:
 
     metadata = sdk.metadata()
     original = Path(sdk.get_prefix())
+    if run([sdk.get_llvm_config(), "--version"], capture=True) != sdk.LLVM_VERSION:
+        raise RuntimeError("The installed llvm-config launcher returned an incorrect version")
+    if Path(run([sdk.get_llvm_config(), "--prefix"], capture=True)).resolve() != original.resolve():
+        raise RuntimeError("The installed llvm-config launcher resolved a different SDK")
     for relative, record in metadata["files"].items():
         path = original / relative
         if not path.is_file():

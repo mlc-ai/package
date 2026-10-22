@@ -26,7 +26,8 @@ SOURCES = {
     },
     "zlib": {
         "version": "1.3.1",
-        "url": "https://zlib.net/fossils/zlib-1.3.1.tar.gz",
+        "url": "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz",
+        "mirrors": ["https://zlib.net/fossils/zlib-1.3.1.tar.gz"],
         "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
     },
     "zstd": {
@@ -67,12 +68,21 @@ def source_tree(name: str, work: Path) -> Path:
     archive = cache / filename
     if not archive.is_file() or sha256(archive) != spec["sha256"]:
         temporary = archive.with_name(filename + ".part")
-        with urllib.request.urlopen(spec["url"], timeout=120) as response, temporary.open("wb") as stream:
-            shutil.copyfileobj(response, stream)
-        if sha256(temporary) != spec["sha256"]:
-            temporary.unlink()
-            raise RuntimeError(f"Source checksum mismatch: {filename}")
-        temporary.replace(archive)
+        errors = []
+        for url in [spec["url"], *spec.get("mirrors", [])]:
+            try:
+                with urllib.request.urlopen(url, timeout=120) as response, temporary.open("wb") as stream:
+                    shutil.copyfileobj(response, stream)
+                actual = sha256(temporary)
+                if actual != spec["sha256"]:
+                    raise RuntimeError(f"checksum {actual}, expected {spec['sha256']}")
+                temporary.replace(archive)
+                break
+            except (OSError, RuntimeError) as error:
+                temporary.unlink(missing_ok=True)
+                errors.append(f"{url}: {error}")
+        else:
+            raise RuntimeError(f"Could not fetch verified source {filename}: " + "; ".join(errors))
     destination = work / "sources" / name
     stamp = destination / ".mlc-source-sha256"
     if stamp.is_file() and stamp.read_text() == spec["sha256"]:

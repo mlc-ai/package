@@ -48,6 +48,11 @@ def stage(native: Path, work: Path) -> Path | None:
                     if path.is_file():
                         archive.write(path, "mlc_llvm_static/" + path.relative_to(raw).as_posix())
             temporary.replace(cache)
+    if (os.environ.get("MLC_LLVM_STATIC_CLEAN_BUILD") == "1"
+            and source_work.resolve() == (work / "source-build").resolve()):
+        # The raw SDK and its component graph are now complete. Free only our
+        # managed build tree before making/installing multiple wheel payloads.
+        shutil.rmtree(source_work)
     extra = native.parent / "extra/mlc_llvm_static"
     split_sdk(raw, native, extra, version(), PROJECT / "src/mlc_llvm_static/_llvm_config.py")
     # Upstream's executable remains in the raw build/cache, never either wheel.
@@ -85,6 +90,8 @@ def build(output: Path, work: Path, tag: str | None) -> None:
     env = dict(os.environ, MLC_LLVM_STATIC_PREFIX=str(native / "static"),
                MLC_LLVM_STATIC_EXTRA_PAYLOAD=str(extra))
     destination = work / "wheels"
+    if destination.exists():
+        shutil.rmtree(destination)
     destination.mkdir(parents=True, exist_ok=True)
     for project in (PROJECT, PROJECT.parent / "mlc-llvm-static-extra-targets"):
         run([sys.executable, "-m", "build", "--wheel", "--no-isolation", "--outdir", destination, project], env=env)
