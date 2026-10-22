@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     if (!target) { llvm::errs() << error << '\n'; return 1; }
     llvm::TargetOptions options;
     std::unique_ptr<llvm::TargetMachine> machine(
-        target->createTargetMachine(triple, "generic", "", options, llvm::Reloc::PIC_));
+        target->createTargetMachine(triple, "", "", options, llvm::Reloc::PIC_));
     if (!machine) return 2;
     llvm::LLVMContext context;
     llvm::SMDiagnostic diagnostic;

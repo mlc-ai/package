@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 from mlc_llvm_static._llvm_config import Configuration, ConfigurationError
-from split_sdk import filter_headers, partitions, read_components
+from split_sdk import filter_headers, partitions, read_components, split_sdk
 
 
 @pytest.fixture
@@ -127,3 +127,48 @@ def test_component_table_requires_complete_graph(tmp_path):
     path.write_text("Unexpected future LLVM component format")
     with pytest.raises(RuntimeError, match="Unrecognized"):
         read_components(path)
+
+
+@pytest.mark.parametrize("system", ["Linux", "Windows"])
+def test_split_removes_reference_executable_and_keeps_disjoint_ownership(tmp_path, sdk, system):
+    prefix, _, base_metadata = sdk
+    raw = tmp_path / "raw"
+    import shutil
+    shutil.copytree(prefix, raw / "static")
+    static = raw / "static"
+    config = static / "lib/cmake/llvm"
+    config.mkdir(parents=True)
+    (config / "LLVMConfig.cmake").write_text(
+        'set(LLVM_AVAILABLE_LIBS LLVMCore;LLVMSupport;LLVMX86CodeGen;LLVMARMCodeGen)\n'
+        'set(LLVM_TARGETS_TO_BUILD X86;ARM)\n'
+        'include("${LLVM_CMAKE_DIR}/LLVMBaseExports.cmake" OPTIONAL)\n'
+        'include("${LLVM_CMAKE_DIR}/LLVMExtraExports.cmake" OPTIONAL)\n'
+        'include("${LLVM_CMAKE_DIR}/LLVMReferenceExports.cmake" OPTIONAL)\n')
+    for name in ("Base", "Extra", "Reference"):
+        (config / f"LLVM{name}Exports.cmake").write_text("# fixture export set\n")
+    headers = static / "include/llvm/Config"
+    headers.mkdir(parents=True)
+    (headers / "Targets.def").write_text("LLVM_TARGET(X86)\nLLVM_TARGET(ARM)\n#undef LLVM_TARGET\n")
+    (headers / "Targets.h").write_text("#define LLVM_HAS_X86_TARGET 1\n#define LLVM_HAS_ARM_TARGET 1\n")
+    (static / "bin").mkdir()
+    (static / "bin" / ("llvm-config.exe" if system == "Windows" else "llvm-config")).write_bytes(b"reference executable")
+    (raw / "licenses").mkdir()
+    (raw / "licenses/LLVM.txt").write_text("fixture license")
+    metadata = {"llvm_version": "23.1.1", "system": system, "build": base_metadata["build"], "files": {}}
+    (raw / "staticlib.json").write_text(json.dumps(metadata))
+    data = {"components": base_metadata["profiles"]["all"]["components"],
+            "native_components": base_metadata["profiles"]["native"]["components"],
+            "extra_libraries": ["LLVMARMCodeGen"], "native": "X86", "targets": ["X86", "ARM"],
+            "flags": base_metadata["flags"], "host_target": base_metadata["host_target"]}
+    (static / "share/mlc-llvm-static/build.json").write_text(json.dumps(data))
+    native, extra = tmp_path / "native", tmp_path / "extra"
+    split_sdk(raw, native, extra, "23.1.1.dev1", ROOT / "src/mlc_llvm_static/_llvm_config.py")
+    native_files = {p.relative_to(native / "static") for p in (native / "static").rglob("*") if p.is_file()}
+    extra_files = {p.relative_to(extra / "static") for p in (extra / "static").rglob("*") if p.is_file()}
+    assert not native_files & extra_files
+    assert Path("lib/libLLVMARMCodeGen.a") not in native_files
+    assert Path("lib/libLLVMARMCodeGen.a") in extra_files
+    assert not list((native / "static/lib/cmake/llvm").glob("LLVMReferenceExports*"))
+    assert "LLVMReferenceExports" not in (native / "static/lib/cmake/llvm/LLVMConfig.cmake").read_text()
+    assert not (native / "static/bin/llvm-config.exe").exists()
+    assert Configuration(native / "static").targets == ["X86"]

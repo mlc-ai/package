@@ -82,7 +82,8 @@ def main() -> None:
         prefix = root / "relocated SDK with spaces"
         shutil.copytree(original, prefix)
         command = [sys.executable, prefix / "bin/llvm-config.py"]
-        if any(path.name not in ("llvm-config", "llvm-config.py") for path in (prefix / "bin").iterdir()):
+        if any(path.is_file() and path.name not in ("llvm-config", "llvm-config.py")
+               for path in (prefix / "bin").iterdir()):
             raise RuntimeError("SDK unexpectedly contains compiled LLVM tools")
         if run([*command, "--version"], capture=True) != sdk.LLVM_VERSION:
             raise RuntimeError("LLVM version mismatch")

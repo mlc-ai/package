@@ -198,6 +198,7 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
     variables.write_text(text[:line.start()] + normalized + text[line.end():], encoding="utf-8")
     install(build, "install-base-distribution")
     install(build, "install-extra-distribution")
+    install(build, "install-reference-distribution")
     record_build(build, prefix)
     if platform.system() == "Linux":
         triple = run([prefix / "bin" / "llvm-config", "--host-target"], capture=True)

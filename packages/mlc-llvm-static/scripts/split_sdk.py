@@ -75,9 +75,10 @@ def distribution_options(build: Path) -> list[str]:
     if native not in targets or len(targets) < 2:
         raise RuntimeError("Split SDKs require an All-target build containing the native backend")
     _, extra = partitions(graph, targets, native)
-    return ["-DLLVM_DISTRIBUTION_COMPONENTS=", "-DLLVM_DISTRIBUTIONS=Base;Extra",
-            "-DLLVM_Base_DISTRIBUTION_COMPONENTS=llvm-headers;llvm-libraries;cmake-exports;base-cmake-exports;llvm-config",
-            "-DLLVM_Extra_DISTRIBUTION_COMPONENTS=" + ";".join(sorted(extra)) + ";extra-cmake-exports"]
+    return ["-DLLVM_DISTRIBUTION_COMPONENTS=", "-DLLVM_DISTRIBUTIONS=Base;Extra;Reference",
+            "-DLLVM_Base_DISTRIBUTION_COMPONENTS=llvm-headers;llvm-libraries;cmake-exports;base-cmake-exports",
+            "-DLLVM_Extra_DISTRIBUTION_COMPONENTS=" + ";".join(sorted(extra)) + ";extra-cmake-exports",
+            "-DLLVM_Reference_DISTRIBUTION_COMPONENTS=llvm-config;reference-cmake-exports"]
 
 
 def record_build(build: Path, prefix: Path) -> None:
@@ -185,6 +186,7 @@ endif()
     text = text.replace('include("${LLVM_CMAKE_DIR}/LLVMExtraExports.cmake" OPTIONAL)',
                         'if(MLC_LLVM_STATIC_PROFILE STREQUAL "all")\n'
                         '  include("${LLVM_CMAKE_DIR}/LLVMExtraExports.cmake")\nendif()')
+    text = text.replace('include("${LLVM_CMAKE_DIR}/LLVMReferenceExports.cmake" OPTIONAL)', "")
     text += '\nif(MLC_LLVM_STATIC_PROFILE STREQUAL "native")\n  string(APPEND LLVM_DEFINITIONS " -DMLC_LLVM_STATIC_NATIVE_ONLY=1")\nendif()\n'
     text += 'set_property(GLOBAL PROPERTY LLVM_COMPONENT_LIBS ${LLVM_AVAILABLE_LIBS})\n'
     path.write_text(text)
@@ -202,6 +204,8 @@ def split_sdk(raw: Path, native: Path, extra: Path, version: str, runtime: Path)
         (destination / "static").mkdir(parents=True)
     base, added = native / "static", extra / "static"
     shutil.copytree(source, base, dirs_exist_ok=True)
+    for path in (base / "lib/cmake/llvm").glob("LLVMReferenceExports*.cmake"):
+        path.unlink()
     libraries = {}
     for path in (base / "lib").glob("*"):
         if path.suffix in (".a", ".lib"):
