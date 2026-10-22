@@ -60,10 +60,12 @@ def test_rejects_dynamic_sdk_libraries(output, name):
     ("Darwin", "_mlc_llvm_probe\n_compress2\n", {"_mlc_llvm_probe", "_compress2"}),
     ("Windows", """Dump of file C:\\SDK with spaces\\mlc_llvm_probe.dll
   ordinal hint RVA      name
-        1    0 00001234 mlc_llvm_probe
+        1    0 00001234 __jit_debug_descriptor
+        2    1 00002345 __jit_debug_register_code
+        3    2 00003456 mlc_llvm_probe
   Summary
         1000 .text
-""", {"mlc_llvm_probe"}),
+""", {"mlc_llvm_probe", "__jit_debug_descriptor", "__jit_debug_register_code"}),
 ])
 def test_reads_export_tables(system, output, expected):
     assert verify.exported_symbols(output, system) == expected

@@ -206,15 +206,23 @@ private to avoid interposition with another LLVM in the same process. On ELF,
 use an export/version script plus `--exclude-libs,ALL`; on macOS use an exported
 symbols list; on Windows use explicit DLL exports. Setting hidden visibility
 only while compiling the consumer cannot change previously compiled archives.
+Windows ORC consumers can additionally export `__jit_debug_descriptor` and
+`__jit_debug_register_code`: LLVM marks these GDB JIT hooks with
+`LLVM_ALWAYS_EXPORT`, embedding export directives in archive members. Treat
+them as explicit debugger ABI exceptions. Full suppression would require a
+separately validated LLVM/source or object transformation; a consumer's export
+list alone does not remove them. See
+[JITLoaderGDB](https://github.com/llvm/llvm-project/blob/llvmorg-23.1.1/llvm/lib/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.cpp).
 The [ORC addon](https://github.com/apache/tvm-ffi/blob/29c01dc89bf65e41b5647dc301718284cd594ede/addons/tvm_ffi_orcjit/CMakeLists.txt)
-already applies these controls.
+already applies export controls on ELF and macOS.
 
 The verification probe runs through both imported CMake targets and raw
 `llvm-config` flags. It exercises zlib and zstd compression/decompression,
 malformed-stream errors, and real ELF `SHF_COMPRESSED` sections containing a
 DWARF compilation unit. LLVM Object and DWARF must recover the expected DIE
 name for both codecs on every host, without external LLVM tools. It also
-restricts and inspects exported symbols, rejects dynamic disabled optional
+restricts and inspects exported symbols with the named Windows debugger
+exceptions, rejects dynamic disabled optional
 dependencies, and checks every available imported archive's location after
 relocation. The existing IR/optimization/bitcode/JIT and Linux ABI checks
 continue to run.
