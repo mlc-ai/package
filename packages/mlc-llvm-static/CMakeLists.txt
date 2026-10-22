@@ -17,5 +17,6 @@ add_custom_target(stage_mlc_llvm_static ALL
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   COMMENT "Preparing the LLVM static development SDK"
   VERBATIM)
-install(DIRECTORY "${stage}/static" "${stage}/licenses" DESTINATION mlc_llvm_static)
+install(DIRECTORY "${stage}/static" "${stage}/licenses" DESTINATION mlc_llvm_static
+  USE_SOURCE_PERMISSIONS)
 install(FILES "${stage}/staticlib.json" DESTINATION mlc_llvm_static)
