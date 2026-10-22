@@ -25,12 +25,14 @@ def run(command: list[str | Path], *, capture: bool = False) -> str:
 
 
 def verify_linux_abi(path: Path) -> None:
-    # manylinux_2_28's libstdc++ baseline is GCC 8. Check both the packaged
+    # Symbol ceilings from auditwheel's manylinux_2_28 policy for both release
+    # architectures. Check both the packaged
     # llvm-config executable and a linked consumer, not just archive filenames.
     if platform.system() != "Linux":
         return
     output = run(["readelf", "--version-info", path], capture=True)
-    for namespace, maximum in (("GLIBC", (2, 28)), ("GLIBCXX", (3, 4, 25)), ("CXXABI", (1, 3, 11))):
+    for namespace, maximum in (("GLIBC", (2, 28)), ("GLIBCXX", (3, 4, 24)),
+                               ("CXXABI", (1, 3, 11)), ("GCC", (7, 0, 0))):
         versions = re.findall(r"\b" + namespace + r"_([0-9.]+)", output)
         for version in versions:
             if tuple(map(int, version.split("."))) > maximum:
