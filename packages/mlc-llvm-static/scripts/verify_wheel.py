@@ -23,7 +23,8 @@ def run(command: list[str | Path], *, capture: bool = False) -> str:
 def dynamic_sdk_dependencies(output: str) -> list[str]:
     """Read library basenames from ldd, otool, or dumpbin output."""
     pattern = re.compile(
-        r"^(?:lib)?(?:LLVM[^/\\]*|zlib[^/\\]*|zstd[^/\\]*|z(?:\.\d+)*)"
+        r"^(?:lib)?(?:LLVM[^/\\]*|zlib[^/\\]*|zstd[^/\\]*|z(?:\.\d+)*|"
+        r"(?:xml2|edit|ffi|z3|curl|(?:cpp-)?httplib|pfm|icu[^/\\]*|iconv|tinfo|ncurses[^/\\]*|msdia)[^/\\]*)"
         r"\.(?:so(?:\.\d+)*|dylib|dll)$", re.IGNORECASE,
     )
     dependencies = []
@@ -33,6 +34,13 @@ def dynamic_sdk_dependencies(output: str) -> list[str]:
         if pattern.fullmatch(name):
             dependencies.append(name)
     return dependencies
+
+
+def exported_symbols(output: str, system: str) -> set[str]:
+    """Read nm -D --format=posix, nm -gUj, or dumpbin /EXPORTS output."""
+    if system == "Windows":
+        return set(re.findall(r"^\s*\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)", output, re.MULTILINE))
+    return {line.split()[0] for line in output.splitlines() if line.strip()}
 
 
 def verify_linux_abi(path: Path) -> None:
@@ -94,25 +102,37 @@ def main() -> None:
                 raise RuntimeError(f"pkg-config metadata is not relocatable: {path}")
         verify_linux_abi(executable)
         source = Path(__file__).resolve().parents[1] / "verify"
-        build = root / "build"
-        run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
-             "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
-             f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}"])
-        run(["cmake", "--build", build, "--parallel", "2"])
-        library = next(path for path in build.rglob("*mlc_llvm_probe*")
-                       if path.suffix in (".dll", ".so", ".dylib"))
-        verify_linux_abi(library)
-        if platform.system() == "Linux":
-            dependencies = run(["ldd", library], capture=True)
-        elif platform.system() == "Darwin":
-            dependencies = run(["otool", "-L", library], capture=True)
-        else:
-            dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
-        if dynamic_sdk_dependencies(dependencies):
-            raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
-        # A child process releases the DLL before TemporaryDirectory cleanup on
-        # Windows, where a loaded DLL cannot be deleted.
-        run([sys.executable, "-c", """
+        for link_mode in ("cmake", "llvm-config"):
+            build = root / link_mode
+            run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
+                 "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
+                 f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}",
+                 f"-DMLC_LLVM_USE_CONFIG_FLAGS={'ON' if link_mode == 'llvm-config' else 'OFF'}"])
+            run(["cmake", "--build", build, "--parallel", "2"])
+            library = next(path for path in build.rglob("*mlc_llvm_probe*")
+                           if path.suffix in (".dll", ".so", ".dylib"))
+            verify_linux_abi(library)
+            if platform.system() == "Linux":
+                dependencies = run(["ldd", library], capture=True)
+            elif platform.system() == "Darwin":
+                dependencies = run(["otool", "-L", library], capture=True)
+            else:
+                dependencies = run(["dumpbin", "/DEPENDENTS", library], capture=True)
+            if dynamic_sdk_dependencies(dependencies):
+                raise RuntimeError(f"Consumer links a dynamic SDK dependency:\n{dependencies}")
+            system = platform.system()
+            if system == "Linux":
+                symbols = run(["nm", "-D", "--defined-only", "--format=posix", library], capture=True)
+            elif system == "Darwin":
+                symbols = run(["nm", "-gUj", library], capture=True)
+            else:
+                symbols = run(["dumpbin", "/EXPORTS", library], capture=True)
+            expected = "_mlc_llvm_probe" if system == "Darwin" else "mlc_llvm_probe"
+            if exported_symbols(symbols, system) != {expected}:
+                raise RuntimeError(f"Consumer exposes unexpected symbols:\n{symbols}")
+            # A child process releases the DLL before TemporaryDirectory cleanup on
+            # Windows, where a loaded DLL cannot be deleted.
+            run([sys.executable, "-c", """
 import ctypes
 import sys
 probe = ctypes.CDLL(sys.argv[1])
@@ -120,7 +140,7 @@ probe.mlc_llvm_probe.restype = ctypes.c_int
 result = probe.mlc_llvm_probe()
 if result != 42:
     raise SystemExit(f"LLVM consumer returned {result}, expected 42")
-""", library])
+            """, library])
     print(f"Verified LLVM {sdk.LLVM_VERSION}: {metadata['archive_count']} archives; targets: {metadata['targets']}")
 
 

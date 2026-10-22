@@ -23,6 +23,12 @@ disabled to keep the SDK independent of packages installed on its build host.
 The wheel is a **build dependency**. Statically linked downstream wheels do not
 need to depend on this SDK at runtime.
 
+See the [dependency audit](DEPENDENCIES.md) for optional-feature consequences,
+platform libraries, transitive linking, and requirements for additional backends.
+libxml2 is needed for LLVM's Windows manifest merger, which this profile disables;
+it is not required by the selected IR/code-generation/ORC paths. Host system and
+C++ runtimes remain downstream dependencies.
+
 ## Install and locate
 
 Install the wheel matching your platform, using a downloaded file or its GitHub
@@ -83,6 +89,8 @@ and absence of unrequested tools/shared libraries. A shared consumer then parses
 LLVM IR, optimizes it, writes bitcode, and JIT-executes a function returning 42.
 The consumer must not depend on dynamic LLVM, zlib, or zstd. Linux also checks
 the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline.
+The probe also round-trips both compression formats, reads compressed ELF DWARF,
+and checks that its export controls keep LLVM and compression symbols private.
 CI caches the compiled SDK by platform, package version, and build-recipe files.
 Verification-only changes repackage and recheck that SDK without recompiling
 LLVM. A cached SDK is always verified before it becomes a release artifact.
