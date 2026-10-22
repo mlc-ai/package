@@ -274,6 +274,14 @@ def main() -> None:
             shutil.copytree(supplied, prefix, dirs_exist_ok=True)
             shutil.copytree(package / "licenses", output / "licenses", dirs_exist_ok=True)
             shutil.copy2(package / "staticlib.json", output / "staticlib.json")
+        relocate_pkgconfig(prefix)
+        manifest_path = output / "staticlib.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for path in (prefix / "lib" / "pkgconfig").glob("*.pc"):
+            manifest["files"][path.relative_to(prefix).as_posix()] = {
+                "sha256": sha256(path), "size": path.stat().st_size,
+            }
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         validate_prefix(prefix)
         return
     if os.environ.get("MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD") != "1":

@@ -76,6 +76,9 @@ def main() -> None:
         for path in prefix.rglob("*"):
             if path.is_file() and (path.suffix in (".so", ".dll", ".dylib") or ".so." in path.name):
                 raise RuntimeError(f"SDK unexpectedly contains a shared library: {path}")
+        for path in (prefix / "lib" / "pkgconfig").glob("*.pc"):
+            if "prefix=${pcfiledir}/../.." not in path.read_text(encoding="utf-8"):
+                raise RuntimeError(f"pkg-config metadata is not relocatable: {path}")
         verify_linux_abi(executable)
         source = Path(__file__).resolve().parents[1] / "verify"
         build = root / "build"
