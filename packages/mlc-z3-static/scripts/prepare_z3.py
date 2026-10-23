@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_z3_static"
+DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "python" / "mlc_z3_static"
 
 # version.py at the package root is the single source of truth for the pinned
 # Z3 release; a version bump edits only that file.
@@ -410,10 +410,11 @@ def write_license(package_dir: Path, source_dir: Path) -> str:
     licenses_dir.mkdir(parents=True, exist_ok=True)
     source_license = source_dir / "LICENSE.txt"
     dest = licenses_dir / "LICENSE-Z3.txt"
-    if source_license.is_file():
-        shutil.copy2(source_license, dest)
-    else:
-        dest.write_text("See https://github.com/Z3Prover/z3/blob/master/LICENSE.txt\n", encoding="utf-8")
+    # The license comes from the SHA-256-verified upstream source archive; the
+    # bundled Z3 artifacts must never ship without their license text.
+    if not source_license.is_file():
+        raise RuntimeError(f"Z3 source archive has no LICENSE.txt at {source_license}")
+    shutil.copy2(source_license, dest)
     return rel(package_dir, dest)
 
 

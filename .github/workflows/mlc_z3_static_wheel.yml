@@ -84,14 +84,11 @@ jobs:
           CIBW_ARCHS_WINDOWS: ${{ matrix.arch }}
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_ENVIRONMENT_LINUX: >-
-            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
           CIBW_ENVIRONMENT_MACOS: >-
-            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             MACOSX_DEPLOYMENT_TARGET="14.0"
             CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
           CIBW_ENVIRONMENT_WINDOWS: >-
-            MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
         run: |
           python -m pip install cibuildwheel==3.3.1

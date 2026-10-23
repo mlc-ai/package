@@ -39,7 +39,7 @@ if (-not $env:CIBW_BUILD_VERBOSITY) {
   $env:CIBW_BUILD_VERBOSITY = "1"
 }
 if (-not $env:CIBW_ENVIRONMENT) {
-  $env:CIBW_ENVIRONMENT = "MLC_DOXYGEN_BIN_PLAT_NAME='$env:MLC_DOXYGEN_BIN_PLAT_NAME' CMAKE_BUILD_PARALLEL_LEVEL='$env:CMAKE_BUILD_PARALLEL_LEVEL'"
+  $env:CIBW_ENVIRONMENT = "CMAKE_BUILD_PARALLEL_LEVEL='$env:CMAKE_BUILD_PARALLEL_LEVEL'"
 }
 
 uv tool run --isolated --from "cibuildwheel==3.3.1" cibuildwheel --platform windows --output-dir wheelhouse .

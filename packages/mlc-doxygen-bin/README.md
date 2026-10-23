@@ -29,12 +29,30 @@ On Windows:
 scripts\wheel_windows.ps1
 ```
 
-The scripts run `cibuildwheel==3.3.1` through `uv`. During CIBW's
-`before-build` phase, `scripts/prepare_doxygen.py` downloads the pinned
-upstream source archive, verifies its SHA-256 digest, builds the CLI executable,
-and copies the install tree into `src/mlc_doxygen_bin`.
+The scripts run `cibuildwheel==3.3.1` through `uv`. The package is built with
+scikit-build-core: building a wheel runs `scripts/prepare_doxygen.py`, which
+downloads the pinned upstream source archive, verifies its SHA-256 digest,
+builds the CLI executable, and stages it into the wheel. Wheels are tagged
+`py3-none-<platform>`; the manylinux script (and CI) retags scikit-build-core's
+`linux_<arch>` tag to `manylinux_2_28_<arch>`.
 
 Build artifacts are written to `wheelhouse/`.
+
+## Build From Source
+
+Prebuilt wheels are published for common platforms; elsewhere pip builds from
+the sdist like any other compiled package. That needs a C++17 compiler, Flex
+(>= 2.6, see below) and Bison on `PATH` (or `FLEX_EXECUTABLE` /
+`BISON_EXECUTABLE`), Python, and network access to download the pinned Doxygen
+source; CMake and Ninja are pulled in as build requirements:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=8 python -m pip install --no-binary mlc-doxygen-bin mlc-doxygen-bin
+```
+
+From a checkout, `python -m build --wheel` builds a wheel for the host.
+Set `MLC_DOXYGEN_BIN_SOURCE_DIR=/path/to/doxygen` to build an existing source
+tree instead of downloading the pinned archive.
 
 ## Platform And Architecture
 
@@ -84,6 +102,17 @@ bundle `doxywizard`, `doxyindexer`, `doxysearch.cgi`, libclang, Graphviz,
 LaTeX, Ghostscript, or PlantUML. Those tools remain external runtime
 dependencies for Doxygen features that need them.
 
+## License
+
+The packaging code in this directory (build scripts, CMake, and the Python
+wrapper) is licensed under the MIT License, which is compatible with GPL-2.0;
+see `LICENSE`. The bundled Doxygen
+executable is licensed by its authors under GPL-2.0-only. Its license text is
+copied from the SHA-256-verified upstream source archive into the wheel as
+`mlc_doxygen_bin/licenses/LICENSE-Doxygen.txt`, and the build fails if that
+file is missing. The wheel metadata declares `MIT AND GPL-2.0-only`
+to cover both.
+
 ## Usage
 
 ```bash
@@ -99,6 +128,21 @@ import mlc_doxygen_bin
 print(mlc_doxygen_bin.get_executable_path())
 print(mlc_doxygen_bin.metadata())
 ```
+
+## Tests
+
+The pytest suite under `tests/python/` exercises the installed package. The
+tests check the version metadata and run the packaged executable through its
+executable path, `python -m mlc_doxygen_bin`, and the `doxygen` console script,
+including generating HTML for a tiny project. From this directory:
+
+```bash
+python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest
+pytest
+```
+
+Run pytest against an installed wheel; the tests import the installed
+package, not `python/`. cibuildwheel runs the same suite on every built wheel.
 
 ## Bumping the version
 
@@ -116,7 +160,7 @@ Doxygen release, edit only that file:
   curl -fsSL https://github.com/doxygen/doxygen/releases/download/Release_<X_Y_Z>/doxygen-<X.Y.Z>.src.tar.gz | sha256sum
   ```
 
-Package metadata (through `setup.py`), the build scripts, the default build
+Package metadata, the build scripts, the default build
 directory, and the generated runtime module `mlc_doxygen_bin/_version.py` all
 read these values. The publishing workflow's `version_suffix` input runs
 `scripts/stamp_version.py --suffix <suffix>`, which rewrites `__version__` in

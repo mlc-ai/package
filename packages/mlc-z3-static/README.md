@@ -18,9 +18,9 @@ The wheel contains:
 
 The package is built with scikit-build-core: building a wheel runs
 `scripts/prepare_z3.py`, which downloads the pinned Z3 source archive,
-verifies its SHA-256 digest, and builds both library flavors. Source builds are
-opt-in (`MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1`) to avoid accidental long Z3
-builds when pip cannot find a matching prebuilt wheel.
+verifies its SHA-256 digest, and builds both library flavors. Prebuilt wheels
+are published for common platforms; elsewhere pip builds from the sdist like
+any other compiled package (see [Build From Source](#build-from-source)).
 
 ## Python Helpers
 
@@ -87,20 +87,28 @@ archive. Use `--kind shared` (or `get_cmake_prefix_path("shared")`) to link the
 shared flavor instead; each flavor has its own relocatable CMake prefix. See
 `example_project/` for a complete uv-managed consumer.
 
-## Local Build
+## Build From Source
 
-Build a wheel directly:
+Building from the sdist (or this directory) needs a C++20 compiler with
+`<format>` support (Z3 5.x requires it; e.g. GCC >= 13, Clang >= 17, Visual
+Studio 2022), network access to download the pinned Z3 source archive, and
+Python; CMake (>= 3.26) and Ninja are pulled in as build requirements. A full static + shared Z3 build
+takes a while; set `CMAKE_BUILD_PARALLEL_LEVEL` to use more cores:
 
 ```bash
-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 python -m build --wheel
+CMAKE_BUILD_PARALLEL_LEVEL=8 python -m pip install --no-binary mlc-z3-static mlc-z3-static
+```
+
+Build a wheel from a checkout:
+
+```bash
+python -m build --wheel
 ```
 
 Use an existing Z3 checkout instead of downloading the pinned archive:
 
 ```bash
-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 \
-MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 \
-python -m build --wheel
+MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 python -m build --wheel
 ```
 
 ## Build Release Wheels
@@ -120,20 +128,17 @@ scripts/wheel_manylinux_2_28.sh
 scripts/wheel_macos.sh
 ```
 
-The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
-Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
-host CIBW runner or post-build verifier. Both run `cibuildwheel==3.3.1`, retag
-Linux wheels as `manylinux_2_28`, and verify each produced wheel from a clean
-temporary virtual environment with:
-
-```bash
-scripts/wheel_verify.sh wheelhouse/<wheel-file>.whl
+```powershell
+scripts\wheel_windows.ps1
 ```
 
-The verifier installs the wheel, configures a small CMake project against
-`mlc_z3_static.get_cmake_prefix_path("static")`, links to `z3::libz3`, runs the
-executable, and checks that the executable does not link against a dynamic
-`libz3`.
+The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
+Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
+host CIBW runner. They run `cibuildwheel==3.3.1`, which tests each wheel in a
+clean virtual environment with the pytest suite (see [Tests](#tests)): it
+links a small CMake consumer against `z3::libz3` for both flavors, runs it,
+and checks that the static flavor does not link a dynamic `libz3`. The
+manylinux script retags Linux wheels as `manylinux_2_28`.
 
 The manylinux script defaults to the host architecture. Set
 `MLC_Z3_STATIC_ARCH=x86_64` or `MLC_Z3_STATIC_ARCH=aarch64` to choose explicitly.
@@ -143,6 +148,30 @@ The script defaults to the newest installed python.org CPython only as the build
 interpreter. The output wheel is still Python-agnostic and tagged
 `py3-none-<platform>`. Override `CIBW_BUILD` to force a specific installed build
 interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
+
+## Tests
+
+The pytest suite under `tests/python/` exercises the installed package. The
+tests check the version metadata, artifact paths, and the config CLI, and configure,
+link, and run a small CMake consumer against both the static and shared
+flavors (this needs a C++ compiler). From this directory:
+
+```bash
+python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest
+pytest
+```
+
+Run pytest against an installed wheel; the tests import the installed
+package, not `python/`. cibuildwheel runs the same suite on every built wheel.
+
+## License
+
+This package is distributed under the MIT License, the license of the Z3
+artifacts it bundles. `LICENSE` is a verbatim copy of Z3's upstream
+`LICENSE.txt`, so this directory and its sdist are self-contained. The wheel
+also carries the license copied during packaging from the SHA-256-verified
+upstream source archive as `mlc_z3_static/licenses/LICENSE-Z3.txt`; the build
+fails if that file is missing.
 
 ## Bumping the version
 
