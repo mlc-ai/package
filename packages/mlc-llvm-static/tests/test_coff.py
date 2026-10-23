@@ -15,7 +15,7 @@ spec.loader.exec_module(module)
 
 def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False,
             selection=2, section_number=0, bss=False, bss_file_data=False,
-            undefined=False, directive=False, reference=4, public_value=0):
+            undefined=False, directive=False, reference=4, public_value=0, comdat=False):
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
     symbol_count = (8 if weak else 6) if labels else 1
@@ -29,7 +29,8 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
         header = struct.pack("<HHIIIHH", 0x8664, 2, 0, symbol_offset, symbol_count, 0, 0)
     sections = b""
     offset = header_size + 80
-    for name, contents, flags in [(b".bss" if bss else b".text", code, 0xc0100080 if bss else 0x60000020),
+    for name, contents, flags in [(b".bss" if bss else b".text", code,
+                                   (0xc0100080 if bss else 0x60000020) | (0x1000 if comdat else 0)),
                                    (b".drectve" if directive else b".debug$S", debug, 0x42100040)]:
         referenced = name == b".text" and bool(relocations)
         sections += struct.pack("<8sIIIIIIHHI", name, 0, 0, len(contents),
@@ -148,3 +149,10 @@ def test_common_data_is_a_protected_public_definition(tmp_path, big):
     original = module.coff_contents(path)
     path.write_bytes(library(big, undefined=True, public_value=32))
     assert module.coff_contents(path) != original
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_static_keys_in_non_associative_comdats_are_required_without_relocations(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, labels=True, comdat=True))
+    assert module.coff_contents(path, removable=True) == set()

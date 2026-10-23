@@ -46,11 +46,16 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
             sections = []
             indices = {}
             references = set()
+            non_associative_comdats = set()
+            debug_sections = set()
             for index in range(count):
                 section = data[section_offset + index * 40:section_offset + (index + 1) * 40]
                 name = section[:8].rstrip(b"\0")
                 if name.startswith(b"/"):
                     name = string_at(int(name[1:]))
+                characteristics = struct.unpack_from("<I", section, 36)[0]
+                if characteristics & 0x1000:  # IMAGE_SCN_LNK_COMDAT.
+                    non_associative_comdats.add(index + 1)
                 # These tables contain symbol indexes outside normal COFF
                 # relocations. Do not rewrite them without dedicated handling.
                 if name.startswith((b".gfids", b".giats", b".gljmp", b".gehcont")):
@@ -64,6 +69,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 for relocation in range(first, relocation_count):
                     references.add(struct.unpack_from("<I", data, relocation_offset + relocation * 10 + 4)[0])
                 if name.startswith(b".debug"):
+                    debug_sections.add(index + 1)
                     continue
                 indices[index + 1] = len(sections)
                 raw_size, raw_offset = struct.unpack_from("<II", section, 16)
@@ -79,7 +85,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     # without ordinary relocations. Keep every directive token.
                     protected.update(re.split(rb'[\s,:="\x00]+', payload))
                 sections.append((name, characteristics, raw_size, hashlib.sha256(payload).digest()))
-            definitions, comdats = [], []
+            definitions, comdats, local_labels = [], [], []
             symbols = {}
             index = 0
             while index < symbol_count:
@@ -92,8 +98,9 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 if symbol[:4] == b"\0\0\0\0":
                     name = string_at(struct.unpack_from("<I", symbol, 4)[0])
                 symbols[index] = name
-                if not auxiliaries and ((storage == 3 and number > 0) or
-                                        (storage == 2 and number == 0 and value == 0)):
+                if not auxiliaries and storage == 3 and number > 0:
+                    local_labels.append((number, name))
+                elif not auxiliaries and storage == 2 and number == 0 and value == 0:
                     candidates.add(name)
                 else:
                     # Preserve section definitions/COMDAT auxiliary records,
@@ -114,6 +121,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     # Bigobj pads each auxiliary record to 20 bytes; ordinary
                     # COFF uses 18. The section-definition fields are the same.
                     if auxiliary[14] == 5:  # IMAGE_COMDAT_SELECT_ASSOCIATIVE.
+                        non_associative_comdats.discard(number)
                         associated = struct.unpack_from("<H", auxiliary, 12)[0]
                         associated |= struct.unpack_from("<H", auxiliary, 16)[0] << 16
                         canonical = indices[associated] + 1
@@ -127,6 +135,13 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                         struct.pack_into("<H", auxiliary, 16, 0)
                     comdats.append((name, indices[number], bytes(auxiliary)))
                 index += 1 + auxiliaries
+            for number, name in local_labels:
+                if number in non_associative_comdats or number in debug_sections:
+                    # MSVC needs a COMDAT key symbol even if no relocation uses
+                    # it. In PCH objects the key can have STATIC storage class.
+                    protected.add(name)
+                else:
+                    candidates.add(name)
             protected.update(symbols[index] for index in references)
             result.append((sections, sorted(definitions), sorted(comdats)))
     if removable:
@@ -162,7 +177,7 @@ def compact_coff(raw: Path) -> None:
         with tempfile.TemporaryDirectory(prefix="llvm-coff-symbols-") as temporary:
             symbols_file = Path(temporary) / "symbols.txt"
             symbols_file.write_bytes(b"\n".join(sorted(names)) + b"\n")
-            subprocess.run([executable, "--strip-debug", f"--strip-symbols={symbols_file}", str(archive)], check=True)
+            subprocess.run([executable, f"--strip-symbols={symbols_file}", str(archive)], check=True)
         actual = coff_contents(archive)
         if actual != contents:
             for index, (expected_object, actual_object) in enumerate(zip(contents, actual)):
