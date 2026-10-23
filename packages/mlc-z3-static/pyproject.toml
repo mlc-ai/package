@@ -21,6 +21,10 @@ classifiers = [
   "Topic :: Software Development :: Build Tools",
 ]
 
+[project.optional-dependencies]
+# Run with: pip install ".[test]" && pytest
+test = ["pytest", "cmake>=3.26", "ninja"]
+
 [project.urls]
 Repository = "https://github.com/mlc-ai/package"
 Z3 = "https://github.com/Z3Prover/z3"
@@ -56,8 +60,8 @@ build = "cp311-*"
 build-frontend = "build"
 build-verbosity = 1
 skip = "*-musllinux_* pp*"
-test-requires = ["cmake", "ninja"]
-test-command = "python {project}/scripts/smoke_test_mlc_z3_static.py"
+test-extras = ["test"]
+test-command = "pytest {project}/tests/python -q"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
@@ -66,3 +70,6 @@ repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
 
 [tool.cibuildwheel.macos]
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

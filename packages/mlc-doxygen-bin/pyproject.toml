@@ -19,6 +19,10 @@ classifiers = [
   "Topic :: Software Development :: Documentation",
 ]
 
+[project.optional-dependencies]
+# Run with: pip install ".[test]" && pytest
+test = ["pytest"]
+
 [project.urls]
 Doxygen = "https://github.com/doxygen/doxygen"
 Repository = "https://github.com/mlc-ai/package"
@@ -54,7 +58,8 @@ build = "cp311-*"
 build-frontend = "build"
 build-verbosity = 1
 skip = "*-musllinux_*"
-test-command = "python {project}/scripts/smoke_test_mlc_doxygen_bin.py"
+test-extras = ["test"]
+test-command = "pytest {project}/tests/python -q"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
@@ -67,3 +72,6 @@ repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
 
 [tool.cibuildwheel.windows]
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

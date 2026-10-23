@@ -118,6 +118,21 @@ print(mlc_doxygen_bin.get_executable_path())
 print(mlc_doxygen_bin.metadata())
 ```
 
+## Tests
+
+The pytest suite under `tests/python/` exercises the installed package. The
+tests check the version metadata and run the packaged executable through its
+executable path, `python -m mlc_doxygen_bin`, and the `doxygen` console script,
+including generating HTML for a tiny project. From this directory:
+
+```bash
+python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest
+pytest
+```
+
+Run pytest against an installed wheel; the tests import the installed
+package, not `src/`. cibuildwheel runs the same suite on every built wheel.
+
 ## Bumping the version
 
 [`version.py`](version.py) is the single version source. To move to a new

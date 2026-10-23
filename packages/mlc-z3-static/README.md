@@ -152,6 +152,21 @@ interpreter. The output wheel is still Python-agnostic and tagged
 `py3-none-<platform>`. Override `CIBW_BUILD` to force a specific installed build
 interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
 
+## Tests
+
+The pytest suite under `tests/python/` exercises the installed package. The
+tests check the version metadata, artifact paths, and the config CLI, and configure,
+link, and run a small CMake consumer against both the static and shared
+flavors (this needs a C++ compiler). From this directory:
+
+```bash
+python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest
+pytest
+```
+
+Run pytest against an installed wheel; the tests import the installed
+package, not `src/`. cibuildwheel runs the same suite on every built wheel.
+
 ## Bumping the version
 
 [`version.py`](version.py) is the single version source. To move to a new Z3
