@@ -228,6 +228,9 @@ def build_win_iconv(work_root: Path) -> Path:
         "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>",
     ])
     run([CMAKE, "--build", build_dir, "--config", build_type, "--target", "install"])
+    # win-iconv is public domain; keep its notice so the wheel records that
+    # doxygen.exe statically links it.
+    shutil.copy2(source_dir / "readme.txt", prefix / "LICENSE-win-iconv.txt")
     return prefix
 
 
@@ -371,7 +374,7 @@ def write_metadata(package_dir: Path, executable: Path, source_dir: Path, licens
     )
 
 
-def build_and_install(source_dir: Path, work_root: Path) -> Path:
+def build_and_install(source_dir: Path, work_root: Path) -> tuple[Path, Path | None]:
     build_dir = work_root / "build"
     stage_dir = work_root / "stage"
     if build_dir.exists():
@@ -401,7 +404,7 @@ def build_and_install(source_dir: Path, work_root: Path) -> Path:
         build_cmd.extend(["--parallel", parallel])
     run(build_cmd)
     validate_stage(stage_dir)
-    return stage_dir
+    return stage_dir, iconv_dir
 
 
 def main() -> None:
@@ -414,9 +417,11 @@ def main() -> None:
 
     source_dir = get_source_tree(build_root)
     clean_package_outputs(package_dir)
-    stage_dir = build_and_install(source_dir, build_root)
+    stage_dir, iconv_dir = build_and_install(source_dir, build_root)
     executable = copy_runtime(stage_dir, package_dir)
     license_path = write_license(package_dir, source_dir)
+    if iconv_dir is not None:
+        shutil.copy2(iconv_dir / "LICENSE-win-iconv.txt", package_dir / "licenses" / "LICENSE-win-iconv.txt")
     write_version_module(package_dir)
     write_metadata(package_dir, executable, source_dir, license_path)
 

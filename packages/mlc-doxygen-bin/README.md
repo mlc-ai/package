@@ -111,7 +111,9 @@ executable is licensed by its authors under GPL-2.0-only. Its license text is
 copied from the SHA-256-verified upstream source archive into the wheel as
 `mlc_doxygen_bin/licenses/LICENSE-Doxygen.txt`, and the build fails if that
 file is missing. The wheel metadata declares `MIT AND GPL-2.0-only`
-to cover both.
+to cover both. Windows ARM64 wheels also statically link the public-domain
+win-iconv; its notice is included as
+`mlc_doxygen_bin/licenses/LICENSE-win-iconv.txt`.
 
 ## Usage
 
