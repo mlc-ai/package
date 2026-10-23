@@ -15,6 +15,10 @@ on:
         description: Upload both wheel families to a new draft GitHub prerelease
         default: false
         type: boolean
+      publish_pypi:
+        description: Publish both wheel families to PyPI (requires trusted publishing setup)
+        default: false
+        type: boolean
       platform:
         description: Host platform to validate (publishing requires all)
         default: all
@@ -51,6 +55,7 @@ jobs:
         env:
           SDK_PLATFORM: ${{ inputs.platform || 'all' }}
           PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          PUBLISH_PYPI: ${{ inputs.publish_pypi }}
         run: |
           python - <<'PY'
           import json, os
@@ -62,8 +67,8 @@ jobs:
           ]
           selected = os.environ["SDK_PLATFORM"]
           if selected != "all":
-              if os.environ.get("PUBLISH_RELEASE") == "true":
-                  raise SystemExit("Release publishing requires platform=all")
+              if any(os.environ.get(name) == "true" for name in ("PUBLISH_RELEASE", "PUBLISH_PYPI")):
+                  raise SystemExit("Publishing requires platform=all")
               rows = [row for row in rows if row["tag"] == selected]
           if not rows:
               raise SystemExit("Unknown SDK platform")
@@ -151,9 +156,48 @@ jobs:
           path: packages/mlc-llvm-static/wheelhouse/*.whl
           if-no-files-found: error
 
+  distributions:
+    name: Prepare release distributions
+    needs: [checks, build_wheels]
+    if: github.event_name == 'workflow_dispatch' && (inputs.publish_release || inputs.publish_pypi)
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
+      PLATFORM_MATRIX: ${{ needs.checks.outputs.matrix }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mlc-llvm-static-*
+          path: dist
+          merge-multiple: true
+      - name: Check complete wheel set
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          wheels = sorted(Path("dist").glob("*.whl"))
+          expected = {f"{family}-{os.environ['PACKAGE_VERSION']}-py3-none-{row['tag']}.whl"
+                      for row in json.loads(os.environ["PLATFORM_MATRIX"])["include"]
+                      for family in ("mlc_llvm_static", "mlc_llvm_static_extra_targets")}
+          if {path.name for path in wheels} != expected:
+              raise SystemExit("Release wheels do not match the selected platforms and package version")
+          PY
+      - name: Verify distribution metadata
+        run: |
+          python -m pip install twine
+          python -m twine check --strict dist/*.whl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llvm-sdk-wheels
+          path: dist/*.whl
+          if-no-files-found: error
+
   release:
     name: Draft GitHub release
-    needs: [checks, build_wheels]
+    needs: [checks, distributions]
     if: github.event_name == 'workflow_dispatch' && inputs.publish_release
     runs-on: ubuntu-latest
     permissions:
@@ -163,24 +207,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: mlc-llvm-static-*
+          name: llvm-sdk-wheels
           path: dist
-          merge-multiple: true
       - name: Create draft prerelease with both wheel families and checksums
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          PLATFORM_MATRIX: ${{ needs.checks.outputs.matrix }}
         run: |
           python - <<'PY'
-          import hashlib, json, os
+          import hashlib
           from pathlib import Path
           wheels = sorted(Path("dist").glob("*.whl"))
-          expected = {f"{family}-{os.environ['PACKAGE_VERSION']}-py3-none-{row['tag']}.whl"
-                      for row in json.loads(os.environ["PLATFORM_MATRIX"])["include"]
-                      for family in ("mlc_llvm_static", "mlc_llvm_static_extra_targets")}
-          if {path.name for path in wheels} != expected:
-              raise SystemExit("Release wheels do not match the selected platforms and package version")
           Path("dist/SHA256SUMS").write_text("".join(
               hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name + "\n" for path in wheels))
           PY
@@ -195,8 +232,24 @@ jobs:
           Includes static zlib/zstd and the Linux host ORC runtime. Clang, linkers,
           other LLVM tools, target sysroots, and experimental backends are excluded.
           Validation covers both profiles, cross-target object generation, static
-          dependencies, relocation, and removal of the add-on. No PyPI upload.
+          dependencies, relocation, and removal of the add-on.
           EOF
           gh release create "mlc-llvm-static-v${PACKAGE_VERSION}" dist/* \
             --target "$GITHUB_SHA" --draft --prerelease \
             --title "LLVM static SDK ${PACKAGE_VERSION}" --notes-file release-notes.md
+
+  publish_pypi:
+    name: Publish wheels to PyPI
+    needs: distributions
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_pypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: llvm-sdk-wheels
+          path: dist
+      - name: Publish both wheel families with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1

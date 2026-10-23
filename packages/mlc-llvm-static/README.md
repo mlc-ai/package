@@ -1,8 +1,8 @@
 # mlc-llvm-static
 
 An LLVM 23.1.1 development SDK distributed as a Python-version-independent,
-platform-specific wheel. Initial verification uses GitHub Releases; there is no
-PyPI publishing step.
+platform-specific wheel. Initial verification uses GitHub Releases; PyPI
+publishing is an optional manual workflow action.
 
 The SDK contains:
 
@@ -66,8 +66,10 @@ print(llvm.metadata()["targets"])
 
 The package metadata also defines `mlc-llvm-static[all]` to install the exact
 matching add-on when both distributions are available from an index. During
-GitHub-release validation, install their wheel paths/URLs explicitly. Neither
-distribution is published to PyPI by this project workflow.
+GitHub-release validation, install their wheel paths/URLs explicitly. Once both
+distributions are published to PyPI, install the native SDK with
+`python -m pip install mlc-llvm-static`, or every standard backend with
+`python -m pip install 'mlc-llvm-static[all]'`.
 
 The frontend supports `--profile=native|all|auto` and normal static LLVM queries,
 including components, compiler flags, library paths/order, and system libraries.
@@ -110,10 +112,34 @@ families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows AMD64
 Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`). It runs for relevant
 pull requests and can also be dispatched manually. `publish_release=true`
 creates a **new draft prerelease** containing all eight verified wheels and
-`SHA256SUMS`. It does not overwrite an existing release or publish to PyPI.
+`SHA256SUMS`. It does not overwrite an existing release. The independent
+`publish_pypi=true` option uploads the same verified wheel set to PyPI. Both
+publishing options default to false and require `platform=all`. Publishing waits
+for every host's validation and checks the complete wheel set and package metadata
+before either upload. PyPI receives wheels only; source distributions are built
+for validation, since these packages provide a prebuilt SDK.
 The package version defaults to `_version.py`; an optional workflow input stamps
 both distributions and their exact-version requirements together. LLVM's pinned
 version also comes from that file. Cache restores require the exact recipe key.
+
+To enable PyPI publishing, configure a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+for **each** project, `mlc-llvm-static` and `mlc-llvm-static-extra-targets`, using:
+
+| PyPI publisher field | Value |
+| --- | --- |
+| Owner | `mlc-ai` |
+| Repository | `package` |
+| Workflow filename | `mlc_llvm_static_wheel.yml` |
+| Environment | `pypi` |
+
+For projects that do not exist yet, register
+[pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+for both names. The publishing job uses GitHub's `pypi` environment and requests
+an OIDC token only in that job; no PyPI API-token secret is required. After setup,
+dispatch this workflow with `publish_pypi=true` and the desired package version.
+No workflow change is needed. Existing filenames on PyPI cause an error rather
+than being silently skipped.
 
 Verification installs the wheel and copies its SDK to a new directory containing
 spaces. It checks artifact hashes, `llvm-config` relocation, CMake import paths,
