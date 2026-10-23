@@ -15,7 +15,7 @@ spec.loader.exec_module(module)
 
 def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False,
             selection=2, section_number=0, bss=False, bss_file_data=False,
-            undefined=False, directive=False, reference=4):
+            undefined=False, directive=False, reference=4, public_value=0):
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
     symbol_count = (8 if weak else 6) if labels else 1
@@ -36,7 +36,8 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
                                 0 if bss and not bss_file_data and name == b".bss" else offset,
                                 relocation_offset if referenced else 0, 0, int(referenced), 0, flags)
         offset += len(contents)
-    symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, 0, 0 if undefined else 1, 0x20, 2, 0)
+    symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, public_value,
+                         0 if undefined else 1, 0x20, 2, 0)
     if labels:
         fmt = "<8sIiHBB" if big else "<8sIhHBB"
         auxiliary = bytearray(symbol_size)
@@ -137,3 +138,13 @@ def test_linker_directives_protect_declarations_without_relocations(tmp_path, di
     path = tmp_path / "test.lib"
     path.write_bytes(library(True, undefined=True, directive=True, debug=directive))
     assert module.coff_contents(path, removable=True) == set()
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_common_data_is_a_protected_public_definition(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, undefined=True, public_value=16))
+    assert module.coff_contents(path, removable=True) == set()
+    original = module.coff_contents(path)
+    path.write_bytes(library(big, undefined=True, public_value=32))
+    assert module.coff_contents(path) != original

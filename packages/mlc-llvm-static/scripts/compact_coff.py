@@ -87,12 +87,13 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 value = struct.unpack_from("<I", symbol, 8)[0]
                 number = struct.unpack_from("<i" if big else "<h", symbol, 12)[0]
                 storage, auxiliaries = symbol[-2:]
+                symbol_type = struct.unpack_from("<H", symbol, symbol_size - 4)[0]
                 name = symbol[:8].rstrip(b"\0")
                 if symbol[:4] == b"\0\0\0\0":
                     name = string_at(struct.unpack_from("<I", symbol, 4)[0])
                 symbols[index] = name
                 if not auxiliaries and ((storage == 3 and number > 0) or
-                                        (storage == 2 and number == 0)):
+                                        (storage == 2 and number == 0 and value == 0)):
                     candidates.add(name)
                 else:
                     # Preserve section definitions/COMDAT auxiliary records,
@@ -100,11 +101,14 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     protected.add(name)
                 if storage == 105 and auxiliaries:
                     references.add(struct.unpack_from("<I", data, symbol_offset + (index + 1) * symbol_size)[0])
-                if storage == 2 and number != 0:  # External definition, including absolute symbols.
-                    definitions.append((name, value, indices[number] if number > 0 else number))
+                if storage == 2 and (number != 0 or value != 0):
+                    # Section zero with a nonzero value is a COMMON definition,
+                    # not an unused declaration. Its value is the data size.
+                    section_id = ("section", indices[number]) if number > 0 else ("special", number)
+                    definitions.append((name, value, section_id, symbol_type))
                 if storage == 3 and number < 0:
-                    definitions.append((name, value, number))  # @feat.00, compiler feature metadata.
-                if storage == 3 and auxiliaries and number in indices:
+                    definitions.append((name, value, ("special", number), symbol_type))  # @feat.00.
+                if storage == 3 and auxiliaries == 1 and value == 0 and symbol_type == 0 and number in indices:
                     auxiliary = bytearray(data[symbol_offset + (index + 1) * symbol_size:
                                                symbol_offset + (index + 1) * symbol_size + 18])
                     # Bigobj pads each auxiliary record to 20 bytes; ordinary
