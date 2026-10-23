@@ -89,5 +89,6 @@ def test_cmake_consumer(kind: str, tmp_path: Path) -> None:
     # The static flavor must be linked in, the shared one loaded at runtime.
     dependencies = dynamic_dependencies(exe)
     if dependencies is not None:
-        links_libz3 = re.search(r"libz3\.(so|dylib)", dependencies) is not None
+        # Install names may be versioned: libz3.so.5.3 on Linux, libz3.5.3.dylib on macOS.
+        links_libz3 = re.search(r"libz3(\.[0-9]+)*\.(so|dylib)\b", dependencies) is not None
         assert links_libz3 == (kind == "shared"), dependencies
