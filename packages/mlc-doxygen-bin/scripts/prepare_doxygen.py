@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_doxygen_bin"
+DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "python" / "mlc_doxygen_bin"
 
 # version.py at the package root is the single source of truth for the pinned
 # Doxygen release; a version bump edits only that file.

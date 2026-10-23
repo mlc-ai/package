@@ -128,20 +128,17 @@ scripts/wheel_manylinux_2_28.sh
 scripts/wheel_macos.sh
 ```
 
-The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
-Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
-host CIBW runner or post-build verifier. Both run `cibuildwheel==3.3.1`, retag
-Linux wheels as `manylinux_2_28`, and verify each produced wheel from a clean
-temporary virtual environment with:
-
-```bash
-scripts/wheel_verify.sh wheelhouse/<wheel-file>.whl
+```powershell
+scripts\wheel_windows.ps1
 ```
 
-The verifier installs the wheel, configures a small CMake project against
-`mlc_z3_static.get_cmake_prefix_path("static")`, links to `z3::libz3`, runs the
-executable, and checks that the executable does not link against a dynamic
-`libz3`.
+The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
+Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
+host CIBW runner. They run `cibuildwheel==3.3.1`, which tests each wheel in a
+clean virtual environment with the pytest suite (see [Tests](#tests)): it
+links a small CMake consumer against `z3::libz3` for both flavors, runs it,
+and checks that the static flavor does not link a dynamic `libz3`. The
+manylinux script retags Linux wheels as `manylinux_2_28`.
 
 The manylinux script defaults to the host architecture. Set
 `MLC_Z3_STATIC_ARCH=x86_64` or `MLC_Z3_STATIC_ARCH=aarch64` to choose explicitly.
@@ -165,7 +162,7 @@ pytest
 ```
 
 Run pytest against an installed wheel; the tests import the installed
-package, not `src/`. cibuildwheel runs the same suite on every built wheel.
+package, not `python/`. cibuildwheel runs the same suite on every built wheel.
 
 ## Bumping the version
 

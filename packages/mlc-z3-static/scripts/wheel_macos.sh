@@ -75,5 +75,4 @@ for wheel in "${wheels[@]}"; do
       exit 1
       ;;
   esac
-  scripts/wheel_verify.sh "${wheel}"
 done

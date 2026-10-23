@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_z3_static"
+DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "python" / "mlc_z3_static"
 
 # version.py at the package root is the single source of truth for the pinned
 # Z3 release; a version bump edits only that file.

@@ -32,22 +32,22 @@ Z3 = "https://github.com/Z3Prover/z3"
 [tool.scikit-build]
 cmake.version = ">=3.26"
 wheel.py-api = "py3"
-wheel.packages = ["src/mlc_z3_static"]
+wheel.packages = ["python/mlc_z3_static"]
 sdist.exclude = [
   "build",
   "dist",
   "wheelhouse",
   "example_project/build",
   "example_project/.venv",
-  "src/mlc_z3_static/static",
-  "src/mlc_z3_static/shared",
-  "src/mlc_z3_static/licenses",
-  "src/mlc_z3_static/staticlib.json",
-  "src/mlc_z3_static/_version.py",
+  "python/mlc_z3_static/static",
+  "python/mlc_z3_static/shared",
+  "python/mlc_z3_static/licenses",
+  "python/mlc_z3_static/staticlib.json",
+  "python/mlc_z3_static/_version.py",
 ]
 
 # version.py is the single version source; the build generates the runtime
-# src/mlc_z3_static/_version.py from it (see scripts/prepare_z3.py).
+# python/mlc_z3_static/_version.py from it (see scripts/prepare_z3.py).
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "version.py"
@@ -69,6 +69,9 @@ manylinux-aarch64-image = "manylinux_2_28"
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
 
 [tool.cibuildwheel.macos]
+repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
+
+[tool.cibuildwheel.windows]
 repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
 
 [tool.pytest.ini_options]

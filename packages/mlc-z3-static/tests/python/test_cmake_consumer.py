@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -57,6 +58,15 @@ def runtime_env(kind: str) -> dict[str, str]:
     return env
 
 
+def dynamic_dependencies(exe: Path) -> str | None:
+    """Return the executable's dynamic library list, or None if no tool is available."""
+    system = platform.system()
+    tool = {"Linux": ["ldd"], "Darwin": ["otool", "-L"]}.get(system)
+    if tool is None or shutil.which(tool[0]) is None:
+        return None
+    return subprocess.run([*tool, str(exe)], check=True, text=True, stdout=subprocess.PIPE).stdout
+
+
 @pytest.mark.skipif(shutil.which("cmake") is None, reason="cmake is not installed")
 @pytest.mark.parametrize("kind", ["static", "shared"])
 def test_cmake_consumer(kind: str, tmp_path: Path) -> None:
@@ -75,3 +85,9 @@ def test_cmake_consumer(kind: str, tmp_path: Path) -> None:
     # Visual Studio generators are multi-config and add a Release subdirectory.
     exe = build / "Release" / "consumer.exe" if platform.system() == "Windows" else build / "consumer"
     subprocess.run([str(exe)], check=True, env=runtime_env(kind))
+
+    # The static flavor must be linked in, the shared one loaded at runtime.
+    dependencies = dynamic_dependencies(exe)
+    if dependencies is not None:
+        links_libz3 = re.search(r"libz3\.(so|dylib)", dependencies) is not None
+        assert links_libz3 == (kind == "shared"), dependencies

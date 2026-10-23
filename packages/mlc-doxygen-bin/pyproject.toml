@@ -9,6 +9,7 @@ description = "Prebuilt Doxygen command-line executable"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "GPL-2.0-only"
+license-files = ["LICENSE"]
 authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -33,19 +34,19 @@ doxygen = "mlc_doxygen_bin.cli:main"
 [tool.scikit-build]
 cmake.version = ">=3.26"
 wheel.py-api = "py3"
-wheel.packages = ["src/mlc_doxygen_bin"]
+wheel.packages = ["python/mlc_doxygen_bin"]
 sdist.exclude = [
   "build",
   "dist",
   "wheelhouse",
-  "src/mlc_doxygen_bin/bin",
-  "src/mlc_doxygen_bin/licenses",
-  "src/mlc_doxygen_bin/doxygen.json",
-  "src/mlc_doxygen_bin/_version.py",
+  "python/mlc_doxygen_bin/bin",
+  "python/mlc_doxygen_bin/licenses",
+  "python/mlc_doxygen_bin/doxygen.json",
+  "python/mlc_doxygen_bin/_version.py",
 ]
 
 # version.py is the single version source; the build generates the runtime
-# src/mlc_doxygen_bin/_version.py from it (see scripts/prepare_doxygen.py).
+# python/mlc_doxygen_bin/_version.py from it (see scripts/prepare_doxygen.py).
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "version.py"

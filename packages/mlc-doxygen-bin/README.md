@@ -131,7 +131,7 @@ pytest
 ```
 
 Run pytest against an installed wheel; the tests import the installed
-package, not `src/`. cibuildwheel runs the same suite on every built wheel.
+package, not `python/`. cibuildwheel runs the same suite on every built wheel.
 
 ## Bumping the version
 
