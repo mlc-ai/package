@@ -53,6 +53,11 @@ if [[ ! -z $WHEEL_TEST ]]; then
     WHEEL_TEST="-e WHEEL_TEST=${WHEEL_TEST}"
 fi
 
+BUILD_ENV=()
+if [[ -n ${CMAKE_BUILD_PARALLEL_LEVEL:-} ]]; then
+    BUILD_ENV+=(-e "CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}")
+fi
+
 if [[ "${DOCKER_IMAGE_NAME}" == *"cu"* ]]; then
     if [ "$ENABLE_NV_DOCKER" -eq 1 ]; then
         if ! type "nvidia-docker" 1> /dev/null 2> /dev/null
@@ -86,6 +91,7 @@ ${DOCKER_BINARY} run --rm --pid=host\
     -w /workspace \
     ${CUDA_ENV} \
     ${WHEEL_TEST} \
+    "${BUILD_ENV[@]}" \
     ${DOCKER_EXTRA_PARAMS[@]} \
     ${DOCKER_IMAGE_NAME} \
     ${COMMAND[@]}

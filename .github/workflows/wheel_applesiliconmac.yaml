@@ -59,6 +59,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
+    - uses: ./.github/actions/detect-env-vars
     - name: Setup script env
       run: |
         mv conda/tvm-unity/build-environment.yaml 3rdparty/tlcpack/conda/build-environment.yaml
