@@ -122,7 +122,14 @@ The probe also round-trips both compression formats, reads compressed ELF DWARF,
 and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
 CI caches the raw All-target SDK by platform and a fingerprint of the compilation
 and graph-generation recipe. Frontend, packaging, and verification changes reuse
-that build. The packager compares native-component library queries with upstream
+that build. Windows packaging uses `llvm-objcopy --strip-unneeded` on a copy of
+the raw archives to remove unused COFF symbols and debug metadata while retaining
+external definitions, relocation targets, and unwind data. Install LLVM's
+`llvm-objcopy` as a build tool or set `MLC_LLVM_STATIC_OBJCOPY` to its path; the
+tool is not included in either wheel. The resulting archive hashes and tool
+version are included in the SDK fingerprint. Both wheel families use standard
+DEFLATE level 9 after retagging, preserving the unpacked files and RECORD hashes.
+The packager compares native-component library queries with upstream
 `llvm-config`. Wheel verification covers Native and All, explicit Native with
 the add-on present, and add-on uninstall. It initializes every selected backend
 and emits/parses x86_64, AArch64, RISC-V, and WebAssembly objects for All.
