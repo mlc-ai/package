@@ -34,14 +34,6 @@ DOXYGEN_ARCHIVE_URL = (
 # to be first on PATH.
 CMAKE = os.environ.get("MLC_DOXYGEN_BIN_CMAKE_COMMAND") or "cmake"
 
-# Doxygen's bundled Windows iconv (deps/iconv_winbuild) only ships x86/x64
-# libraries, so Windows ARM64 builds link a pinned win-iconv (public domain,
-# Win32-API based) compiled for the target instead. This is a build-tool pin,
-# independent of the Doxygen version in version.py.
-WIN_ICONV_VERSION = "0.0.10"
-WIN_ICONV_ARCHIVE_URL = f"https://github.com/win-iconv/win-iconv/archive/refs/tags/v{WIN_ICONV_VERSION}.tar.gz"
-WIN_ICONV_ARCHIVE_SHA256 = "58493387c7c9c70d61e711ec2feec5db0a59d164556642d2b427dde4ef756bc1"
-
 
 def run(cmd: list[str | Path], *, cwd: Path | None = None) -> None:
     printable = " ".join(shlex.quote(str(part)) for part in cmd)
@@ -201,38 +193,7 @@ def windows_target_arch() -> str | None:
     )
 
 
-def build_win_iconv(work_root: Path) -> Path:
-    """Build a static win-iconv for the target and return its install prefix."""
-    archive = download_archive(
-        WIN_ICONV_ARCHIVE_URL, WIN_ICONV_ARCHIVE_SHA256, work_root / f"win-iconv-{WIN_ICONV_VERSION}.tar.gz"
-    )
-    source_dir = safe_extract(archive, work_root / "src" / f"win-iconv-{WIN_ICONV_VERSION}")
-    build_dir = work_root / "build-win-iconv"
-    prefix = work_root / "win-iconv"
-    for path in (build_dir, prefix):
-        if path.exists():
-            shutil.rmtree(path)
-    build_type = os.environ.get("MLC_DOXYGEN_BIN_BUILD_TYPE", "Release")
-    run([
-        CMAKE, "-S", source_dir, "-B", build_dir, *cmake_generator_args(),
-        f"-DCMAKE_BUILD_TYPE={build_type}",
-        f"-DCMAKE_INSTALL_PREFIX={prefix}",
-        # Only the static library: a shared iconv.lib import library in the
-        # same prefix would be preferred by FindIconv and add a DLL dependency.
-        "-DWIN_ICONV_BUILD_STATIC=ON",
-        "-DWIN_ICONV_BUILD_SHARED=OFF",
-        "-DWIN_ICONV_BUILD_EXECUTABLE=OFF",
-        "-DWIN_ICONV_BUILD_TEST=OFF",
-        # Match Doxygen's win_static=ON (/MT) runtime.
-        "-DCMAKE_POLICY_DEFAULT_CMP0091=NEW",
-        "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>",
-    ])
-    run([CMAKE, "--build", build_dir, "--config", build_type, "--target", "install"])
-    return prefix
-
-
-def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path,
-                            iconv_dir: Path | None = None) -> list[str | Path]:
+def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path) -> list[str | Path]:
     build_type = os.environ.get("MLC_DOXYGEN_BIN_BUILD_TYPE", "Release")
     cmd: list[str | Path] = [
         CMAKE,
@@ -276,8 +237,6 @@ def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path,
 
     if platform.system() == "Windows":
         cmd.append("-Dwin_static=ON")
-    if iconv_dir is not None:
-        cmd.append(f"-DICONV_DIR={iconv_dir}")
 
     extra_args = os.environ.get("MLC_DOXYGEN_BIN_EXTRA_CMAKE_ARGS")
     if extra_args:
@@ -379,12 +338,17 @@ def build_and_install(source_dir: Path, work_root: Path) -> Path:
     if stage_dir.exists():
         shutil.rmtree(stage_dir)
 
-    iconv_dir = None
+    # Doxygen requires iconv, and on Windows it only bundles prebuilt x86/x64
+    # iconv libraries. We do not pull a third-party iconv into the build, so a
+    # Windows ARM64 build needs an iconv supplied through -DICONV_DIR.
     extra_args = os.environ.get("MLC_DOXYGEN_BIN_EXTRA_CMAKE_ARGS", "")
     if windows_target_arch() == "ARM64" and "-DICONV_DIR=" not in extra_args:
-        iconv_dir = build_win_iconv(work_root)
+        raise RuntimeError(
+            "Windows ARM64 needs an ARM64 iconv: Doxygen only bundles x86/x64 iconv libraries. "
+            "Pass -DICONV_DIR=<prefix> through MLC_DOXYGEN_BIN_EXTRA_CMAKE_ARGS."
+        )
 
-    run(cmake_configure_command(source_dir, build_dir, stage_dir, iconv_dir))
+    run(cmake_configure_command(source_dir, build_dir, stage_dir))
 
     build_type = os.environ.get("MLC_DOXYGEN_BIN_BUILD_TYPE", "Release")
     build_cmd: list[str | Path] = [
