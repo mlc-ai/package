@@ -100,7 +100,9 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     definitions.append((name, value, number))  # @feat.00, compiler feature metadata.
                 if storage == 3 and auxiliaries and number in indices:
                     auxiliary = bytearray(data[symbol_offset + (index + 1) * symbol_size:
-                                               symbol_offset + (index + 2) * symbol_size])
+                                               symbol_offset + (index + 1) * symbol_size + 18])
+                    # Bigobj pads each auxiliary record to 20 bytes; ordinary
+                    # COFF uses 18. The section-definition fields are the same.
                     if auxiliary[14] == 5:  # IMAGE_COMDAT_SELECT_ASSOCIATIVE.
                         associated = struct.unpack_from("<H", auxiliary, 12)[0]
                         associated |= struct.unpack_from("<H", auxiliary, 16)[0] << 16

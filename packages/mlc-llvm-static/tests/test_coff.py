@@ -105,3 +105,11 @@ def test_bss_preserves_logical_size_with_or_without_file_data(tmp_path, big):
     assert module.coff_contents(path) == original
     path.write_bytes(library(big, bss=True, code=bytes(32)))
     assert module.coff_contents(path) != original
+
+
+def test_bigobj_to_ordinary_coff_preserves_section_definitions(tmp_path):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(True, labels=True))
+    original = module.coff_contents(path)
+    path.write_bytes(library(False, labels=True))
+    assert module.coff_contents(path) == original
