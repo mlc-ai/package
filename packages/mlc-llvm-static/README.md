@@ -133,8 +133,11 @@ tool is not included in either wheel. The resulting archive hashes and tool
 version are included in the SDK fingerprint. The packager rejects any change to
 public symbol definitions or non-debug section contents, including code, data,
 and unwind information. Windows verification also links every archive member
-using `/WHOLEARCHIVE`. Both wheel families use standard DEFLATE level 9 after
-retagging, preserving the unpacked files and RECORD hashes. Packaging fails if
+using `/WHOLEARCHIVE`. Windows packaging additionally requires 7-Zip (or
+`MLC_LLVM_STATIC_7ZIP` pointing to its executable) for stronger standard DEFLATE
+encoding; neither packaging tool is needed by installed consumers. Other hosts
+use zlib DEFLATE level 9. Recompression runs after retagging and preserves the
+unpacked files, permissions, and RECORD hashes. Packaging fails if
 either wheel reaches 100,000,000 bytes, leaving no ambiguity between MB and MiB.
 The packager compares native-component library queries with upstream
 `llvm-config`. Wheel verification covers Native and All, explicit Native with

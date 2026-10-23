@@ -51,13 +51,15 @@ def compress_windows(wheel: Path, destination: Path) -> None:
             listing.write_text("\n".join(names) + "\n", encoding="utf-8")
             output = work / "wheel.zip"
             subprocess.run([executable, "a", "-tzip", "-mm=Deflate", "-mx=9", "-mfb=258",
-                            "-mpass=15", "-mmt=2", "-scsUTF-8", "-bd", "-bb0", "-y",
-                            str(output), "@" + str(listing)], cwd=payload, check=True)
+                            "-mpass=3", "-mmt=2", "-scsUTF-8", "-bd", "-bb0", "-y",
+                            str(output), "@" + str(listing)], cwd=payload, check=True, timeout=1200)
             with zipfile.ZipFile(output, "a") as target:
                 if set(target.namelist()) != set(source.namelist()):
                     raise RuntimeError("7-Zip changed the wheel member list")
                 for member in target.infolist():
                     original = source.getinfo(member.filename)
+                    if member.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                        raise RuntimeError("Only standard STORE/DEFLATE wheel compression is allowed")
                     if (member.CRC, member.file_size) != (original.CRC, original.file_size):
                         raise RuntimeError(f"7-Zip changed wheel payload: {member.filename}")
                     member.external_attr = original.external_attr

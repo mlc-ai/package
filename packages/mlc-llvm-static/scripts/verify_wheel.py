@@ -16,7 +16,8 @@ from pathlib import Path
 def run(command: list[str | Path], *, capture: bool = False) -> str:
     command = [str(item) for item in command]
     print("+ " + shlex.join(command), flush=True)
-    result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE if capture else None)
+    result = subprocess.run(command, check=True, text=True, timeout=180,
+                            stdout=subprocess.PIPE if capture else None)
     return result.stdout.strip() if capture else ""
 
 
