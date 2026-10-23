@@ -16,7 +16,7 @@ def setup_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(prepare, "__file__", str(tmp_path / "scripts/prepare_llvm.py"))
     cache = tmp_path / ".sdk-cache"
     cache.mkdir()
-    return cache / "sdk.whl"
+    return cache / "all-sdk.zip"
 
 
 def test_restores_only_sdk_payload_with_executable_permissions(tmp_path, monkeypatch):

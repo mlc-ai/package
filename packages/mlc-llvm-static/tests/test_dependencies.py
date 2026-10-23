@@ -69,3 +69,24 @@ def test_rejects_dynamic_sdk_libraries(output, name):
 ])
 def test_reads_export_tables(system, output, expected):
     assert verify.exported_symbols(output, system) == expected
+
+
+@pytest.mark.parametrize("output,prefix,windows", [
+    ('-lm -lz /opt/build-sdk/lib/libzstd.a', '/opt/relocated-sdk', False),
+    ('/opt/relocated-sdk-other/lib/libzstd.a', '/opt/relocated-sdk', False),
+    ('/opt/relocated-sdk/../build-sdk/lib/libzstd.a', '/opt/relocated-sdk', False),
+    (r'C:\build-sdk\lib\zstd.lib', r'C:\relocated-sdk', True),
+    (r'D:\sdk\lib\zstd.lib', r'C:\relocated-sdk', True),
+])
+def test_rejects_external_dependency_paths(output, prefix, windows):
+    with pytest.raises(RuntimeError, match="outside the SDK"):
+        verify.verify_system_library_paths(output, prefix, windows=windows)
+
+
+@pytest.mark.parametrize("output,prefix,windows", [
+    ('-lm -lz', '/opt/sdk', False),
+    ('"/opt/SDK with spaces/lib/libzstd.a" -lz', '/opt/SDK with spaces', False),
+    (r'"C:\SDK with spaces\lib\zstd.lib" kernel32.lib', r'C:\SDK with spaces', True),
+])
+def test_accepts_sdk_paths_and_system_library_names(output, prefix, windows):
+    verify.verify_system_library_paths(output, prefix, windows=windows)

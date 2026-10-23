@@ -227,8 +227,7 @@ dependencies, and checks every available imported archive's location after
 relocation. The existing IR/optimization/bitcode/JIT and Linux ABI checks
 continue to run.
 
-Before shipping the split or replacing discovery, retain these additional
-validation requirements:
+Retain these validation requirements as the SDK changes:
 
 - Keep both discovery routes working when introducing the configuration
   frontend. Extend coverage to additional representative roots and `all`,
@@ -250,16 +249,8 @@ validation requirements:
 The published experimental wheels' earlier four-platform and downstream checks
 are recorded in [PR 115](https://github.com/mlc-ai/package/pull/115).
 
-The [dependency validation run](https://github.com/mlc-ai/package/actions/runs/39806951525)
-passes on Linux x86_64/aarch64, macOS arm64, and Windows AMD64 against the
-existing `23.1.1.dev0` release wheels. Every platform passes 34 Python regression
-tests and both CMake-target and raw `llvm-config` link routes after relocation
-into a path containing spaces. Both routes execute the codec/error-path,
-compressed ELF/DWARF, export/dependency, and JIT checks; Linux additionally
-enforces the manylinux ABI ceilings. The isolated validation workflow downloads
-the pinned release assets and verifies SHA-256 checksums before installation.
-It does not compile LLVM or publish packages.
-
-These results validate the released native SDK profile. The concurrent
-Native/All split and Python frontend need their own artifact-based checks
-before their behavior can be considered verified.
+The [experimental dev3 release](https://github.com/mlc-ai/package/releases/tag/mlc-llvm-static-v23.1.1.dev3)
+records four-platform Native/All validation, both discovery routes, add-on
+removal, relocation, static dependency and export checks, cross-target objects,
+and downstream FFI/TIRx results. Target availability is checked against LLVM's
+configured backend list rather than a fixed set of architectures or a count.

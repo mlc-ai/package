@@ -60,7 +60,9 @@ def main():
     targets("native")
     run([sys.executable, "-m", "pip", "install", "--no-deps", extra])
     run([sys.executable, "-m", "pip", "check"])
-    if sdk.metadata()["profile"] != "all" or len(sdk.metadata()["targets"]) < 20:
+    metadata = sdk.metadata()
+    expected_targets = set(metadata["profiles"]["all"]["components"]["all-targets"]["requires"])
+    if metadata["profile"] != "all" or {target.lower() for target in metadata["targets"]} != expected_targets:
         raise RuntimeError("The add-on did not enable all standard LLVM targets")
     run([sys.executable, verifier])
     targets("all")

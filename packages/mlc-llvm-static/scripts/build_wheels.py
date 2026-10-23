@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import copy
 from concurrent.futures import ThreadPoolExecutor
-import json
 import os
 from pathlib import Path
 import runpy
@@ -14,7 +13,6 @@ import subprocess
 import sys
 import zipfile
 
-import prepare_llvm
 from compact_coff import compact_coff
 from compress_wheel import compress_wheel
 from packaging_tools import seven_zip

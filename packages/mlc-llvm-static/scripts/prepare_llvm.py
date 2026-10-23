@@ -8,6 +8,7 @@ import json
 import os
 import platform
 import re
+import runpy
 import shlex
 import shutil
 import subprocess
@@ -16,7 +17,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-LLVM_VERSION = "23.1.1"
+LLVM_VERSION = runpy.run_path(str(Path(__file__).resolve().parents[1] / "src/mlc_llvm_static/_version.py"))["LLVM_VERSION"]
 DEFAULT_TARGETS = "all"
 SOURCES = {
     "llvm": {
@@ -213,7 +214,7 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
     if platform.system() == "Linux":
         triple = run([prefix / "bin" / "llvm-config", "--host-target"], capture=True)
         build = work / "build-orc"
-        configure(source / "compiler-rt", build, prefix / "lib" / "clang" / "23", [
+        configure(source / "compiler-rt", build, prefix / "lib" / "clang" / LLVM_VERSION.split(".")[0], [
             f"-DLLVM_CMAKE_DIR={prefix / 'lib' / 'cmake' / 'llvm'}",
             f"-DCMAKE_C_COMPILER_TARGET={triple}", f"-DCMAKE_CXX_COMPILER_TARGET={triple}",
             "-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON", "-DCOMPILER_RT_INCLUDE_TESTS=OFF",
@@ -295,18 +296,18 @@ def relocate_pkgconfig(prefix: Path) -> None:
 
 
 def cached_prefix(work: Path) -> Path | None:
-    """Restore a CI wheel cached under its exact build-recipe/platform key."""
+    """Restore the raw SDK cached under its exact build-recipe/platform key."""
     if os.environ.get("MLC_LLVM_STATIC_USE_CACHE") != "1":
         return None
     cache = Path(__file__).resolve().parents[1] / ".sdk-cache"
-    wheels = sorted(cache.glob("all-sdk.zip")) or sorted(cache.glob("*.whl"))
-    if not wheels:
+    archive_path = cache / "all-sdk.zip"
+    if not archive_path.is_file():
         return None
     root = work / "cached-sdk"
     if root.exists():
         shutil.rmtree(root)
     root.mkdir(parents=True)
-    with zipfile.ZipFile(wheels[0]) as archive:
+    with zipfile.ZipFile(archive_path) as archive:
         for item in archive.infolist():
             if item.is_dir() or not item.filename.startswith((
                 "mlc_llvm_static/static/", "mlc_llvm_static/licenses/",
@@ -322,7 +323,7 @@ def cached_prefix(work: Path) -> Path | None:
             mode = (item.external_attr >> 16) & 0o777
             if mode:
                 target.chmod(mode)
-    print(f"Reusing compiled SDK from {wheels[0].name}", flush=True)
+    print(f"Reusing compiled SDK from {archive_path.name}", flush=True)
     return root / "mlc_llvm_static" / "static"
 
 

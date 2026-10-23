@@ -59,3 +59,14 @@ def test_bad_download_never_creates_executable(tmp_path, monkeypatch):
     assert not (tmp_path / "7zzs").exists()
     assert not (tmp_path / "tool.tar.xz").exists()
     assert not (tmp_path / "tool.tar.part").exists()
+
+
+@pytest.mark.parametrize("architecture", ["arm64", "x86_64"])
+def test_macos_uses_the_universal_archive(tmp_path, monkeypatch, architecture):
+    data = fixture_archive(monkeypatch)
+    entry = module.SEVEN_ZIP[("Linux", "aarch64")]
+    monkeypatch.setattr(module, "SEVEN_ZIP", {("Darwin", "universal"): entry})
+    monkeypatch.setattr(module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(module.platform, "machine", lambda: architecture)
+    monkeypatch.setattr(module.urllib.request, "urlopen", lambda *args, **kwargs: io.BytesIO(data))
+    assert Path(module.seven_zip(tmp_path)).read_bytes() == b"packaging executable fixture\n"

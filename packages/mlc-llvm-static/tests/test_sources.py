@@ -49,3 +49,30 @@ def test_rejects_every_unverified_download(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="Could not fetch verified source"):
         prepare.source_tree("zlib", tmp_path)
     assert not (tmp_path / "sources/zlib.tar.gz").exists()
+
+
+def test_orc_install_directory_uses_the_configured_llvm_major(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(SCRIPT.parent))
+    import split_sdk
+
+    source, work, prefix = (tmp_path / name for name in ("source", "work", "prefix"))
+    (source / "llvm/tools").mkdir(parents=True)
+    (prefix / "lib").mkdir(parents=True)
+    configurations = []
+
+    def configure(source, build, destination, options):
+        configurations.append((source, destination))
+        if build.name == "build-llvm":
+            variables = build / "tools/llvm-config/BuildVariables.inc"
+            variables.parent.mkdir(parents=True, exist_ok=True)
+            variables.write_text('#define LLVM_SYSTEM_LIBS ""\n')
+
+    monkeypatch.setattr(prepare, "LLVM_VERSION", "99.2.3")
+    monkeypatch.setattr(prepare.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(prepare, "configure", configure)
+    monkeypatch.setattr(prepare, "install", lambda *args: None)
+    monkeypatch.setattr(prepare, "run", lambda *args, **kwargs: "riscv64-unknown-linux-gnu")
+    monkeypatch.setattr(split_sdk, "distribution_options", lambda *args: [])
+    monkeypatch.setattr(split_sdk, "record_build", lambda *args: None)
+    prepare.build_llvm(source, work, prefix)
+    assert configurations[-1] == (source / "compiler-rt", prefix / "lib/clang/99")

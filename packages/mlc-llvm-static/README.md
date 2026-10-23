@@ -101,7 +101,7 @@ target_link_libraries(my_target PRIVATE ${LLVM_LIBS})
 For TIRx's existing command-based discovery, set `TVM_TIRX_USE_LLVM` to the result
 of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 `LLVM_PREFIX` to the result of `--prefix`. Linux ORC runtime archives live under
-`lib/clang/23/lib/`, matching the addon's discovery convention.
+`lib/clang/<LLVM-major>/lib/`, matching the addon's discovery convention.
 
 ## Builds and GitHub verification
 
@@ -111,6 +111,9 @@ Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`). I
 pull requests and can also be dispatched manually. `publish_release=true`
 creates a **new draft prerelease** containing all eight verified wheels and
 `SHA256SUMS`. It does not overwrite an existing release or publish to PyPI.
+The package version defaults to `_version.py`; an optional workflow input stamps
+both distributions and their exact-version requirements together. LLVM's pinned
+version also comes from that file. Cache restores require the exact recipe key.
 
 Verification installs the wheel and copies its SDK to a new directory containing
 spaces. It checks artifact hashes, `llvm-config` relocation, CMake import paths,

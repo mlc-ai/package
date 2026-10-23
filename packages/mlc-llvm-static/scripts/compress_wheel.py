@@ -19,7 +19,7 @@ def compress_wheel(wheel: Path, *, seven_zip: str | None = None) -> None:
     temporary = wheel.with_suffix(".whl.tmp")
     seven_zip = seven_zip or os.environ.get("MLC_LLVM_STATIC_7ZIP")
     try:
-        if seven_zip or wheel.name.endswith("-win_amd64.whl"):
+        if seven_zip:
             compress_deflate(wheel, temporary, executable=seven_zip)
             temporary.replace(wheel)
             return

@@ -1,5 +1,5 @@
 #include <llvm/ADT/SmallVector.h>
-#include <llvm/Config/Targets.h>
+#include "target-availability.h"
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IRReader/IRReader.h>
@@ -13,20 +13,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
-
-#if defined(MLC_LLVM_EXPECT_ALL_PROFILE)
-#if !LLVM_HAS_X86_TARGET || !LLVM_HAS_AARCH64_TARGET || !LLVM_HAS_RISCV_TARGET
-#error All-profile target-availability headers are inconsistent
-#endif
-#elif defined(MLC_LLVM_EXPECT_NATIVE_X86)
-#if !LLVM_HAS_X86_TARGET || LLVM_HAS_AARCH64_TARGET || LLVM_HAS_RISCV_TARGET
-#error Native X86 target-availability headers are inconsistent
-#endif
-#elif defined(MLC_LLVM_EXPECT_NATIVE_AArch64)
-#if LLVM_HAS_X86_TARGET || !LLVM_HAS_AARCH64_TARGET || LLVM_HAS_RISCV_TARGET
-#error Native AArch64 target-availability headers are inconsistent
-#endif
-#endif
 
 int main(int argc, char** argv) {
   // These expand the selected generated headers. A profile/library mismatch

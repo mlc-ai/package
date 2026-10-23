@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import ntpath
 import os
 import platform
+import posixpath
 import re
 import shlex
 import shutil
@@ -42,6 +44,23 @@ def exported_symbols(output: str, system: str) -> set[str]:
     if system == "Windows":
         return set(re.findall(r"^\s*\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)", output, re.MULTILINE))
     return {line.split()[0] for line in output.splitlines() if line.strip()}
+
+
+def verify_system_library_paths(output: str, prefix: Path, *, windows: bool = os.name == "nt") -> None:
+    """Absolute dependency paths must remain inside the relocated SDK."""
+    paths = ntpath if windows else posixpath
+    root = paths.normcase(paths.abspath(str(prefix)))
+    for token in shlex.split(output, posix=not windows):
+        library = token.strip('"')
+        if not paths.isabs(library):
+            continue
+        candidate = paths.normcase(paths.abspath(library))
+        try:
+            inside = paths.commonpath([root, candidate]) == root
+        except ValueError:  # Paths on different Windows drives.
+            inside = False
+        if not inside:
+            raise RuntimeError(f"llvm-config retained a dependency outside the SDK: {library}")
 
 
 def verify_linux_abi(path: Path) -> None:
@@ -96,9 +115,8 @@ def main() -> None:
                                ("--libdir", prefix / "lib"), ("--cmakedir", prefix / "lib/cmake/llvm")):
             if Path(run([*command, flag], capture=True)).resolve() != expected.resolve():
                 raise RuntimeError(f"llvm-config {flag} is not relocatable")
-        system_libs = run([*command, "--link-static", "--system-libs"], capture=True)
-        if str(original) in system_libs or any(token.startswith(("/private/", "/tmp/", "/project/")) for token in shlex.split(system_libs)):
-            raise RuntimeError(f"llvm-config retained build-time system library paths: {system_libs}")
+        system_libs = run([*command, "--quote-paths", "--link-static", "--system-libs"], capture=True)
+        verify_system_library_paths(system_libs, prefix)
         for path in prefix.rglob("*"):
             if path.is_file() and (path.suffix in (".so", ".dll", ".dylib") or ".so." in path.name):
                 raise RuntimeError(f"SDK unexpectedly contains a shared library: {path}")
@@ -114,6 +132,7 @@ def main() -> None:
             run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
                  "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
                  f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}",
+                 f"-DMLC_LLVM_EXPECTED_VERSION={sdk.LLVM_VERSION}",
                  f"-DMLC_LLVM_USE_CONFIG_FLAGS={'ON' if link_mode == 'llvm-config' else 'OFF'}",
                  f"-DMLC_LLVM_WHOLE_ARCHIVE={'ON' if link_mode == 'whole-archive' else 'OFF'}"])
             run(["cmake", "--build", build, "--parallel", "2"])

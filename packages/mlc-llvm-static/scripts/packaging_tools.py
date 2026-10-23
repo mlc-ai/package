@@ -15,7 +15,7 @@ SEVEN_ZIP = {
                           "22cf82fcc6eb7474f1d5bb4f02c0f8ebd573a718089d6833dc30f8350a3b232e"),
     ("Linux", "aarch64"): ("7z2605-linux-arm64.tar.xz", "7zzs",
                            "0b71f6cfc34669b3bf69f2347efd3429f77020665003a13b9cdc53b784270421"),
-    ("Darwin", "arm64"): ("7z2605-mac.tar.xz", "7zz",
+    ("Darwin", "universal"): ("7z2605-mac.tar.xz", "7zz",
                           "12ef6830317743cfd3f0ab1724bde43fcc270d8b6d8564f8c12c2a2b7f993570"),
 }
 
@@ -24,7 +24,8 @@ def seven_zip(work: Path) -> str:
     override = os.environ.get("MLC_LLVM_STATIC_7ZIP")
     if override:
         return shutil.which(override) or str(Path(override).resolve())
-    host = (platform.system(), platform.machine().lower())
+    system = platform.system()
+    host = (system, "universal" if system == "Darwin" else platform.machine().lower())
     if host[0] == "Windows":
         executable = shutil.which("7z") or shutil.which("7zz")
         if not executable:
