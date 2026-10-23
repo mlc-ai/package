@@ -13,10 +13,10 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False):
+def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False, selection=2):
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
-    symbol_count = (7 if weak else 5) if labels else 1
+    symbol_count = (8 if weak else 6) if labels else 1
     relocation_offset = header_size + 80 + len(code) + len(debug)
     relocations = struct.pack("<IIH", 0, 4, 4) if labels and not weak else b""
     symbol_offset = relocation_offset + len(relocations)
@@ -35,12 +35,15 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
     symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, 0, 1, 0x20, 2, 0)
     if labels:
         fmt = "<8sIiHBB" if big else "<8sIhHBB"
-        symbol += struct.pack(fmt, b".text", 0, 1, 0, 3, 1) + bytes(symbol_size)
+        auxiliary = bytearray(symbol_size)
+        auxiliary[14] = selection
+        symbol += struct.pack(fmt, b".text", 0, 1, 0, 3, 1) + auxiliary
         symbol += struct.pack(fmt, b"$dead", 0, 1, 0, 3, 0)
         symbol += struct.pack(fmt, b"$keep", 0, 1, 0, 3, 0)
         if weak:
             symbol += struct.pack(fmt, b"weak", 0, 0, 0, 105, 1)
             symbol += struct.pack("<I", 4) + bytes(symbol_size - 4)
+        symbol += struct.pack(fmt, b"@feat.00", 0x800, -1, 0, 3, 0)
     payload = header + sections + code + debug + relocations + symbol + struct.pack("<I", 4)
     member = b"file.obj/".ljust(16) + b"0".ljust(12) + b"0".ljust(6) + b"0".ljust(6)
     member += b"644".ljust(8) + str(len(payload)).encode().ljust(10) + b"`\n"
@@ -69,3 +72,12 @@ def test_only_unreferenced_labels_can_be_removed(tmp_path, big, weak):
     # A name may be local in one member and public in another.
     path.write_bytes(library(big, labels=True, weak=weak) + library(big, public=b"$dead")[8:])
     assert module.coff_contents(path, removable=True) == set()
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_comdat_selection_is_part_of_the_preservation_check(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, labels=True, selection=2))
+    original = module.coff_contents(path)
+    path.write_bytes(library(big, labels=True, selection=3))
+    assert module.coff_contents(path) != original

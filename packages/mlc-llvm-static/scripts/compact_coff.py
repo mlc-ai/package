@@ -69,7 +69,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 payload = data[raw_offset:raw_offset + raw_size] if raw_offset else b""
                 characteristics = struct.unpack_from("<I", section, 36)[0]
                 sections.append((name, characteristics, raw_size, hashlib.sha256(payload).digest()))
-            definitions = []
+            definitions, comdats = [], []
             symbols = {}
             index = 0
             while index < symbol_count:
@@ -81,7 +81,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 if symbol[:4] == b"\0\0\0\0":
                     name = string_at(struct.unpack_from("<I", symbol, 4)[0])
                 symbols[index] = name
-                if storage == 3 and not auxiliaries:
+                if storage == 3 and not auxiliaries and number > 0:
                     candidates.add(name)
                 else:
                     # Preserve section definitions/COMDAT auxiliary records,
@@ -91,9 +91,21 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     references.add(struct.unpack_from("<I", data, symbol_offset + (index + 1) * symbol_size)[0])
                 if storage == 2 and number != 0:  # External definition, including absolute symbols.
                     definitions.append((name, value, indices[number] if number > 0 else number))
+                if storage == 3 and number < 0:
+                    definitions.append((name, value, number))  # @feat.00, compiler feature metadata.
+                if storage == 3 and auxiliaries and number in indices:
+                    auxiliary = bytearray(data[symbol_offset + (index + 1) * symbol_size:
+                                               symbol_offset + (index + 2) * symbol_size])
+                    if auxiliary[14] == 5:  # IMAGE_COMDAT_SELECT_ASSOCIATIVE.
+                        associated = struct.unpack_from("<H", auxiliary, 12)[0]
+                        associated |= struct.unpack_from("<H", auxiliary, 16)[0] << 16
+                        canonical = indices[associated] + 1
+                        struct.pack_into("<H", auxiliary, 12, canonical & 0xffff)
+                        struct.pack_into("<H", auxiliary, 16, canonical >> 16)
+                    comdats.append((name, indices[number], bytes(auxiliary)))
                 index += 1 + auxiliaries
             protected.update(symbols[index] for index in references)
-            result.append((sections, sorted(definitions)))
+            result.append((sections, sorted(definitions), sorted(comdats)))
     if removable:
         # Names are matched across all members of the archive: a local label
         # in one object must not erase a public or referenced name in another.
@@ -127,7 +139,18 @@ def compact_coff(raw: Path) -> None:
             symbols_file = Path(temporary) / "symbols.txt"
             symbols_file.write_bytes(b"\n".join(sorted(names)) + b"\n")
             subprocess.run([executable, "--strip-debug", f"--strip-symbols={symbols_file}", str(archive)], check=True)
-        if coff_contents(archive) != contents:
+        actual = coff_contents(archive)
+        if actual != contents:
+            for index, (expected_object, actual_object) in enumerate(zip(contents, actual)):
+                if expected_object == actual_object:
+                    continue
+                print(f"COFF object {index}: section/definition counts {list(map(len, expected_object))} -> {list(map(len, actual_object))}", flush=True)
+                for part, expected_part, actual_part in zip(("sections", "definitions", "COMDATs"), expected_object, actual_object):
+                    for expected_entry, actual_entry in zip(expected_part, actual_part):
+                        if expected_entry != actual_entry:
+                            print(f"First changed {part}: {expected_entry!r} -> {actual_entry!r}", flush=True)
+                            break
+                break
             raise RuntimeError(f"COFF compaction changed public definitions or non-debug sections: {archive}")
         after += archive.stat().st_size
         metadata["files"][archive.relative_to(prefix).as_posix()] = {
