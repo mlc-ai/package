@@ -5,6 +5,7 @@ import json
 import hashlib
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import struct
@@ -73,6 +74,10 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                     # offset instead of the input's null pointer; only its size
                     # and flags describe loaded data.
                     payload = b""
+                if name == b".drectve":
+                    # /INCLUDE, /EXPORT and /ALTERNATENAME may refer to symbols
+                    # without ordinary relocations. Keep every directive token.
+                    protected.update(re.split(rb'[\s,:="\x00]+', payload))
                 sections.append((name, characteristics, raw_size, hashlib.sha256(payload).digest()))
             definitions, comdats = [], []
             symbols = {}
@@ -86,11 +91,12 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 if symbol[:4] == b"\0\0\0\0":
                     name = string_at(struct.unpack_from("<I", symbol, 4)[0])
                 symbols[index] = name
-                if storage == 3 and not auxiliaries and number > 0:
+                if not auxiliaries and ((storage == 3 and number > 0) or
+                                        (storage == 2 and number == 0)):
                     candidates.add(name)
                 else:
                     # Preserve section definitions/COMDAT auxiliary records,
-                    # public and undefined externals, and every other class.
+                    # public definitions and every other class.
                     protected.add(name)
                 if storage == 105 and auxiliaries:
                     references.add(struct.unpack_from("<I", data, symbol_offset + (index + 1) * symbol_size)[0])
@@ -123,7 +129,7 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
         # Names are matched across all members of the archive: a local label
         # in one object must not erase a public or referenced name in another.
         return {name for name in candidates - protected
-                if name and b"#" not in name and not any(byte in b" \t\r\n\v\f" for byte in name)}
+                if name and not any(byte in b' \t\r\n\v\f#,:="' for byte in name)}
     return result
 
 
@@ -145,8 +151,9 @@ def compact_coff(raw: Path) -> None:
         before += archive.stat().st_size
         contents = coff_contents(archive)
         # Generic --strip-unneeded removes unreferenced COMDAT section
-        # definitions required by MSVC. Explicitly remove only local labels
-        # that have no relocation/weak reference anywhere in this archive.
+        # definitions required by MSVC. Explicitly remove only local labels or
+        # undefined declarations with no relocation, weak reference, directive,
+        # or public-definition name collision anywhere in this archive.
         names = coff_contents(archive, removable=True)
         with tempfile.TemporaryDirectory(prefix="llvm-coff-symbols-") as temporary:
             symbols_file = Path(temporary) / "symbols.txt"
@@ -171,6 +178,6 @@ def compact_coff(raw: Path) -> None:
         }
     # The split build fingerprint includes both the transformation and the
     # resulting archive hashes, so compacted and original SDKs cannot be mixed.
-    metadata["packaging"] = {"coff": "unreferenced-local-labels-v1", "llvm_objcopy": version}
+    metadata["packaging"] = {"coff": "unreferenced-symbols-preserve-comdat-v1", "llvm_objcopy": version}
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
     print(f"COFF archives: {before:,} -> {after:,} bytes", flush=True)

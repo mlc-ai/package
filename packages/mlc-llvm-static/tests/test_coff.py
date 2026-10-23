@@ -14,12 +14,13 @@ spec.loader.exec_module(module)
 
 
 def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False,
-            selection=2, section_number=0, bss=False, bss_file_data=False):
+            selection=2, section_number=0, bss=False, bss_file_data=False,
+            undefined=False, directive=False, reference=4):
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
     symbol_count = (8 if weak else 6) if labels else 1
     relocation_offset = header_size + 80 + len(code) + len(debug)
-    relocations = struct.pack("<IIH", 0, 4, 4) if labels and not weak else b""
+    relocations = struct.pack("<IIH", 0, reference, 4) if labels and not weak else b""
     symbol_offset = relocation_offset + len(relocations)
     if big:
         header = struct.pack("<HHHHI16sIIIIIII", 0, 0xffff, 2, 0x8664, 0,
@@ -29,13 +30,13 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
     sections = b""
     offset = header_size + 80
     for name, contents, flags in [(b".bss" if bss else b".text", code, 0xc0100080 if bss else 0x60000020),
-                                   (b".debug$S", debug, 0x42100040)]:
+                                   (b".drectve" if directive else b".debug$S", debug, 0x42100040)]:
         referenced = name == b".text" and bool(relocations)
         sections += struct.pack("<8sIIIIIIHHI", name, 0, 0, len(contents),
                                 0 if bss and not bss_file_data and name == b".bss" else offset,
                                 relocation_offset if referenced else 0, 0, int(referenced), 0, flags)
         offset += len(contents)
-    symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, 0, 1, 0x20, 2, 0)
+    symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, 0, 0 if undefined else 1, 0x20, 2, 0)
     if labels:
         fmt = "<8sIiHBB" if big else "<8sIhHBB"
         auxiliary = bytearray(symbol_size)
@@ -46,7 +47,7 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
         symbol += struct.pack(fmt, b"$keep", 0, 1, 0, 3, 0)
         if weak:
             symbol += struct.pack(fmt, b"weak", 0, 0, 0, 105, 1)
-            symbol += struct.pack("<I", 4) + bytes(symbol_size - 4)
+            symbol += struct.pack("<I", reference) + bytes(symbol_size - 4)
         symbol += struct.pack(fmt, b"@feat.00", 0x800, -1, 0, 3, 0)
     payload = header + sections + code + debug + relocations + symbol + struct.pack("<I", 4)
     member = b"file.obj/".ljust(16) + b"0".ljust(12) + b"0".ljust(6) + b"0".ljust(6)
@@ -113,3 +114,26 @@ def test_bigobj_to_ordinary_coff_preserves_section_definitions(tmp_path):
     original = module.coff_contents(path)
     path.write_bytes(library(False, labels=True))
     assert module.coff_contents(path) == original
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_unreferenced_declarations_can_be_removed_unless_defined_in_another_member(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, undefined=True))
+    assert module.coff_contents(path, removable=True) == {b"public"}
+    path.write_bytes(library(big, undefined=True) + library(big)[8:])
+    assert module.coff_contents(path, removable=True) == set()
+
+
+@pytest.mark.parametrize("weak", [False, True])
+def test_relocation_and_weak_references_protect_undefined_declarations(tmp_path, weak):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(True, undefined=True, labels=True, weak=weak, reference=0))
+    assert b"public" not in module.coff_contents(path, removable=True)
+
+
+@pytest.mark.parametrize("directive", [b"/INCLUDE:public", b"/ALTERNATENAME:weak=public", b"/EXPORT:public", b'/INCLUDE:"public"'])
+def test_linker_directives_protect_declarations_without_relocations(tmp_path, directive):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(True, undefined=True, directive=True, debug=directive))
+    assert module.coff_contents(path, removable=True) == set()
