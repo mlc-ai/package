@@ -4,12 +4,11 @@ $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
 
 if (-not $env:MLC_DOXYGEN_BIN_ARCH) {
-  # PROCESSOR_ARCHITECTURE is AMD64 or ARM64 for a native 64-bit shell.
+  # PROCESSOR_ARCHITECTURE is AMD64 for a native x64 shell.
   $env:MLC_DOXYGEN_BIN_ARCH = $env:PROCESSOR_ARCHITECTURE
 }
 switch ($env:MLC_DOXYGEN_BIN_ARCH) {
   "AMD64" { $PlatformTag = "win_amd64" }
-  "ARM64" { $PlatformTag = "win_arm64" }
   default { throw "Unsupported Windows architecture: $env:MLC_DOXYGEN_BIN_ARCH" }
 }
 
