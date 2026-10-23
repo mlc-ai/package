@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import tarfile
 
@@ -40,7 +41,8 @@ def test_verified_download_and_cached_archive(tmp_path, monkeypatch):
     monkeypatch.setattr(module.urllib.request, "urlopen", download)
     executable = Path(module.seven_zip(tmp_path))
     assert executable.read_bytes() == b"packaging executable fixture\n"
-    assert executable.stat().st_mode & 0o111
+    if os.name != "nt":
+        assert executable.stat().st_mode & 0o111
     # Re-extract from the verified cached archive rather than trusting an old
     # executable that may have been modified by a previous packaging run.
     executable.write_bytes(b"modified")
