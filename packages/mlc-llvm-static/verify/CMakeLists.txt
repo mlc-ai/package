@@ -70,6 +70,23 @@ target_compile_options(mlc_llvm_probe PRIVATE ${definitions})
 target_compile_features(mlc_llvm_probe PRIVATE cxx_std_17)
 target_link_libraries(mlc_llvm_probe PRIVATE ${libraries})
 target_link_options(mlc_llvm_probe PRIVATE ${config_link_options})
+option(MLC_LLVM_WHOLE_ARCHIVE "Check every static library member with the Windows linker" OFF)
+if(MLC_LLVM_WHOLE_ARCHIVE AND MSVC)
+  set(whole_archive_options "/OPT:NOREF\n")
+  foreach(name ${LLVM_AVAILABLE_LIBS} ZLIB::ZLIB zstd::libzstd_static)
+    get_target_property(kind "${name}" TYPE)
+    if(kind STREQUAL "STATIC_LIBRARY" OR kind STREQUAL "UNKNOWN_LIBRARY")
+      target_link_libraries(mlc_llvm_probe PRIVATE "${name}")
+      string(APPEND whole_archive_options "\"/WHOLEARCHIVE:$<TARGET_FILE:${name}>\"\n")
+    endif()
+  endforeach()
+  # CMake keeps link options outside its library response file. Expanding
+  # hundreds of absolute /WHOLEARCHIVE paths exceeds cmd.exe's length limit.
+  file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/whole-archive-$<CONFIG>.rsp"
+       CONTENT "${whole_archive_options}")
+  target_link_options(mlc_llvm_probe PRIVATE
+    "LINKER:@${CMAKE_CURRENT_BINARY_DIR}/whole-archive-$<CONFIG>.rsp")
+endif()
 
 # Static archives do not make their symbols private in a downstream DSO.
 # Exercise the export controls required when another LLVM can share a process.

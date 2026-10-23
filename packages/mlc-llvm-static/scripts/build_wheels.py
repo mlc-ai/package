@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,8 @@ import sys
 import zipfile
 
 import prepare_llvm
+from compact_coff import compact_coff
+from compress_wheel import compress_wheel
 from split_sdk import split_sdk
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -54,6 +57,8 @@ def stage(native: Path, work: Path) -> Path | None:
         # managed build tree before making/installing multiple wheel payloads.
         shutil.rmtree(source_work)
     extra = native.parent / "extra/mlc_llvm_static"
+    # Work on the restored copy, keeping the cached upstream SDK unchanged.
+    compact_coff(raw)
     split_sdk(raw, native, extra, version(), PROJECT / "src/mlc_llvm_static/_llvm_config.py")
     # Upstream's executable remains in the raw build/cache, never either wheel.
     # Verify every installed component's dependency order against that build.
@@ -101,6 +106,11 @@ def build(output: Path, work: Path, tag: str | None) -> None:
     wheels = sorted(destination.glob("*.whl"))
     if len(wheels) != 2:
         raise RuntimeError(f"Expected two wheels, got {wheels}")
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(compress_wheel, wheels))
+    for wheel in wheels:
+        if wheel.stat().st_size >= 100_000_000:
+            raise RuntimeError(f"{wheel.name}: {wheel.stat().st_size:,} bytes exceeds the SDK's 100 MB wheel budget")
     paths = []
     for wheel in wheels:
         with zipfile.ZipFile(wheel) as archive:

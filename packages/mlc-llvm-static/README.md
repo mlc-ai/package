@@ -122,7 +122,25 @@ The probe also round-trips both compression formats, reads compressed ELF DWARF,
 and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
 CI caches the raw All-target SDK by platform and a fingerprint of the compilation
 and graph-generation recipe. Frontend, packaging, and verification changes reuse
-that build. The packager compares native-component library queries with upstream
+that build. Windows packaging uses `llvm-objcopy` on a copy of the raw archives
+to remove unreferenced local labels and unused undefined declarations. Public
+definitions, relocation/weak-reference targets, linker directive references,
+COMDAT section definitions and key symbols, compiler feature flags, debug/PCH
+metadata, and unwind data are retained.
+Generic `--strip-unneeded` is unsuitable because
+it removes COMDAT records required by MSVC's linker. Install LLVM's
+`llvm-objcopy` as a build tool or set `MLC_LLVM_STATIC_OBJCOPY` to its path; the
+tool is not included in either wheel. The resulting archive hashes and tool
+version are included in the SDK fingerprint. The packager rejects any change to
+public symbol definitions or non-debug section contents, including code, data,
+and unwind information. Windows verification also links every archive member
+using `/WHOLEARCHIVE`. Windows packaging additionally requires 7-Zip (or
+`MLC_LLVM_STATIC_7ZIP` pointing to its executable) for stronger standard DEFLATE
+encoding; neither packaging tool is needed by installed consumers. Other hosts
+use zlib DEFLATE level 9. Recompression runs after retagging and preserves the
+unpacked files, permissions, and RECORD hashes. Packaging fails if
+either wheel reaches 100,000,000 bytes, leaving no ambiguity between MB and MiB.
+The packager compares native-component library queries with upstream
 `llvm-config`. Wheel verification covers Native and All, explicit Native with
 the add-on present, and add-on uninstall. It initializes every selected backend
 and emits/parses x86_64, AArch64, RISC-V, and WebAssembly objects for All.
