@@ -57,7 +57,8 @@ def stage(native: Path, work: Path) -> Path | None:
         shutil.rmtree(source_work)
     extra = native.parent / "extra/mlc_llvm_static"
     # Work on the restored copy, keeping the cached upstream SDK unchanged.
-    compact_coff(raw)
+    if os.environ.get("MLC_LLVM_STATIC_COMPACT_COFF") == "1":
+        compact_coff(raw)
     split_sdk(raw, native, extra, version(), PROJECT / "src/mlc_llvm_static/_llvm_config.py")
     # Upstream's executable remains in the raw build/cache, never either wheel.
     # Verify every installed component's dependency order against that build.
