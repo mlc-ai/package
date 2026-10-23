@@ -5,6 +5,8 @@ import importlib.util
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
+import pytest
+
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/compress_wheel.py"
 spec = importlib.util.spec_from_file_location("compress_wheel", SCRIPT)
 module = importlib.util.module_from_spec(spec)
@@ -37,4 +39,39 @@ def test_preserves_payload_record_and_archive_metadata(tmp_path):
         assert member.compress_type == ZIP_DEFLATED
         assert archive.comment == b"SDK wheel"
     assert path.stat().st_size < before
+    assert not path.with_suffix(".whl.tmp").exists()
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_strong_deflate_preserves_modes_and_rejects_changed_payload(tmp_path, monkeypatch, corrupt):
+    path = tmp_path / "sdk-py3-none-macosx_14_0_arm64.whl"
+    member = ZipInfo("sdk/bin/llvm-config", (2020, 1, 2, 3, 4, 6))
+    member.external_attr = 0o100755 << 16
+    member.comment = b"original member comment"
+    content = b"#!/usr/bin/env python3\n"
+    with ZipFile(path, "w", ZIP_DEFLATED) as archive:
+        archive.comment = b"original archive comment"
+        archive.writestr(member, content)
+    original = path.read_bytes()
+
+    def encode(command, cwd, **kwargs):
+        assert "-mm=Deflate" in command
+        assert "-mpass=3" in command
+        with ZipFile(command[-2], "w", ZIP_DEFLATED) as archive:
+            archive.writestr(member.filename, b"changed" if corrupt else (Path(cwd) / member.filename).read_bytes())
+
+    monkeypatch.setattr(module.subprocess, "run", encode)
+    if corrupt:
+        with pytest.raises(RuntimeError, match="changed wheel payload"):
+            module.compress_wheel(path, seven_zip="fixture-tool")
+        assert path.read_bytes() == original
+    else:
+        module.compress_wheel(path, seven_zip="fixture-tool")
+        with ZipFile(path) as archive:
+            actual = archive.getinfo(member.filename)
+            assert archive.read(member.filename) == content
+            assert actual.external_attr == member.external_attr
+            assert actual.date_time == member.date_time
+            assert actual.comment == member.comment
+            assert archive.comment == b"original archive comment"
     assert not path.with_suffix(".whl.tmp").exists()

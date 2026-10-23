@@ -134,12 +134,32 @@ tool is not included in either wheel. The resulting archive hashes and tool
 version are included in the SDK fingerprint. The packager rejects any change to
 public symbol definitions or non-debug section contents, including code, data,
 and unwind information. Windows verification also links every archive member
-using `/WHOLEARCHIVE`. Windows packaging additionally requires 7-Zip (or
-`MLC_LLVM_STATIC_7ZIP` pointing to its executable) for stronger standard DEFLATE
-encoding; neither packaging tool is needed by installed consumers. Other hosts
-use zlib DEFLATE level 9. Recompression runs after retagging and preserves the
-unpacked files, permissions, and RECORD hashes. Packaging fails if
+using `/WHOLEARCHIVE`. All hosts use 7-Zip for stronger standard ZIP DEFLATE
+encoding. Linux and macOS packaging fetch an official 7-Zip 26.05 binary with
+a pinned SHA-256; Windows uses the installed 7-Zip. Set `MLC_LLVM_STATIC_7ZIP`
+to use an existing executable, including for offline packaging. Neither
+packaging tool is needed by installed consumers. Recompression runs after
+retagging and preserves the unpacked files, permissions, and RECORD hashes. Packaging fails if
 either wheel reaches 100,000,000 bytes, leaving no ambiguity between MB and MiB.
+
+A remote compression-only benchmark of the dev2 release measured these savings
+over zlib level 9 (decimal MB). Every unpacked file's SHA-256, mode, and timestamp
+was identical. This reduces downloads; installed SDK size is unchanged.
+
+| Host | Native: zlib → 7-Zip | Extra targets: zlib → 7-Zip |
+| --- | ---: | ---: |
+| Linux x86_64 | 64.2 → 61.3 | 34.4 → 32.3 |
+| Linux aarch64 | 62.2 → 59.3 | 33.2 → 31.2 |
+| macOS arm64 | 48.5 → 46.2 | 25.7 → 24.1 |
+
+An additional Linux aarch64 `objcopy --strip-unneeded` experiment on the eight
+largest archives saved 4.58 MB installed but only 0.65 MB compressed (2.5%).
+It preserved allocated section bytes and externally defined symbols in those
+samples. This transformation is not enabled: it changes object metadata and
+requires separate exhaustive native linker validation, unlike lossless ZIP
+recompression. Linux/macOS archives retain their original symbols and sections;
+no code generation targets or compiler optimizations are removed to save space.
+
 The packager compares native-component library queries with upstream
 `llvm-config`. Wheel verification covers Native and All, explicit Native with
 the add-on present, and add-on uninstall. It initializes every selected backend
