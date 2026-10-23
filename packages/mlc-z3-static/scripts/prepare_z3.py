@@ -410,10 +410,11 @@ def write_license(package_dir: Path, source_dir: Path) -> str:
     licenses_dir.mkdir(parents=True, exist_ok=True)
     source_license = source_dir / "LICENSE.txt"
     dest = licenses_dir / "LICENSE-Z3.txt"
-    if source_license.is_file():
-        shutil.copy2(source_license, dest)
-    else:
-        dest.write_text("See https://github.com/Z3Prover/z3/blob/master/LICENSE.txt\n", encoding="utf-8")
+    # The license comes from the SHA-256-verified upstream source archive; the
+    # bundled Z3 artifacts must never ship without their license text.
+    if not source_license.is_file():
+        raise RuntimeError(f"Z3 source archive has no LICENSE.txt at {source_license}")
+    shutil.copy2(source_license, dest)
     return rel(package_dir, dest)
 
 

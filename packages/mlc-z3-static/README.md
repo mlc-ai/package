@@ -164,6 +164,15 @@ pytest
 Run pytest against an installed wheel; the tests import the installed
 package, not `python/`. cibuildwheel runs the same suite on every built wheel.
 
+## License
+
+This package is distributed under the MIT License, the license of the Z3
+artifacts it bundles. `LICENSE` is a verbatim copy of Z3's upstream
+`LICENSE.txt`, so this directory and its sdist are self-contained. The wheel
+also carries the license copied during packaging from the SHA-256-verified
+upstream source archive as `mlc_z3_static/licenses/LICENSE-Z3.txt`; the build
+fails if that file is missing.
+
 ## Bumping the version
 
 [`version.py`](version.py) is the single version source. To move to a new Z3

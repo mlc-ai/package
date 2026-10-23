@@ -56,3 +56,8 @@ def test_config_cli(kind: str, flag: str, getter) -> None:
         [sys.executable, "-m", "mlc_z3_static.config", flag, "--kind", kind], text=True
     )
     assert output.strip() == getter(kind)
+
+
+def test_bundled_z3_license_is_upstream_mit() -> None:
+    license_path = Path(mlc_z3_static.__file__).parent / "licenses" / "LICENSE-Z3.txt"
+    assert "Permission is hereby granted, free of charge" in license_path.read_text(encoding="utf-8")
