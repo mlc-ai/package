@@ -105,14 +105,16 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 ## Builds and publishing
 
 The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
-families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows AMD64.
+families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows
+AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
+the ARM64 MSVC toolchain; its wheels use the `win_arm64` platform tag.
 Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
 Relevant pull requests build and validate the wheels. Manual runs publish both
 wheel families to PyPI, with `version_suffix` as the only input. Every run
-validates all four host platforms. Publishing waits for every host's validation
-and checks all eight wheels and their package metadata before uploading. PyPI
-receives wheels only; source distributions are built for validation, since these
-packages provide a prebuilt SDK.
+validates every supported host platform. Publishing waits for every host's
+validation and checks the complete wheel set and its metadata before uploading.
+PyPI receives wheels only; source distributions are built for validation, since
+these packages provide a prebuilt SDK.
 The SDK is compiled once per host and partitioned into both wheel families.
 Separate publishing jobs download their project's validated wheels and do not
 build anything. Wait for both jobs to succeed before using the All profile from

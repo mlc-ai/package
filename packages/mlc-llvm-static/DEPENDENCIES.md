@@ -93,7 +93,7 @@ LLVM, including when LLVM generates code for another architecture.
 | --- | --- |
 | Linux x86_64/aarch64 | glibc, the selected C++ runtime/compiler support, and configure-detected `rt`, `dl`, pthread, math. `libatomic` is conditional on the host compiler/architecture; preserve its discovered flags if present. Backtrace/execinfo dependencies are conditional on other host platforms. Do not bundle a second glibc. |
 | macOS arm64 | Apple SDK/system libraries, libc++, libSystem, and any flags reported by the actual build. Static LLVM/zlib/zstd does not imply static libc++ or libSystem. The SDK's deployment floor remains macOS 14.0. No vendor framework is required merely to include extra backends. |
-| Windows AMD64 | Support links `psapi`, `shell32`, `ole32`, `uuid`, `advapi32`, `ws2_32`, `ntdll`. Its CMake interface also carries `delayimp` and delay-load options. Windows `LLVMHTTP` additionally links `winhttp` and `crypt32`, even with CURL off. The archives use `/MD`; downstream code must use a compatible release CRT and provide the VC/UCRT runtime environment. |
+| Windows AMD64/ARM64 | Support links `psapi`, `shell32`, `ole32`, `uuid`, `advapi32`, `ws2_32`, `ntdll`. Its CMake interface also carries `delayimp` and delay-load options. Windows `LLVMHTTP` additionally links `winhttp` and `crypt32`, even with CURL off. The archives use `/MD`; downstream code must use a compatible release CRT for its architecture and provide the VC/UCRT runtime environment. |
 
 The table combines the inspected Linux export with upstream
 [platform detection](https://github.com/llvm/llvm-project/blob/llvmorg-23.1.1/llvm/cmake/config-ix.cmake),
@@ -158,7 +158,7 @@ additional target archives and its distinct profile metadata/headers/CMake
 files. Installing it preserves the base's compression libraries and host runtime.
 Both profiles use the same dependency feature policy and build fingerprint.
 Remote CI initializes every selected backend and emits representative
-cross-target objects on all four hosts.
+cross-target objects on every supported host.
 
 ## Metadata needed by a configuration frontend
 

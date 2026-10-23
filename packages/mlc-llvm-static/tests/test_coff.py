@@ -1,4 +1,5 @@
 """COFF compaction may change debug metadata, never public code or definitions."""
+from functools import partial
 import importlib.util
 from pathlib import Path
 import struct
@@ -13,9 +14,11 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False,
-            selection=2, section_number=0, bss=False, bss_file_data=False,
-            undefined=False, directive=False, reference=4, public_value=0, comdat=False):
+def make_library(big, code=None, public=b"public", debug=b"debug", labels=False, weak=False,
+                 selection=2, section_number=0, bss=False, bss_file_data=False,
+                 undefined=False, directive=False, reference=4, public_value=0, comdat=False, *, machine):
+    if code is None:
+        code = b"\xc3" if machine == 0x8664 else b"\xc0\x03\x5f\xd6"  # RET.
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
     symbol_count = (8 if weak else 6) if labels else 1
@@ -23,10 +26,10 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
     relocations = struct.pack("<IIH", 0, reference, 4) if labels and not weak else b""
     symbol_offset = relocation_offset + len(relocations)
     if big:
-        header = struct.pack("<HHHHI16sIIIIIII", 0, 0xffff, 2, 0x8664, 0,
+        header = struct.pack("<HHHHI16sIIIIIII", 0, 0xffff, 2, machine, 0,
                              bytes(16), 0, 0, 0, 0, 2, symbol_offset, symbol_count)
     else:
-        header = struct.pack("<HHIIIHH", 0x8664, 2, 0, symbol_offset, symbol_count, 0, 0)
+        header = struct.pack("<HHIIIHH", machine, 2, 0, symbol_offset, symbol_count, 0, 0)
     sections = b""
     offset = header_size + 80
     for name, contents, flags in [(b".bss" if bss else b".text", code,
@@ -57,8 +60,13 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
     return b"!<arch>\n" + member + payload + (b"\n" if len(payload) % 2 else b"")
 
 
+@pytest.fixture(params=[0x8664, 0xAA64], ids=["amd64", "arm64"])
+def library(request):
+    return partial(make_library, machine=request.param)
+
+
 @pytest.mark.parametrize("big", [False, True])
-def test_fingerprint_ignores_debug_but_protects_code_and_public_names(tmp_path, big):
+def test_fingerprint_ignores_debug_but_protects_code_and_public_names(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big))
     expected = module.coff_contents(path)
@@ -72,7 +80,7 @@ def test_fingerprint_ignores_debug_but_protects_code_and_public_names(tmp_path, 
 
 @pytest.mark.parametrize("big", [False, True])
 @pytest.mark.parametrize("weak", [False, True])
-def test_only_unreferenced_labels_can_be_removed(tmp_path, big, weak):
+def test_only_unreferenced_labels_can_be_removed(tmp_path, library, big, weak):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, labels=True, weak=weak))
     assert module.coff_contents(path, removable=True) == {b"$dead"}
@@ -82,7 +90,7 @@ def test_only_unreferenced_labels_can_be_removed(tmp_path, big, weak):
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_comdat_selection_is_part_of_the_preservation_check(tmp_path, big):
+def test_comdat_selection_is_part_of_the_preservation_check(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, labels=True, selection=2))
     original = module.coff_contents(path)
@@ -91,7 +99,7 @@ def test_comdat_selection_is_part_of_the_preservation_check(tmp_path, big):
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_ignores_non_associative_comdat_number_normalization(tmp_path, big):
+def test_ignores_non_associative_comdat_number_normalization(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, labels=True, section_number=0))
     original = module.coff_contents(path)
@@ -100,7 +108,7 @@ def test_ignores_non_associative_comdat_number_normalization(tmp_path, big):
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_bss_preserves_logical_size_with_or_without_file_data(tmp_path, big):
+def test_bss_preserves_logical_size_with_or_without_file_data(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, bss=True, code=bytes(16)))
     original = module.coff_contents(path)
@@ -110,7 +118,7 @@ def test_bss_preserves_logical_size_with_or_without_file_data(tmp_path, big):
     assert module.coff_contents(path) != original
 
 
-def test_bigobj_to_ordinary_coff_preserves_section_definitions(tmp_path):
+def test_bigobj_to_ordinary_coff_preserves_section_definitions(tmp_path, library):
     path = tmp_path / "test.lib"
     path.write_bytes(library(True, labels=True))
     original = module.coff_contents(path)
@@ -119,7 +127,7 @@ def test_bigobj_to_ordinary_coff_preserves_section_definitions(tmp_path):
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_unreferenced_declarations_can_be_removed_unless_defined_in_another_member(tmp_path, big):
+def test_unreferenced_declarations_can_be_removed_unless_defined_in_another_member(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, undefined=True))
     assert module.coff_contents(path, removable=True) == {b"public"}
@@ -128,21 +136,21 @@ def test_unreferenced_declarations_can_be_removed_unless_defined_in_another_memb
 
 
 @pytest.mark.parametrize("weak", [False, True])
-def test_relocation_and_weak_references_protect_undefined_declarations(tmp_path, weak):
+def test_relocation_and_weak_references_protect_undefined_declarations(tmp_path, library, weak):
     path = tmp_path / "test.lib"
     path.write_bytes(library(True, undefined=True, labels=True, weak=weak, reference=0))
     assert b"public" not in module.coff_contents(path, removable=True)
 
 
 @pytest.mark.parametrize("directive", [b"/INCLUDE:public", b"/ALTERNATENAME:weak=public", b"/EXPORT:public", b'/INCLUDE:"public"'])
-def test_linker_directives_protect_declarations_without_relocations(tmp_path, directive):
+def test_linker_directives_protect_declarations_without_relocations(tmp_path, library, directive):
     path = tmp_path / "test.lib"
     path.write_bytes(library(True, undefined=True, directive=True, debug=directive))
     assert module.coff_contents(path, removable=True) == set()
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_common_data_is_a_protected_public_definition(tmp_path, big):
+def test_common_data_is_a_protected_public_definition(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, undefined=True, public_value=16))
     assert module.coff_contents(path, removable=True) == set()
@@ -152,7 +160,7 @@ def test_common_data_is_a_protected_public_definition(tmp_path, big):
 
 
 @pytest.mark.parametrize("big", [False, True])
-def test_static_keys_in_non_associative_comdats_are_required_without_relocations(tmp_path, big):
+def test_static_keys_in_non_associative_comdats_are_required_without_relocations(tmp_path, library, big):
     path = tmp_path / "test.lib"
     path.write_bytes(library(big, labels=True, comdat=True))
     assert module.coff_contents(path, removable=True) == set()
