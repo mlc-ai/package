@@ -68,6 +68,11 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                 raw_size, raw_offset = struct.unpack_from("<II", section, 16)
                 payload = data[raw_offset:raw_offset + raw_size] if raw_offset else b""
                 characteristics = struct.unpack_from("<I", section, 36)[0]
+                if characteristics & 0x80:  # IMAGE_SCN_CNT_UNINITIALIZED_DATA.
+                    # BSS is logically zero-filled. objcopy may give it a file
+                    # offset instead of the input's null pointer; only its size
+                    # and flags describe loaded data.
+                    payload = b""
                 sections.append((name, characteristics, raw_size, hashlib.sha256(payload).digest()))
             definitions, comdats = [], []
             symbols = {}
@@ -102,6 +107,12 @@ def coff_contents(path: Path, *, removable: bool = False) -> list | set[bytes]:
                         canonical = indices[associated] + 1
                         struct.pack_into("<H", auxiliary, 12, canonical & 0xffff)
                         struct.pack_into("<H", auxiliary, 16, canonical >> 16)
+                    else:
+                        # Number/HighNumber are meaningful only for associative
+                        # COMDATs. LLVM fills in the section's own number where
+                        # MSVC emits zero for other selection modes.
+                        struct.pack_into("<H", auxiliary, 12, 0)
+                        struct.pack_into("<H", auxiliary, 16, 0)
                     comdats.append((name, indices[number], bytes(auxiliary)))
                 index += 1 + auxiliaries
             protected.update(symbols[index] for index in references)

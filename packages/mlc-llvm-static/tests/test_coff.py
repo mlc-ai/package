@@ -13,7 +13,8 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False, selection=2):
+def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, weak=False,
+            selection=2, section_number=0, bss=False, bss_file_data=False):
     header_size = 56 if big else 20
     symbol_size = 20 if big else 18
     symbol_count = (8 if weak else 6) if labels else 1
@@ -27,9 +28,11 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
         header = struct.pack("<HHIIIHH", 0x8664, 2, 0, symbol_offset, symbol_count, 0, 0)
     sections = b""
     offset = header_size + 80
-    for name, contents, flags in [(b".text", code, 0x60000020), (b".debug$S", debug, 0x42100040)]:
+    for name, contents, flags in [(b".bss" if bss else b".text", code, 0xc0100080 if bss else 0x60000020),
+                                   (b".debug$S", debug, 0x42100040)]:
         referenced = name == b".text" and bool(relocations)
-        sections += struct.pack("<8sIIIIIIHHI", name, 0, 0, len(contents), offset,
+        sections += struct.pack("<8sIIIIIIHHI", name, 0, 0, len(contents),
+                                0 if bss and not bss_file_data and name == b".bss" else offset,
                                 relocation_offset if referenced else 0, 0, int(referenced), 0, flags)
         offset += len(contents)
     symbol = struct.pack("<8sIiHBB" if big else "<8sIhHBB", public, 0, 1, 0x20, 2, 0)
@@ -37,6 +40,7 @@ def library(big, code=b"\xc3", public=b"public", debug=b"debug", labels=False, w
         fmt = "<8sIiHBB" if big else "<8sIhHBB"
         auxiliary = bytearray(symbol_size)
         auxiliary[14] = selection
+        struct.pack_into("<H", auxiliary, 12, section_number)
         symbol += struct.pack(fmt, b".text", 0, 1, 0, 3, 1) + auxiliary
         symbol += struct.pack(fmt, b"$dead", 0, 1, 0, 3, 0)
         symbol += struct.pack(fmt, b"$keep", 0, 1, 0, 3, 0)
@@ -80,4 +84,24 @@ def test_comdat_selection_is_part_of_the_preservation_check(tmp_path, big):
     path.write_bytes(library(big, labels=True, selection=2))
     original = module.coff_contents(path)
     path.write_bytes(library(big, labels=True, selection=3))
+    assert module.coff_contents(path) != original
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_ignores_non_associative_comdat_number_normalization(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, labels=True, section_number=0))
+    original = module.coff_contents(path)
+    path.write_bytes(library(big, labels=True, section_number=1))
+    assert module.coff_contents(path) == original
+
+
+@pytest.mark.parametrize("big", [False, True])
+def test_bss_preserves_logical_size_with_or_without_file_data(tmp_path, big):
+    path = tmp_path / "test.lib"
+    path.write_bytes(library(big, bss=True, code=bytes(16)))
+    original = module.coff_contents(path)
+    path.write_bytes(library(big, bss=True, bss_file_data=True, code=bytes(16)))
+    assert module.coff_contents(path) == original
+    path.write_bytes(library(big, bss=True, code=bytes(32)))
     assert module.coff_contents(path) != original
