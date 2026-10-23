@@ -65,6 +65,7 @@ def _library_candidates(kind: str, artifact_dir: Path) -> list[Path]:
             lib_dir / "libz3.a",
             lib_dir / "z3.lib",
             lib_dir / "libz3.lib",
+            lib_dir / "libz3-static.lib",
         ]
 
     candidates = [

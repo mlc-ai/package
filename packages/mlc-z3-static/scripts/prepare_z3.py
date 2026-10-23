@@ -27,6 +27,11 @@ Z3_COMMIT: str = _VERSION["Z3_COMMIT"]
 Z3_ARCHIVE_SHA256: str = _VERSION["Z3_ARCHIVE_SHA256"]
 Z3_ARCHIVE_URL = f"https://github.com/Z3Prover/z3/archive/{Z3_COMMIT}.tar.gz"
 
+# The outer scikit-build-core project forwards its CMake executable so the
+# inner Z3 build uses the same (sufficiently new) CMake rather than whatever
+# `cmake` happens to be first on PATH.
+CMAKE = os.environ.get("MLC_Z3_STATIC_CMAKE_COMMAND") or "cmake"
+
 
 def run(cmd: list[str | Path], *, cwd: Path | None = None) -> None:
     printable = " ".join(shlex.quote(str(part)) for part in cmd)
@@ -140,7 +145,7 @@ def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, 
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
     shared = "ON" if kind == "shared" else "OFF"
     cmd: list[str | Path] = [
-        "cmake",
+        CMAKE,
         "-S",
         source_dir,
         "-B",
@@ -207,7 +212,7 @@ def build_and_install(source_dir: Path, work_root: Path, package_dir: Path, kind
 
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
     build_cmd: list[str | Path] = [
-        "cmake",
+        CMAKE,
         "--build",
         build_dir,
         "--config",
@@ -232,6 +237,9 @@ def library_candidates(stage_dir: Path, kind: str) -> list[Path]:
             lib_dir / "libz3.a",
             lib_dir / "z3.lib",
             lib_dir / "libz3.lib",
+            # Z3 >= 5 names the MSVC static archive libz3-static.lib so it can
+            # share a prefix with the shared build's libz3.lib import library.
+            lib_dir / "libz3-static.lib",
         ]
 
     candidates = [
@@ -258,11 +266,12 @@ def validate_stage(stage_dir: Path, kind: str) -> Path:
         stage_dir / "include" / "z3.h",
         stage_dir / "include" / "z3++.h",
         stage_dir / "lib" / "cmake" / "z3" / "Z3Config.cmake",
-        stage_dir / "lib" / "cmake" / "z3" / "Z3Targets.cmake",
     ]
     for path in required:
         if not path.is_file():
             raise RuntimeError(f"Z3 {kind} install tree is missing {path.relative_to(stage_dir)}")
+    if not main_targets_files(stage_dir, kind):
+        raise RuntimeError(f"Z3 {kind} install tree is missing its exported CMake targets file")
     library = first_library(stage_dir, kind)
     validate_relocatable_cmake_exports(stage_dir, kind)
     validate_relocatable_pkgconfig(stage_dir, kind)
@@ -274,11 +283,26 @@ def normalize_installed_metadata(stage_dir: Path, kind: str) -> None:
     relativize_pkgconfig_files(stage_dir)
 
 
-def relativize_cmake_exports(stage_dir: Path, kind: str) -> None:
-    targets_path = stage_dir / "lib" / "cmake" / "z3" / "Z3Targets.cmake"
-    if not targets_path.is_file():
-        return
+def exported_cmake_files(stage_dir: Path) -> list[Path]:
+    """CMake export files: Z3Targets*.cmake (Z3 4.x) or Z3-<kind>-*.cmake (Z3 >= 5)."""
+    cmake_dir = stage_dir / "lib" / "cmake" / "z3"
+    paths = {*cmake_dir.glob("Z3Targets*.cmake"), *cmake_dir.glob("Z3-*-targets*.cmake"),
+             *cmake_dir.glob("Z3-*-dependencies.cmake")}
+    return sorted(path for path in paths if path.is_file())
 
+
+def main_targets_files(stage_dir: Path, kind: str) -> list[Path]:
+    cmake_dir = stage_dir / "lib" / "cmake" / "z3"
+    candidates = [cmake_dir / "Z3Targets.cmake", cmake_dir / f"Z3-{kind}-targets.cmake"]
+    return [path for path in candidates if path.is_file()]
+
+
+def relativize_cmake_exports(stage_dir: Path, kind: str) -> None:
+    for targets_path in main_targets_files(stage_dir, kind):
+        relativize_cmake_export(stage_dir, kind, targets_path)
+
+
+def relativize_cmake_export(stage_dir: Path, kind: str, targets_path: Path) -> None:
     absolute_stage = str(stage_dir)
     text = targets_path.read_text(encoding="utf-8")
     absolute_import_prefix = f'set(_IMPORT_PREFIX "{absolute_stage}")'
@@ -326,9 +350,7 @@ def relativize_pkgconfig_files(stage_dir: Path) -> None:
 
 def validate_relocatable_cmake_exports(stage_dir: Path, kind: str) -> None:
     cmake_dir = stage_dir / "lib" / "cmake" / "z3"
-    exported_files = [
-        path for path in cmake_dir.glob("Z3Targets*.cmake") if path.is_file()
-    ]
+    exported_files = exported_cmake_files(stage_dir)
     if not exported_files:
         raise RuntimeError(f"Z3 {kind} install tree is missing exported CMake targets in {cmake_dir}")
 
