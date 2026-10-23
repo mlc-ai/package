@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+authors = [{ name = "MLC AI" }]
 keywords = ["z3", "smt", "static-library", "cmake"]
 classifiers = [
   "Development Status :: 4 - Beta",

@@ -8,9 +8,9 @@ dynamic = ["version"]
 description = "Prebuilt Doxygen command-line executable"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "GPL-2.0-only"
+license = "Apache-2.0 AND GPL-2.0-only"
 license-files = ["LICENSE"]
-authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+authors = [{ name = "MLC AI" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",

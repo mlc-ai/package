@@ -102,6 +102,16 @@ bundle `doxywizard`, `doxyindexer`, `doxysearch.cgi`, libclang, Graphviz,
 LaTeX, Ghostscript, or PlantUML. Those tools remain external runtime
 dependencies for Doxygen features that need them.
 
+## License
+
+The packaging code in this directory (build scripts, CMake, and the Python
+wrapper) is licensed under Apache-2.0; see `LICENSE`. The bundled Doxygen
+executable is licensed by its authors under GPL-2.0-only. Its license text is
+copied from the SHA-256-verified upstream source archive into the wheel as
+`mlc_doxygen_bin/licenses/LICENSE-Doxygen.txt`, and the build fails if that
+file is missing. The wheel metadata declares `Apache-2.0 AND GPL-2.0-only`
+to cover both.
+
 ## Usage
 
 ```bash

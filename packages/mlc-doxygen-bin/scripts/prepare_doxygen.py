@@ -336,10 +336,11 @@ def write_license(package_dir: Path, source_dir: Path) -> str:
     licenses_dir.mkdir(parents=True, exist_ok=True)
     source_license = source_dir / "LICENSE"
     dest = licenses_dir / "LICENSE-Doxygen.txt"
-    if source_license.is_file():
-        shutil.copy2(source_license, dest)
-    else:
-        dest.write_text("See https://github.com/doxygen/doxygen/blob/master/LICENSE\n", encoding="utf-8")
+    # The license comes from the SHA-256-verified upstream source archive; the
+    # GPL-2.0 Doxygen executable must never ship without its license text.
+    if not source_license.is_file():
+        raise RuntimeError(f"Doxygen source archive has no LICENSE at {source_license}")
+    shutil.copy2(source_license, dest)
     return rel(package_dir, dest)
 
 

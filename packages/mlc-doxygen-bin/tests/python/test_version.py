@@ -1,6 +1,8 @@
 """Version metadata of the installed mlc-doxygen-bin wheel."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import mlc_doxygen_bin
 
 
@@ -19,3 +21,8 @@ def test_metadata_records_pinned_source() -> None:
     assert metadata["doxygen_version"] == mlc_doxygen_bin.DOXYGEN_VERSION
     assert metadata["doxygen_tag"] == mlc_doxygen_bin.DOXYGEN_TAG
     assert metadata["package_version"] == mlc_doxygen_bin.__version__
+
+
+def test_bundled_doxygen_license_is_upstream_gpl() -> None:
+    license_path = Path(mlc_doxygen_bin.__file__).parent / "licenses" / "LICENSE-Doxygen.txt"
+    assert "GNU GENERAL PUBLIC LICENSE" in license_path.read_text(encoding="utf-8")
