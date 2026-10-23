@@ -5,7 +5,7 @@ project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${project_dir}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
-  echo "wheel_macos_v4_16_0.sh must run on macOS" >&2
+  echo "wheel_macos.sh must run on macOS" >&2
   exit 1
 fi
 

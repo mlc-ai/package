@@ -48,7 +48,9 @@ def main() -> None:
     executable = mlc_doxygen_bin.get_executable_path()
     direct = run([executable, "--version"])
     wrapped = run([sys.executable, "-m", "mlc_doxygen_bin", "--version"])
-    expected = mlc_doxygen_bin.__version__
+    # __version__ may carry a package suffix such as .post1; the binary reports
+    # the upstream Doxygen release.
+    expected = mlc_doxygen_bin.DOXYGEN_VERSION
     if direct.stdout.strip() != expected:
         raise RuntimeError(f"Expected direct Doxygen version {expected}, got {direct.stdout.strip()!r}")
     if wrapped.stdout.strip() != expected:

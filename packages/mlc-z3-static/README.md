@@ -1,7 +1,10 @@
 # mlc-z3-static
 
-`mlc-z3-static` is a Python package that carries native Z3 4.16.0 development
-artifacts for build systems. It does not provide Z3 Python bindings.
+`mlc-z3-static` is a Python package that carries native Z3 development
+artifacts for build systems. It does not provide Z3 Python bindings. The pinned
+Z3 release is recorded in [`version.py`](version.py); at runtime it is exposed
+as `mlc_z3_static.Z3_VERSION`, `mlc_z3_static.Z3_TAG`, and
+`mlc_z3_static.Z3_COMMIT`.
 
 The wheel contains:
 
@@ -14,7 +17,7 @@ The wheel contains:
   for `kind` in `static` and `shared`.
 
 The package is built with scikit-build-core: building a wheel runs
-`scripts/prepare_z3_v4_16_0.py`, which downloads the pinned Z3 source archive,
+`scripts/prepare_z3.py`, which downloads the pinned Z3 source archive,
 verifies its SHA-256 digest, and builds both library flavors. Source builds are
 opt-in (`MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1`) to avoid accidental long Z3
 builds when pip cannot find a matching prebuilt wheel.
@@ -44,7 +47,7 @@ python -m mlc_z3_static.config --prefix --kind shared
 Install the wheel into the Python environment used by the downstream build:
 
 ```bash
-python -m pip install mlc-z3-static==4.16.0
+python -m pip install mlc-z3-static
 ```
 
 Point CMake at the packaged static Z3 and use Z3's exported target:
@@ -105,11 +108,11 @@ python -m build --wheel
 From this directory:
 
 ```bash
-scripts/wheel_manylinux_2_28_v4_16_0.sh
+scripts/wheel_manylinux_2_28.sh
 ```
 
 ```bash
-scripts/wheel_macos_v4_16_0.sh
+scripts/wheel_macos.sh
 ```
 
 The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
@@ -135,3 +138,31 @@ The script defaults to the newest installed python.org CPython only as the build
 interpreter. The output wheel is still Python-agnostic and tagged
 `py3-none-<platform>`. Override `CIBW_BUILD` to force a specific installed build
 interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
+
+## Bumping the version
+
+[`version.py`](version.py) is the single version source. To move to a new Z3
+release, edit only that file:
+
+- `Z3_VERSION`: the upstream release (the Git tag is derived as
+  `z3-<Z3_VERSION>`).
+- `__version__`: the Python package version; it must equal `Z3_VERSION`, or
+  `Z3_VERSION` plus a PEP 440 suffix such as `.post1`.
+- `Z3_COMMIT`: the commit the release tag points to:
+
+  ```bash
+  gh api repos/Z3Prover/z3/commits/z3-<Z3_VERSION> --jq .sha
+  ```
+
+- `Z3_ARCHIVE_SHA256`: the SHA-256 of the archive `scripts/prepare_z3.py`
+  downloads:
+
+  ```bash
+  curl -fsSL https://github.com/Z3Prover/z3/archive/<Z3_COMMIT>.tar.gz | sha256sum
+  ```
+
+Package metadata, the build scripts, the default build directory, and the
+generated runtime module `mlc_z3_static/_version.py` all read these values.
+The publishing workflow's `version_suffix` input runs
+`scripts/stamp_version.py --suffix <suffix>`, which rewrites `__version__` in
+the build checkout and rejects versions not based on `Z3_VERSION`.

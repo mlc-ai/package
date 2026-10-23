@@ -55,24 +55,18 @@ jobs:
             platform_tag: win_amd64
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - uses: ./.github/actions/detect-env-vars
-      - name: Stamp version suffix
-        if: inputs.version_suffix != ''
+      - name: Stamp package version
+        # Validates version.py and appends the optional suffix to __version__.
         shell: bash
+        env:
+          VERSION_SUFFIX: ${{ inputs.version_suffix }}
         run: |
-          python - "${{ inputs.version_suffix }}" <<'EOF'
-          import re
-          import sys
-          from pathlib import Path
-
-          suffix = sys.argv[1]
-          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
-          text = path.read_text(encoding="utf-8")
-          path.write_text(
-              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
-              encoding="utf-8",
-          )
-          EOF
+          python -m pip install packaging
+          python packages/mlc-z3-static/scripts/stamp_version.py --suffix "$VERSION_SUFFIX"
       - name: Build wheel
         # cibuildwheel must run from the package directory: the commands in
         # [tool.cibuildwheel] reference scripts/ relative to it.
@@ -114,22 +108,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Stamp version suffix
-        if: inputs.version_suffix != ''
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Stamp package version
+        # Validates version.py and appends the optional suffix to __version__.
+        shell: bash
+        env:
+          VERSION_SUFFIX: ${{ inputs.version_suffix }}
         run: |
-          python - "${{ inputs.version_suffix }}" <<'EOF'
-          import re
-          import sys
-          from pathlib import Path
-
-          suffix = sys.argv[1]
-          path = Path("packages/mlc-z3-static/src/mlc_z3_static/_version.py")
-          text = path.read_text(encoding="utf-8")
-          path.write_text(
-              re.sub(r'(__version__ = "[^"]+)(")', rf"\g<1>{suffix}\g<2>", text, count=1),
-              encoding="utf-8",
-          )
-          EOF
+          python -m pip install packaging
+          python packages/mlc-z3-static/scripts/stamp_version.py --suffix "$VERSION_SUFFIX"
       - name: Build sdist
         working-directory: packages/mlc-z3-static
         run: pipx run build --sdist

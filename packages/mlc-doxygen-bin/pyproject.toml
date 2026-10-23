@@ -7,8 +7,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlc-doxygen-bin"
-version = "1.17.0"
-description = "Prebuilt Doxygen 1.17.0 command-line executable"
+# The version comes from version.py at the project root; setup.py passes it.
+dynamic = ["version"]
+description = "Prebuilt Doxygen command-line executable"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "GPL-2.0-only"
@@ -53,7 +54,7 @@ build = "cp311-*"
 build-frontend = "build"
 build-verbosity = 1
 skip = "*-musllinux_*"
-before-build = "python -m pip install cmake ninja && python scripts/prepare_doxygen_v1_17_0.py"
+before-build = "python -m pip install cmake ninja && python scripts/prepare_doxygen.py"
 test-command = "python {project}/scripts/smoke_test_mlc_doxygen_bin.py"
 
 [tool.cibuildwheel.linux]

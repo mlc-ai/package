@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import platform
+import runpy
 import shlex
 import shutil
 import subprocess
@@ -13,16 +14,20 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-DOXYGEN_VERSION = "1.17.0"
-DOXYGEN_TAG = "Release_1_17_0"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_doxygen_bin"
+
+# version.py at the package root is the single source of truth for the pinned
+# Doxygen release; a version bump edits only that file.
+_VERSION = runpy.run_path(str(PROJECT_ROOT / "version.py"))
+PACKAGE_VERSION: str = _VERSION["__version__"]
+DOXYGEN_VERSION: str = _VERSION["DOXYGEN_VERSION"]
+DOXYGEN_TAG: str = _VERSION["DOXYGEN_TAG"]
+DOXYGEN_ARCHIVE_SHA256: str = _VERSION["DOXYGEN_ARCHIVE_SHA256"]
 DOXYGEN_ARCHIVE_URL = (
     "https://github.com/doxygen/doxygen/releases/download/"
     f"{DOXYGEN_TAG}/doxygen-{DOXYGEN_VERSION}.src.tar.gz"
 )
-DOXYGEN_ARCHIVE_SHA256 = "fa4c3dd78785abc11ccc992bc9c01e7a8c3120fe14b8a8dfd7cefa7014530814"
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_doxygen_bin"
 
 
 def run(cmd: list[str | Path], *, cwd: Path | None = None) -> None:
@@ -228,16 +233,6 @@ def rel(package_dir: Path, path: Path) -> str:
     return path.relative_to(package_dir).as_posix()
 
 
-def write_version_file(package_dir: Path) -> None:
-    (package_dir / "_version.py").write_text(
-        (
-            f'__version__ = "{DOXYGEN_VERSION}"\n'
-            f'DOXYGEN_TAG = "{DOXYGEN_TAG}"\n'
-        ),
-        encoding="utf-8",
-    )
-
-
 def write_license(package_dir: Path, source_dir: Path) -> str:
     licenses_dir = package_dir / "licenses"
     licenses_dir.mkdir(parents=True, exist_ok=True)
@@ -259,7 +254,7 @@ def write_metadata(package_dir: Path, executable: Path, source_dir: Path, licens
         "source_archive_url": DOXYGEN_ARCHIVE_URL,
         "source_archive_sha256": DOXYGEN_ARCHIVE_SHA256,
         "source_dir": str(source_dir),
-        "package_version": DOXYGEN_VERSION,
+        "package_version": PACKAGE_VERSION,
         "executable": rel(package_dir, executable),
         "license": license_path,
         "features": {
@@ -308,7 +303,7 @@ def build_and_install(source_dir: Path, work_root: Path) -> Path:
 def main() -> None:
     package_dir = Path(os.environ.get("MLC_DOXYGEN_BIN_PACKAGE_DIR", DEFAULT_PACKAGE_DIR)).resolve()
     build_root = Path(
-        os.environ.get("MLC_DOXYGEN_BIN_BUILD_ROOT", PROJECT_ROOT / "build" / "doxygen-v1.17.0")
+        os.environ.get("MLC_DOXYGEN_BIN_BUILD_ROOT", PROJECT_ROOT / "build" / f"doxygen-v{DOXYGEN_VERSION}")
     ).resolve()
     package_dir.mkdir(parents=True, exist_ok=True)
     build_root.mkdir(parents=True, exist_ok=True)
@@ -318,7 +313,6 @@ def main() -> None:
     stage_dir = build_and_install(source_dir, build_root)
     executable = copy_runtime(stage_dir, package_dir)
     license_path = write_license(package_dir, source_dir)
-    write_version_file(package_dir)
     write_metadata(package_dir, executable, source_dir, license_path)
 
 
