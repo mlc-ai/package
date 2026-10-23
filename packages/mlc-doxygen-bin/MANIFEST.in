@@ -1,9 +1,0 @@
-include README.md
-include setup.py
-include version.py
-recursive-include scripts *.py *.sh *.ps1
-recursive-include src/mlc_doxygen_bin *.py py.typed
-prune src/mlc_doxygen_bin/bin
-prune src/mlc_doxygen_bin/licenses
-exclude src/mlc_doxygen_bin/*.json
-exclude src/mlc_doxygen_bin/_version.py
