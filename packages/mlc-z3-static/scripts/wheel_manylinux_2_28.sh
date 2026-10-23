@@ -5,7 +5,7 @@ project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${project_dir}"
 
 if [[ "$(uname -s)" != "Linux" ]]; then
-  echo "wheel_manylinux_2_28_v4_16_0.sh must run on Linux with Docker available" >&2
+  echo "wheel_manylinux_2_28.sh must run on Linux with Docker available" >&2
   exit 1
 fi
 

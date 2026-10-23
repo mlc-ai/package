@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import platform
+import runpy
 import shlex
 import shutil
 import subprocess
@@ -13,14 +14,23 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-Z3_VERSION = "4.16.0"
-Z3_TAG = "z3-4.16.0"
-Z3_COMMIT = "ddb49568d3520e99799e364fb22f35fc67d887b1"
-Z3_ARCHIVE_URL = f"https://github.com/Z3Prover/z3/archive/{Z3_COMMIT}.tar.gz"
-Z3_ARCHIVE_SHA256 = "34deac6d0d46002b1040c56a51c4385ebb4ea56baa95fa8dd66e315a25b0cfa6"
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PACKAGE_DIR = PROJECT_ROOT / "src" / "mlc_z3_static"
+
+# version.py at the package root is the single source of truth for the pinned
+# Z3 release; a version bump edits only that file.
+_VERSION = runpy.run_path(str(PROJECT_ROOT / "version.py"))
+PACKAGE_VERSION: str = _VERSION["__version__"]
+Z3_VERSION: str = _VERSION["Z3_VERSION"]
+Z3_TAG: str = _VERSION["Z3_TAG"]
+Z3_COMMIT: str = _VERSION["Z3_COMMIT"]
+Z3_ARCHIVE_SHA256: str = _VERSION["Z3_ARCHIVE_SHA256"]
+Z3_ARCHIVE_URL = f"https://github.com/Z3Prover/z3/archive/{Z3_COMMIT}.tar.gz"
+
+# The outer scikit-build-core project forwards its CMake executable so the
+# inner Z3 build uses the same (sufficiently new) CMake rather than whatever
+# `cmake` happens to be first on PATH.
+CMAKE = os.environ.get("MLC_Z3_STATIC_CMAKE_COMMAND") or "cmake"
 
 
 def run(cmd: list[str | Path], *, cwd: Path | None = None) -> None:
@@ -109,11 +119,33 @@ def get_source_tree(work_root: Path) -> Path:
     return safe_extract(archive, work_root / "src")
 
 
+# platform.machine() of the (native) build interpreter -> Visual Studio -A value.
+_WINDOWS_GENERATOR_PLATFORMS = {"AMD64": "x64", "X86_64": "x64", "ARM64": "ARM64", "AARCH64": "ARM64", "X86": "Win32"}
+
+
+def cmake_generator_platform(generator: str | None) -> str | None:
+    """Return the Visual Studio ``-A`` platform for the inner Z3 build.
+
+    The outer scikit-build-core configure forwards its CMAKE_GENERATOR_PLATFORM
+    (derived from the target wheel platform, e.g. ARM64 for win_arm64). Without
+    it, fall back to the build interpreter's architecture so a native ARM64
+    build never silently produces x64 libraries.
+    """
+    if platform.system() != "Windows":
+        return None
+    if generator and not generator.startswith("Visual Studio"):
+        return None
+    explicit = os.environ.get("MLC_Z3_STATIC_CMAKE_GENERATOR_PLATFORM")
+    if explicit:
+        return explicit
+    return _WINDOWS_GENERATOR_PLATFORMS.get(platform.machine().upper())
+
+
 def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, kind: str) -> list[str | Path]:
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
     shared = "ON" if kind == "shared" else "OFF"
     cmd: list[str | Path] = [
-        "cmake",
+        CMAKE,
         "-S",
         source_dir,
         "-B",
@@ -125,6 +157,9 @@ def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, 
         cmd.extend(["-G", generator])
     elif platform.system() != "Windows" and shutil.which("ninja"):
         cmd.extend(["-G", "Ninja"])
+    generator_platform = cmake_generator_platform(generator or os.environ.get("CMAKE_GENERATOR"))
+    if generator_platform:
+        cmd.extend(["-A", generator_platform])
 
     cmd.extend(
         [
@@ -177,7 +212,7 @@ def build_and_install(source_dir: Path, work_root: Path, package_dir: Path, kind
 
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
     build_cmd: list[str | Path] = [
-        "cmake",
+        CMAKE,
         "--build",
         build_dir,
         "--config",
@@ -202,6 +237,9 @@ def library_candidates(stage_dir: Path, kind: str) -> list[Path]:
             lib_dir / "libz3.a",
             lib_dir / "z3.lib",
             lib_dir / "libz3.lib",
+            # Z3 >= 5 names the MSVC static archive libz3-static.lib so it can
+            # share a prefix with the shared build's libz3.lib import library.
+            lib_dir / "libz3-static.lib",
         ]
 
     candidates = [
@@ -228,11 +266,12 @@ def validate_stage(stage_dir: Path, kind: str) -> Path:
         stage_dir / "include" / "z3.h",
         stage_dir / "include" / "z3++.h",
         stage_dir / "lib" / "cmake" / "z3" / "Z3Config.cmake",
-        stage_dir / "lib" / "cmake" / "z3" / "Z3Targets.cmake",
     ]
     for path in required:
         if not path.is_file():
             raise RuntimeError(f"Z3 {kind} install tree is missing {path.relative_to(stage_dir)}")
+    if not main_targets_files(stage_dir, kind):
+        raise RuntimeError(f"Z3 {kind} install tree is missing its exported CMake targets file")
     library = first_library(stage_dir, kind)
     validate_relocatable_cmake_exports(stage_dir, kind)
     validate_relocatable_pkgconfig(stage_dir, kind)
@@ -244,11 +283,26 @@ def normalize_installed_metadata(stage_dir: Path, kind: str) -> None:
     relativize_pkgconfig_files(stage_dir)
 
 
-def relativize_cmake_exports(stage_dir: Path, kind: str) -> None:
-    targets_path = stage_dir / "lib" / "cmake" / "z3" / "Z3Targets.cmake"
-    if not targets_path.is_file():
-        return
+def exported_cmake_files(stage_dir: Path) -> list[Path]:
+    """CMake export files: Z3Targets*.cmake (Z3 4.x) or Z3-<kind>-*.cmake (Z3 >= 5)."""
+    cmake_dir = stage_dir / "lib" / "cmake" / "z3"
+    paths = {*cmake_dir.glob("Z3Targets*.cmake"), *cmake_dir.glob("Z3-*-targets*.cmake"),
+             *cmake_dir.glob("Z3-*-dependencies.cmake")}
+    return sorted(path for path in paths if path.is_file())
 
+
+def main_targets_files(stage_dir: Path, kind: str) -> list[Path]:
+    cmake_dir = stage_dir / "lib" / "cmake" / "z3"
+    candidates = [cmake_dir / "Z3Targets.cmake", cmake_dir / f"Z3-{kind}-targets.cmake"]
+    return [path for path in candidates if path.is_file()]
+
+
+def relativize_cmake_exports(stage_dir: Path, kind: str) -> None:
+    for targets_path in main_targets_files(stage_dir, kind):
+        relativize_cmake_export(stage_dir, kind, targets_path)
+
+
+def relativize_cmake_export(stage_dir: Path, kind: str, targets_path: Path) -> None:
     absolute_stage = str(stage_dir)
     text = targets_path.read_text(encoding="utf-8")
     absolute_import_prefix = f'set(_IMPORT_PREFIX "{absolute_stage}")'
@@ -296,9 +350,7 @@ def relativize_pkgconfig_files(stage_dir: Path) -> None:
 
 def validate_relocatable_cmake_exports(stage_dir: Path, kind: str) -> None:
     cmake_dir = stage_dir / "lib" / "cmake" / "z3"
-    exported_files = [
-        path for path in cmake_dir.glob("Z3Targets*.cmake") if path.is_file()
-    ]
+    exported_files = exported_cmake_files(stage_dir)
     if not exported_files:
         raise RuntimeError(f"Z3 {kind} install tree is missing exported CMake targets in {cmake_dir}")
 
@@ -331,7 +383,7 @@ def validate_relocatable_pkgconfig(stage_dir: Path, kind: str) -> None:
 def clean_package_outputs(package_dir: Path) -> None:
     for name in ("static", "shared", "licenses"):
         shutil.rmtree(package_dir / name, ignore_errors=True)
-    for name in ("staticlib.json",):
+    for name in ("staticlib.json", "_version.py"):
         (package_dir / name).unlink(missing_ok=True)
 
 
@@ -339,12 +391,15 @@ def rel(package_dir: Path, path: Path) -> str:
     return path.relative_to(package_dir).as_posix()
 
 
-def write_version_file(package_dir: Path) -> None:
+def write_version_module(package_dir: Path) -> None:
+    """Generate the runtime ``mlc_z3_static/_version.py`` from ``version.py``."""
     (package_dir / "_version.py").write_text(
         (
-            f'__version__ = "{Z3_VERSION}"\n'
-            f'Z3_TAG = "{Z3_TAG}"\n'
-            f'Z3_COMMIT = "{Z3_COMMIT}"\n'
+            "# Generated by scripts/prepare_z3.py from version.py; do not edit.\n"
+            f"__version__ = {PACKAGE_VERSION!r}\n"
+            f"Z3_VERSION = {Z3_VERSION!r}\n"
+            f"Z3_TAG = {Z3_TAG!r}\n"
+            f"Z3_COMMIT = {Z3_COMMIT!r}\n"
         ),
         encoding="utf-8",
     )
@@ -385,7 +440,7 @@ def write_metadata(package_dir: Path, stages: dict[str, Path], source_dir: Path,
         "source_archive_url": Z3_ARCHIVE_URL,
         "source_archive_sha256": Z3_ARCHIVE_SHA256,
         "source_dir": str(source_dir),
-        "package_version": Z3_VERSION,
+        "package_version": PACKAGE_VERSION,
         "artifacts": artifacts,
         "license": license_path,
         "platform": platform.platform(),
@@ -399,7 +454,7 @@ def write_metadata(package_dir: Path, stages: dict[str, Path], source_dir: Path,
 
 def main() -> None:
     package_dir = Path(os.environ.get("MLC_Z3_STATIC_PACKAGE_DIR", DEFAULT_PACKAGE_DIR)).resolve()
-    build_root = Path(os.environ.get("MLC_Z3_STATIC_BUILD_ROOT", PROJECT_ROOT / "build" / "z3-v4.16.0")).resolve()
+    build_root = Path(os.environ.get("MLC_Z3_STATIC_BUILD_ROOT", PROJECT_ROOT / "build" / f"z3-v{Z3_VERSION}")).resolve()
     package_dir.mkdir(parents=True, exist_ok=True)
     build_root.mkdir(parents=True, exist_ok=True)
 
@@ -410,7 +465,7 @@ def main() -> None:
         "shared": build_and_install(source_dir, build_root, package_dir, "shared"),
     }
     license_path = write_license(package_dir, source_dir)
-    write_version_file(package_dir)
+    write_version_module(package_dir)
     write_metadata(package_dir, stages, source_dir, license_path)
 
 

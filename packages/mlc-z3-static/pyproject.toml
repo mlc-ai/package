@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "mlc-z3-static"
 dynamic = ["version"]
-description = "Prebuilt Z3 4.16.0 static and shared libraries, headers, and CMake metadata"
+description = "Prebuilt Z3 static and shared libraries, headers, and CMake metadata"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
@@ -39,11 +39,14 @@ sdist.exclude = [
   "src/mlc_z3_static/shared",
   "src/mlc_z3_static/licenses",
   "src/mlc_z3_static/staticlib.json",
+  "src/mlc_z3_static/_version.py",
 ]
 
+# version.py is the single version source; the build generates the runtime
+# src/mlc_z3_static/_version.py from it (see scripts/prepare_z3.py).
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
-input = "src/mlc_z3_static/_version.py"
+input = "version.py"
 
 [tool.cibuildwheel]
 # CIBW_BUILD selects the Python used to run the build. scikit-build-core tags

@@ -4,12 +4,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ._version import Z3_COMMIT, Z3_TAG, __version__
+from ._version import Z3_COMMIT, Z3_TAG, Z3_VERSION, __version__
 
 __all__ = [
     "__version__",
     "Z3_COMMIT",
     "Z3_TAG",
+    "Z3_VERSION",
     "artifact_kinds",
     "get_cmake_dir",
     "get_cmake_prefix_path",
@@ -64,6 +65,7 @@ def _library_candidates(kind: str, artifact_dir: Path) -> list[Path]:
             lib_dir / "libz3.a",
             lib_dir / "z3.lib",
             lib_dir / "libz3.lib",
+            lib_dir / "libz3-static.lib",
         ]
 
     candidates = [

@@ -1,8 +1,11 @@
 # mlc-z3-static uv consumer example
 
-This is a minimal downstream project that consumes `mlc-z3-static==4.16.0`
-with `uv`, then links a tiny C++ program against the static Z3 CMake target
-shipped in the wheel.
+This is a minimal downstream project that consumes `mlc-z3-static` with `uv`,
+then links a tiny C++ program against the static Z3 CMake target shipped in the
+wheel. The dependency is intentionally unpinned so the example tracks the latest
+published wheel without edits on each Z3 bump; pin an exact version (for
+example `mlc-z3-static==<version>`) in real projects that need reproducible
+builds.
 
 ## Install
 

@@ -5,11 +5,12 @@ import platform
 from pathlib import Path
 from typing import Any
 
-from ._version import DOXYGEN_TAG, __version__
+from ._version import DOXYGEN_TAG, DOXYGEN_VERSION, __version__
 
 __all__ = [
     "__version__",
     "DOXYGEN_TAG",
+    "DOXYGEN_VERSION",
     "get_bin_dir",
     "get_executable_path",
     "metadata",
