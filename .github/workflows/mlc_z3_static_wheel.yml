@@ -55,6 +55,7 @@ jobs:
             platform_tag: win_amd64
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/detect-env-vars
       - name: Stamp version suffix
         if: inputs.version_suffix != ''
         shell: bash
@@ -85,11 +86,14 @@ jobs:
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_ENVIRONMENT_LINUX: >-
             MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
+            CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
           CIBW_ENVIRONMENT_MACOS: >-
             MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             MACOSX_DEPLOYMENT_TARGET="14.0"
+            CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
           CIBW_ENVIRONMENT_WINDOWS: >-
             MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
+            CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
         run: pipx run cibuildwheel==3.3.1 --output-dir wheelhouse .
       - name: Retag Linux wheel
         # scikit-build-core tags Linux wheels linux_<arch>; retag to manylinux_2_28.

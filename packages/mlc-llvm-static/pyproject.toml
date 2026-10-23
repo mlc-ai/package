@@ -1,0 +1,35 @@
+[build-system]
+requires = ["scikit-build-core>=0.11", "cmake>=3.31", "ninja"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "mlc-llvm-static"
+dynamic = ["version"]
+description = "Relocatable LLVM static development libraries, headers, and CMake metadata"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0 WITH LLVM-exception AND Zlib AND BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
+keywords = ["llvm", "static-library", "cmake", "compiler"]
+
+[project.optional-dependencies]
+all = ["mlc-llvm-static-extra-targets==23.1.1"]
+
+[project.scripts]
+llvm-config = "mlc_llvm_static._llvm_config:main"
+
+[project.urls]
+Repository = "https://github.com/mlc-ai/package"
+LLVM = "https://llvm.org/"
+
+[tool.scikit-build]
+cmake.version = ">=3.31"
+wheel.py-api = "py3"
+wheel.packages = ["src/mlc_llvm_static"]
+build-dir = "build/{wheel_tag}"
+sdist.exclude = ["build", "dist", "wheelhouse", ".sdk-cache", "src/mlc_llvm_static/static", "src/mlc_llvm_static/licenses", "src/mlc_llvm_static/staticlib.json"]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "src/mlc_llvm_static/_version.py"

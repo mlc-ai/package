@@ -1,0 +1,211 @@
+name: Build LLVM static SDK wheels
+
+on:
+  pull_request:
+    paths:
+      - "packages/mlc-llvm-static/**"
+      - "packages/mlc-llvm-static-extra-targets/**"
+      - ".github/workflows/mlc_llvm_static_wheel.yml"
+      - ".github/actions/detect-env-vars/**"
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: Version suffix, such as rc0, dev0, or post0; leave empty for stable
+        default: ""
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: llvm-sdk-split-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.platforms.outputs.matrix }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest build
+      - name: Resolve and stamp package versions
+        id: version
+        env:
+          VERSION_SUFFIX: ${{ inputs.version_suffix }}
+        run: >-
+          python packages/mlc-llvm-static/scripts/stamp_version.py
+          --suffix "$VERSION_SUFFIX"
+      - run: python -m pytest packages/mlc-llvm-static/tests -q
+      - name: Define validation platforms
+        id: platforms
+        run: |
+          python - <<'PY'
+          import json, os
+          rows = [
+              dict(name="Linux x86_64", os="ubuntu-latest", tag="manylinux_2_28_x86_64", image="quay.io/pypa/manylinux_2_28_x86_64:latest"),
+              dict(name="Linux aarch64", os="ubuntu-24.04-arm", tag="manylinux_2_28_aarch64", image="quay.io/pypa/manylinux_2_28_aarch64:latest"),
+              dict(name="macOS arm64", os="macos-15", tag="macosx_14_0_arm64"),
+              dict(name="Windows AMD64", os="windows-2022", tag="win_amd64"),
+          ]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("matrix=" + json.dumps(dict(include=rows)) + "\n")
+          PY
+      - name: Build both source distributions
+        run: |
+          python -m build --sdist packages/mlc-llvm-static
+          python -m build --sdist packages/mlc-llvm-static-extra-targets
+
+  build_wheels:
+    needs: checks
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    env:
+      PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.checks.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: ./.github/actions/detect-env-vars
+      - name: Install version helper dependency
+        run: python -m pip install packaging
+      - name: Initialize MSVC for Ninja
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Stamp both package versions
+        shell: bash
+        run: python packages/mlc-llvm-static/scripts/stamp_version.py "$PACKAGE_VERSION"
+      - name: Fingerprint compiled SDK recipe
+        id: recipe
+        shell: bash
+        run: python packages/mlc-llvm-static/scripts/cache_key.py >> "$GITHUB_OUTPUT"
+      - name: Restore compiled All-target SDK
+        id: sdk_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/mlc-llvm-static/.sdk-cache
+          key: llvm-all-sdk-${{ matrix.tag }}-${{ steps.recipe.outputs.key }}
+      - name: Build and verify Linux wheels in manylinux
+        if: runner.os == 'Linux'
+        working-directory: packages/mlc-llvm-static
+        env:
+          IMAGE: ${{ matrix.image }}
+          PLATFORM_TAG: ${{ matrix.tag }}
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/project" -w /project/packages/mlc-llvm-static \
+            -e PLATFORM_TAG -e MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1 \
+            -e MLC_LLVM_STATIC_USE_CACHE=1 -e MLC_LLVM_STATIC_CLEAN_BUILD=1 -e CMAKE_BUILD_PARALLEL_LEVEL \
+            "$IMAGE" bash -c '
+              export PATH="/opt/python/cp311-cp311/bin:$PATH"
+              python -m pip install build scikit-build-core cmake ninja wheel
+              python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
+              python scripts/verify_split_wheels.py wheelhouse
+            '
+      - name: Build and verify macOS and Windows wheels
+        if: runner.os != 'Linux'
+        working-directory: packages/mlc-llvm-static
+        shell: bash
+        env:
+          PLATFORM_TAG: ${{ matrix.tag }}
+          MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD: "1"
+          MLC_LLVM_STATIC_USE_CACHE: "1"
+          MLC_LLVM_STATIC_CLEAN_BUILD: "1"
+          MACOSX_DEPLOYMENT_TARGET: "14.0"
+        run: |
+          python -m pip install build scikit-build-core cmake ninja wheel
+          python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
+          python scripts/verify_split_wheels.py wheelhouse
+      - name: Save compiled SDK even if packaging or validation failed
+        if: always() && steps.sdk_cache.outputs.cache-hit != 'true' && hashFiles('packages/mlc-llvm-static/.sdk-cache/all-sdk.zip') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/mlc-llvm-static/.sdk-cache
+          key: ${{ steps.sdk_cache.outputs.cache-primary-key }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlc-llvm-static-${{ matrix.tag }}
+          path: packages/mlc-llvm-static/wheelhouse/*.whl
+          if-no-files-found: error
+
+  distributions:
+    name: Validate wheel distributions
+    needs: [checks, build_wheels]
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
+      PLATFORM_MATRIX: ${{ needs.checks.outputs.matrix }}
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mlc-llvm-static-*
+          path: dist
+          merge-multiple: true
+      - name: Check complete wheel set
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          wheels = sorted(Path("dist").glob("*.whl"))
+          expected = {f"{family}-{os.environ['PACKAGE_VERSION']}-py3-none-{row['tag']}.whl"
+                      for row in json.loads(os.environ["PLATFORM_MATRIX"])["include"]
+                      for family in ("mlc_llvm_static", "mlc_llvm_static_extra_targets")}
+          if {path.name for path in wheels} != expected:
+              raise SystemExit("Release wheels do not match all platforms and package version")
+          PY
+      - name: Verify distribution metadata
+        run: |
+          python -m pip install twine
+          python -m twine check --strict dist/*.whl
+      - name: Stage native wheels for PyPI
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-mlc-llvm-static
+          path: dist/mlc_llvm_static-*.whl
+          if-no-files-found: error
+      - name: Stage extra-target wheels for PyPI
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-mlc-llvm-static-extra-targets
+          path: dist/mlc_llvm_static_extra_targets-*.whl
+          if-no-files-found: error
+
+  publish_pypi:
+    name: Publish ${{ matrix.project }} to PyPI
+    needs: distributions
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: mlc-llvm-static
+            environment: pypi
+          - project: mlc-llvm-static-extra-targets
+            environment: pypi-all-targets
+    environment:
+      name: ${{ matrix.environment }}
+      url: https://pypi.org/p/${{ matrix.project }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-${{ matrix.project }}
+          path: dist
+      - name: Publish with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1

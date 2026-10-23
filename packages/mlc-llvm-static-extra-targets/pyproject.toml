@@ -1,0 +1,26 @@
+[build-system]
+requires = ["scikit-build-core>=0.11", "cmake>=3.31", "ninja"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "mlc-llvm-static-extra-targets"
+dynamic = ["version"]
+description = "Additional LLVM backends for the matching mlc-llvm-static SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0 WITH LLVM-exception"
+license-files = ["LICENSE"]
+dependencies = ["mlc-llvm-static==23.1.1"]
+
+[project.urls]
+Repository = "https://github.com/mlc-ai/package"
+
+[tool.scikit-build]
+cmake.version = ">=3.31"
+wheel.py-api = "py3"
+wheel.packages = []
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "version.py"

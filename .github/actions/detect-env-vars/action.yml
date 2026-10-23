@@ -1,0 +1,17 @@
+name: Detect build environment
+description: Default CMake build parallelism to the available CPU count.
+runs:
+  using: composite
+  steps:
+    - shell: python
+      run: |
+        import os
+
+        try:
+            cpu_count = len(os.sched_getaffinity(0))
+        except (AttributeError, OSError):
+            cpu_count = os.cpu_count() or 1
+        parallel = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL") or str(cpu_count)
+        with open(os.environ["GITHUB_ENV"], "a") as output:
+            output.write(f"CMAKE_BUILD_PARALLEL_LEVEL={parallel}\n")
+        print(f"CMake build parallelism: {parallel} (available CPUs: {cpu_count})")
