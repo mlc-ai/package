@@ -122,9 +122,11 @@ The probe also round-trips both compression formats, reads compressed ELF DWARF,
 and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
 CI caches the raw All-target SDK by platform and a fingerprint of the compilation
 and graph-generation recipe. Frontend, packaging, and verification changes reuse
-that build. Windows packaging uses `llvm-objcopy --strip-unneeded` on a copy of
-the raw archives to remove unused COFF symbols and debug metadata while retaining
-external definitions, relocation targets, and unwind data. Install LLVM's
+that build. Windows packaging uses `llvm-objcopy` on a copy of the raw archives
+to remove debug metadata and unreferenced local labels while retaining public
+and undefined externals, relocation/weak-reference targets, COMDAT section
+definitions, and unwind data. Generic `--strip-unneeded` is unsuitable because
+it removes COMDAT records required by MSVC's linker. Install LLVM's
 `llvm-objcopy` as a build tool or set `MLC_LLVM_STATIC_OBJCOPY` to its path; the
 tool is not included in either wheel. The resulting archive hashes and tool
 version are included in the SDK fingerprint. The packager rejects any change to
