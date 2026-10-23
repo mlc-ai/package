@@ -105,6 +105,11 @@ python -m build --wheel
 
 ## Build Release Wheels
 
+The publishing workflow builds `py3-none` wheels for manylinux_2_28
+(`x86_64`, `aarch64`), macOS (`arm64`, `x86_64`), and Windows (`AMD64`,
+`ARM64`). On Windows the inner Z3 build uses the same Visual Studio platform
+(`-A x64` or `-A ARM64`) as the wheel being built.
+
 From this directory:
 
 ```bash

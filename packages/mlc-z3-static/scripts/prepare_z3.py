@@ -114,6 +114,28 @@ def get_source_tree(work_root: Path) -> Path:
     return safe_extract(archive, work_root / "src")
 
 
+# platform.machine() of the (native) build interpreter -> Visual Studio -A value.
+_WINDOWS_GENERATOR_PLATFORMS = {"AMD64": "x64", "X86_64": "x64", "ARM64": "ARM64", "AARCH64": "ARM64", "X86": "Win32"}
+
+
+def cmake_generator_platform(generator: str | None) -> str | None:
+    """Return the Visual Studio ``-A`` platform for the inner Z3 build.
+
+    The outer scikit-build-core configure forwards its CMAKE_GENERATOR_PLATFORM
+    (derived from the target wheel platform, e.g. ARM64 for win_arm64). Without
+    it, fall back to the build interpreter's architecture so a native ARM64
+    build never silently produces x64 libraries.
+    """
+    if platform.system() != "Windows":
+        return None
+    if generator and not generator.startswith("Visual Studio"):
+        return None
+    explicit = os.environ.get("MLC_Z3_STATIC_CMAKE_GENERATOR_PLATFORM")
+    if explicit:
+        return explicit
+    return _WINDOWS_GENERATOR_PLATFORMS.get(platform.machine().upper())
+
+
 def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, kind: str) -> list[str | Path]:
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
     shared = "ON" if kind == "shared" else "OFF"
@@ -130,6 +152,9 @@ def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, 
         cmd.extend(["-G", generator])
     elif platform.system() != "Windows" and shutil.which("ninja"):
         cmd.extend(["-G", "Ninja"])
+    generator_platform = cmake_generator_platform(generator or os.environ.get("CMAKE_GENERATOR"))
+    if generator_platform:
+        cmd.extend(["-A", generator_platform])
 
     cmd.extend(
         [

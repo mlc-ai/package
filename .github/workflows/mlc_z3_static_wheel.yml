@@ -53,6 +53,11 @@ jobs:
             build: cp311-win_amd64
             arch: AMD64
             platform_tag: win_amd64
+          - name: Windows ARM64
+            os: windows-11-arm
+            build: cp311-win_arm64
+            arch: ARM64
+            platform_tag: win_arm64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -88,7 +93,9 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: >-
             MLC_Z3_STATIC_ALLOW_SOURCE_BUILD="1"
             CMAKE_BUILD_PARALLEL_LEVEL="${{ env.CMAKE_BUILD_PARALLEL_LEVEL }}"
-        run: pipx run cibuildwheel==3.3.1 --output-dir wheelhouse .
+        run: |
+          python -m pip install cibuildwheel==3.3.1
+          python -m cibuildwheel --output-dir wheelhouse .
       - name: Retag Linux wheel
         # scikit-build-core tags Linux wheels linux_<arch>; retag to manylinux_2_28.
         if: startsWith(matrix.platform_tag, 'manylinux_')

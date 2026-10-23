@@ -50,7 +50,7 @@ Supported values are:
 
 - Linux: `x86_64`, `aarch64`
 - macOS: `arm64`, `x86_64`
-- Windows: `AMD64`
+- Windows: `AMD64`, `ARM64` (defaults to the host's `PROCESSOR_ARCHITECTURE`)
 
 ## Build Dependencies
 
@@ -69,7 +69,13 @@ brew install flex bison
 The macOS script automatically prepends Homebrew's `flex` and `bison`
 directories to `PATH` when Homebrew is available.
 
-On Windows, install Visual Studio Build Tools and `winflexbison3`.
+On Windows, install Visual Studio Build Tools and `winflexbison3`. The x86
+`winflexbison3` tools also work on Windows ARM64 through emulation; they only
+generate sources. Doxygen's bundled Windows iconv library is x86/x64 only, so
+ARM64 builds compile a pinned static
+[win-iconv](https://github.com/win-iconv/win-iconv) for the target and pass it
+as `ICONV_DIR` (pass your own `-DICONV_DIR=...` through
+`MLC_DOXYGEN_BIN_EXTRA_CMAKE_ARGS` to override).
 
 ## Runtime Scope
 

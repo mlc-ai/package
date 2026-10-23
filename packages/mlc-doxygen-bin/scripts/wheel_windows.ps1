@@ -4,10 +4,13 @@ $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
 
 if (-not $env:MLC_DOXYGEN_BIN_ARCH) {
-  $env:MLC_DOXYGEN_BIN_ARCH = "AMD64"
+  # PROCESSOR_ARCHITECTURE is AMD64 or ARM64 for a native 64-bit shell.
+  $env:MLC_DOXYGEN_BIN_ARCH = $env:PROCESSOR_ARCHITECTURE
 }
-if ($env:MLC_DOXYGEN_BIN_ARCH -ne "AMD64") {
-  throw "Unsupported Windows architecture: $env:MLC_DOXYGEN_BIN_ARCH"
+switch ($env:MLC_DOXYGEN_BIN_ARCH) {
+  "AMD64" { $PlatformTag = "win_amd64" }
+  "ARM64" { $PlatformTag = "win_arm64" }
+  default { throw "Unsupported Windows architecture: $env:MLC_DOXYGEN_BIN_ARCH" }
 }
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
@@ -24,13 +27,13 @@ if (-not $env:CMAKE_BUILD_PARALLEL_LEVEL) {
   $env:CMAKE_BUILD_PARALLEL_LEVEL = [string]$env:NUMBER_OF_PROCESSORS
 }
 if (-not $env:MLC_DOXYGEN_BIN_PLAT_NAME) {
-  $env:MLC_DOXYGEN_BIN_PLAT_NAME = "win_amd64"
+  $env:MLC_DOXYGEN_BIN_PLAT_NAME = $PlatformTag
 }
 if (-not $env:CIBW_BUILD) {
-  $env:CIBW_BUILD = "cp311-win_amd64"
+  $env:CIBW_BUILD = "cp311-$PlatformTag"
 }
 if (-not $env:CIBW_ARCHS_WINDOWS) {
-  $env:CIBW_ARCHS_WINDOWS = "AMD64"
+  $env:CIBW_ARCHS_WINDOWS = $env:MLC_DOXYGEN_BIN_ARCH
 }
 if (-not $env:CIBW_BUILD_VERBOSITY) {
   $env:CIBW_BUILD_VERBOSITY = "1"
