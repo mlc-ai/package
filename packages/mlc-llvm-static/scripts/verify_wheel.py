@@ -105,12 +105,16 @@ def main() -> None:
             if "prefix=${pcfiledir}/../.." not in path.read_text(encoding="utf-8"):
                 raise RuntimeError(f"pkg-config metadata is not relocatable: {path}")
         source = Path(__file__).resolve().parents[1] / "verify"
-        for link_mode in ("cmake", "llvm-config"):
+        link_modes = ["cmake", "llvm-config"]
+        if platform.system() == "Windows":
+            link_modes.append("whole-archive")
+        for link_mode in link_modes:
             build = root / link_mode
             run(["cmake", "-S", source, "-B", build, "-G", "Ninja",
                  "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_PREFIX_PATH={prefix}",
                  f"-DLLVM_DIR={prefix / 'lib/cmake/llvm'}", f"-DMLC_LLVM_EXPECTED_PREFIX={prefix}",
-                 f"-DMLC_LLVM_USE_CONFIG_FLAGS={'ON' if link_mode == 'llvm-config' else 'OFF'}"])
+                 f"-DMLC_LLVM_USE_CONFIG_FLAGS={'ON' if link_mode == 'llvm-config' else 'OFF'}",
+                 f"-DMLC_LLVM_WHOLE_ARCHIVE={'ON' if link_mode == 'whole-archive' else 'OFF'}"])
             run(["cmake", "--build", build, "--parallel", "2"])
             library = next(path for path in build.rglob("*mlc_llvm_probe*")
                            if path.suffix in (".dll", ".so", ".dylib"))

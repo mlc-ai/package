@@ -107,6 +107,8 @@ def build(output: Path, work: Path, tag: str | None) -> None:
         raise RuntimeError(f"Expected two wheels, got {wheels}")
     for wheel in wheels:
         compress_wheel(wheel)
+        if wheel.stat().st_size >= 100_000_000:
+            raise RuntimeError(f"{wheel.name}: {wheel.stat().st_size:,} bytes exceeds the SDK's 100 MB wheel budget")
     paths = []
     for wheel in wheels:
         with zipfile.ZipFile(wheel) as archive:

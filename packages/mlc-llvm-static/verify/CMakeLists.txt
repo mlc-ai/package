@@ -70,6 +70,15 @@ target_compile_options(mlc_llvm_probe PRIVATE ${definitions})
 target_compile_features(mlc_llvm_probe PRIVATE cxx_std_17)
 target_link_libraries(mlc_llvm_probe PRIVATE ${libraries})
 target_link_options(mlc_llvm_probe PRIVATE ${config_link_options})
+option(MLC_LLVM_WHOLE_ARCHIVE "Check every static library member with the Windows linker" OFF)
+if(MLC_LLVM_WHOLE_ARCHIVE AND MSVC)
+  foreach(name ${LLVM_AVAILABLE_LIBS} ZLIB::ZLIB zstd::libzstd_static)
+    get_target_property(kind "${name}" TYPE)
+    if(kind STREQUAL "STATIC_LIBRARY")
+      target_link_options(mlc_llvm_probe PRIVATE "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:${name}>")
+    endif()
+  endforeach()
+endif()
 
 # Static archives do not make their symbols private in a downstream DSO.
 # Exercise the export controls required when another LLVM can share a process.
