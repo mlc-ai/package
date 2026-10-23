@@ -118,25 +118,39 @@ publishing options default to false and require `platform=all`. Publishing waits
 for every host's validation and checks the complete wheel set and package metadata
 before either upload. PyPI receives wheels only; source distributions are built
 for validation, since these packages provide a prebuilt SDK.
+The SDK is compiled once per host and partitioned into both wheel families.
+Separate publishing jobs download their project's validated wheels and do not
+build anything. Wait for both jobs to succeed before using the All profile from
+the index. Publishing jobs reuse the validated artifacts and can be rerun
+independently.
+
 The package version defaults to `_version.py`; an optional workflow input stamps
 both distributions and their exact-version requirements together. LLVM's pinned
 version also comes from that file. Cache restores require the exact recipe key.
 
 To enable PyPI publishing, configure a
 [trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
-for **each** project, `mlc-llvm-static` and `mlc-llvm-static-extra-targets`, using:
+for **each** project using these settings:
 
-| PyPI publisher field | Value |
-| --- | --- |
-| Owner | `mlc-ai` |
-| Repository | `package` |
-| Workflow filename | `mlc_llvm_static_wheel.yml` |
-| Environment | `pypi` |
+| PyPI publisher field | Native SDK | Extra targets |
+| --- | --- | --- |
+| Project | `mlc-llvm-static` | `mlc-llvm-static-extra-targets` |
+| Owner | `mlc-ai` | `mlc-ai` |
+| Repository | `package` | `package` |
+| Workflow filename | `mlc_llvm_static_wheel.yml` | `mlc_llvm_static_wheel.yml` |
+| Environment | `pypi-mlc-llvm-static` | `pypi-mlc-llvm-static-extra-targets` |
 
 For projects that do not exist yet, register
 [pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
-for both names. The publishing job uses GitHub's `pypi` environment and requests
-an OIDC token only in that job; no PyPI API-token secret is required. After setup,
+for both names. PyPI requires
+[pending publishers to have distinct identities](https://github.com/pypi/warehouse/blob/main/warehouse/oidc/models/github.py)
+for the repository/workflow/environment combination; the separate environments above
+allow both projects to be registered before their first upload. Existing
+projects can share a publisher, but this setup keeps the first release independent
+for each project. Use these same environment names in GitHub's environment
+settings when configuring protection rules.
+Each publishing job requests its own OIDC token; no PyPI API-token secret is
+required. After setup,
 dispatch this workflow with `publish_pypi=true` and the desired package version.
 No workflow change is needed. Existing filenames on PyPI cause an error rather
 than being silently skipped.

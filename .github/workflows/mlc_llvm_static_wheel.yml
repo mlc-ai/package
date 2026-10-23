@@ -191,9 +191,24 @@ jobs:
           python -m pip install twine
           python -m twine check --strict dist/*.whl
       - uses: actions/upload-artifact@v4
+        if: inputs.publish_release
         with:
           name: llvm-sdk-wheels
           path: dist/*.whl
+          if-no-files-found: error
+      - name: Stage native wheels for PyPI
+        if: inputs.publish_pypi
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-mlc-llvm-static
+          path: dist/mlc_llvm_static-*.whl
+          if-no-files-found: error
+      - name: Stage extra-target wheels for PyPI
+        if: inputs.publish_pypi
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-mlc-llvm-static-extra-targets
+          path: dist/mlc_llvm_static_extra_targets-*.whl
           if-no-files-found: error
 
   release:
@@ -240,17 +255,23 @@ jobs:
             --title "LLVM static SDK ${PACKAGE_VERSION}" --notes-file release-notes.md
 
   publish_pypi:
-    name: Publish wheels to PyPI
+    name: Publish ${{ matrix.project }} to PyPI
     needs: distributions
     if: github.event_name == 'workflow_dispatch' && inputs.publish_pypi
     runs-on: ubuntu-latest
-    environment: pypi
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [mlc-llvm-static, mlc-llvm-static-extra-targets]
+    environment:
+      name: pypi-${{ matrix.project }}
+      url: https://pypi.org/p/${{ matrix.project }}
     permissions:
       id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: llvm-sdk-wheels
+          name: pypi-${{ matrix.project }}
           path: dist
-      - name: Publish both wheel families with trusted publishing
+      - name: Publish with trusted publishing
         uses: pypa/gh-action-pypi-publish@release/v1
