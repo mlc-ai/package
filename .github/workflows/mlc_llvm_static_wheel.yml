@@ -10,7 +10,7 @@ on:
     inputs:
       package_version:
         description: Package version (LLVM is pinned to 23.1.1)
-        default: "23.1.1.dev2"
+        default: "23.1.1.dev3"
         required: true
       publish_release:
         description: Upload both wheel families to a new draft GitHub prerelease
@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PACKAGE_VERSION: ${{ inputs.package_version || '23.1.1.dev2' }}
+  PACKAGE_VERSION: ${{ inputs.package_version || '23.1.1.dev3' }}
 
 jobs:
   checks:

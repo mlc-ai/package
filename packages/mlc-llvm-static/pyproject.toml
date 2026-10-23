@@ -14,7 +14,7 @@ authors = [{ name = "MLC AI", email = "mlc.ai.dev@gmail.com" }]
 keywords = ["llvm", "static-library", "cmake", "compiler"]
 
 [project.optional-dependencies]
-all = ["mlc-llvm-static-extra-targets==23.1.1.dev2"]
+all = ["mlc-llvm-static-extra-targets==23.1.1.dev3"]
 
 [project.scripts]
 llvm-config = "mlc_llvm_static._llvm_config:main"

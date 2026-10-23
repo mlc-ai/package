@@ -17,6 +17,7 @@ import zipfile
 import prepare_llvm
 from compact_coff import compact_coff
 from compress_wheel import compress_wheel
+from packaging_tools import seven_zip
 from split_sdk import split_sdk
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -106,8 +107,9 @@ def build(output: Path, work: Path, tag: str | None) -> None:
     wheels = sorted(destination.glob("*.whl"))
     if len(wheels) != 2:
         raise RuntimeError(f"Expected two wheels, got {wheels}")
+    executable = seven_zip(work / "packaging-tools")
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(compress_wheel, wheels))
+        list(pool.map(lambda wheel: compress_wheel(wheel, seven_zip=executable), wheels))
     for wheel in wheels:
         if wheel.stat().st_size >= 100_000_000:
             raise RuntimeError(f"{wheel.name}: {wheel.stat().st_size:,} bytes exceeds the SDK's 100 MB wheel budget")

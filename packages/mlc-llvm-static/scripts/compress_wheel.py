@@ -12,14 +12,15 @@ import tempfile
 import zipfile
 
 
-def compress_wheel(wheel: Path) -> None:
+def compress_wheel(wheel: Path, *, seven_zip: str | None = None) -> None:
     # Retagging with `wheel tags` recompresses the archive with default settings,
     # so apply this after all metadata/tag changes. RECORD hashes the unpacked
     # bytes; keeping every member unchanged also keeps all its hashes valid.
     temporary = wheel.with_suffix(".whl.tmp")
+    seven_zip = seven_zip or os.environ.get("MLC_LLVM_STATIC_7ZIP")
     try:
-        if wheel.name.endswith("-win_amd64.whl"):
-            compress_windows(wheel, temporary)
+        if seven_zip or wheel.name.endswith("-win_amd64.whl"):
+            compress_deflate(wheel, temporary, executable=seven_zip)
             temporary.replace(wheel)
             return
         with zipfile.ZipFile(wheel) as source, zipfile.ZipFile(
@@ -34,10 +35,10 @@ def compress_wheel(wheel: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def compress_windows(wheel: Path, destination: Path) -> None:
-    executable = os.environ.get("MLC_LLVM_STATIC_7ZIP") or shutil.which("7z") or shutil.which("7zz")
+def compress_deflate(wheel: Path, destination: Path, *, executable: str | None = None) -> None:
+    executable = executable or os.environ.get("MLC_LLVM_STATIC_7ZIP") or shutil.which("7z") or shutil.which("7zz")
     if not executable:
-        raise RuntimeError("Windows wheel packaging requires 7-Zip; set MLC_LLVM_STATIC_7ZIP to its path")
+        raise RuntimeError("Strong DEFLATE packaging requires 7-Zip; set MLC_LLVM_STATIC_7ZIP to its path")
     with tempfile.TemporaryDirectory(prefix="llvm-wheel-deflate-") as temporary:
         work = Path(temporary)
         payload = work / "payload"
