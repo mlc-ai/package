@@ -5,8 +5,8 @@ README.md). Build scripts, package metadata, and the generated runtime module
 ``mlc_doxygen_bin/_version.py`` all derive from these values.
 """
 
-__version__ = "1.17.0"
-DOXYGEN_VERSION = "1.17.0"
-DOXYGEN_ARCHIVE_SHA256 = "fa4c3dd78785abc11ccc992bc9c01e7a8c3120fe14b8a8dfd7cefa7014530814"
+__version__ = "1.18.0"
+DOXYGEN_VERSION = "1.18.0"
+DOXYGEN_ARCHIVE_SHA256 = "a1deed70a6785bbec95a2b2a9e419dc7f7b223a9d74a8644ae611c8e2dcdd354"
 
 DOXYGEN_TAG = "Release_" + DOXYGEN_VERSION.replace(".", "_")
