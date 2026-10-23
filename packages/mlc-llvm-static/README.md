@@ -70,6 +70,9 @@ GitHub-release validation, install their wheel paths/URLs explicitly. Once both
 distributions are published to PyPI, install the native SDK with
 `python -m pip install mlc-llvm-static`, or every standard backend with
 `python -m pip install 'mlc-llvm-static[all]'`.
+The `all` extra pins the add-on to the base wheel's exact version, and the add-on
+pins the base to that same version, including any RC suffix. The base wheel can
+be installed on its own.
 
 The frontend supports `--profile=native|all|auto` and normal static LLVM queries,
 including components, compiler flags, library paths/order, and system libraries.
@@ -109,24 +112,41 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 
 The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
 families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows AMD64.
-Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`). It runs for relevant
-pull requests and can also be dispatched manually. `publish_release=true`
-creates a **new draft prerelease** containing all eight verified wheels and
-`SHA256SUMS`. It does not overwrite an existing release. The independent
-`publish_pypi=true` option uploads the same verified wheel set to PyPI. Both
-publishing options default to false and require `platform=all`. Publishing waits
-for every host's validation and checks the complete wheel set and package metadata
-before either upload. PyPI receives wheels only; source distributions are built
-for validation, since these packages provide a prebuilt SDK.
+Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
+Relevant pull requests build and validate the wheels. Manual runs publish both
+wheel families to PyPI, with `version_suffix` as the only input. Every run
+validates all four host platforms. Publishing waits for every host's validation
+and checks all eight wheels and their package metadata before uploading. PyPI
+receives wheels only; source distributions are built for validation, since these
+packages provide a prebuilt SDK.
 The SDK is compiled once per host and partitioned into both wheel families.
 Separate publishing jobs download their project's validated wheels and do not
 build anything. Wait for both jobs to succeed before using the All profile from
 the index. Publishing jobs reuse the validated artifacts and can be rerun
 independently.
 
-The package version defaults to `_version.py`; an optional workflow input stamps
-both distributions and their exact-version requirements together. LLVM's pinned
-version also comes from that file. Cache restores require the exact recipe key.
+The workflow appends the optional `version_suffix` string to the pinned
+`LLVM_VERSION` in `_version.py`, then validates and normalizes it with Python's
+packaging version parser:
+
+| `version_suffix` | Both package versions |
+| --- | --- |
+| Empty (default) | `23.1.1` |
+| `rc0` | `23.1.1rc0` |
+| `dev0` | `23.1.1.dev0` |
+| `post0` | `23.1.1.post0` |
+
+Other valid suffixes, including alpha/beta and combined suffixes, work the same
+way. Both distributions, wheel filenames, and exact-version requirements are
+stamped together. Cache restores require the exact recipe key; changing the
+package suffix reuses the same compiled LLVM SDK.
+
+Python packaging normalizes `23.1.1.rc0` to `23.1.1rc0`. To test an RC from PyPI,
+pin it explicitly, for example:
+
+```bash
+python -m pip install 'mlc-llvm-static[all]==23.1.1rc0'
+```
 
 To enable PyPI publishing, configure a
 [trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
@@ -138,7 +158,7 @@ for **each** project using these settings:
 | Owner | `mlc-ai` | `mlc-ai` |
 | Repository | `package` | `package` |
 | Workflow filename | `mlc_llvm_static_wheel.yml` | `mlc_llvm_static_wheel.yml` |
-| Environment | `pypi-mlc-llvm-static` | `pypi-mlc-llvm-static-extra-targets` |
+| Environment | `pypi` | `pypi-all-targets` |
 
 For projects that do not exist yet, register
 [pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
@@ -150,8 +170,7 @@ projects can share a publisher, but this setup keeps the first release independe
 for each project. Use these same environment names in GitHub's environment
 settings when configuring protection rules.
 Each publishing job requests its own OIDC token; no PyPI API-token secret is
-required. After setup,
-dispatch this workflow with `publish_pypi=true` and the desired package version.
+required. After setup, dispatch this workflow with the desired version suffix.
 No workflow change is needed. Existing filenames on PyPI cause an error rather
 than being silently skipped.
 

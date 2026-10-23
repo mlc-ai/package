@@ -12,9 +12,14 @@ from packaging.version import Version
 PROJECT = Path(__file__).resolve().parents[1]
 
 
-def stamp_version(requested: str | None = None, *, packages: Path = PROJECT.parent) -> str:
+def stamp_version(requested: str | None = None, *, suffix: str | None = None,
+                  packages: Path = PROJECT.parent) -> str:
     source = packages / "mlc-llvm-static/src/mlc_llvm_static/_version.py"
     current = runpy.run_path(str(source))
+    if suffix is not None:
+        if requested:
+            raise ValueError("Choose an explicit version or a suffix, not both")
+        requested = current["LLVM_VERSION"] + suffix
     version = Version(requested or current["__version__"])
     if version.base_version != current["LLVM_VERSION"]:
         raise ValueError(f"Package version must be based on LLVM {current['LLVM_VERSION']}")
@@ -34,7 +39,9 @@ def stamp_version(requested: str | None = None, *, packages: Path = PROJECT.pare
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("version", nargs="?", default="", help="Defaults to the checked-in package version")
-    version = stamp_version(parser.parse_args().version)
+    parser.add_argument("--suffix", help="Append to the pinned LLVM version; empty for stable")
+    args = parser.parse_args()
+    version = stamp_version(args.version, suffix=args.suffix)
     print(version)
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:

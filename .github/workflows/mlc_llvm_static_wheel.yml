@@ -9,22 +9,11 @@ on:
       - ".github/actions/detect-env-vars/**"
   workflow_dispatch:
     inputs:
-      package_version:
-        description: Package version (defaults to the checked-in version)
+      version_suffix:
+        description: Version suffix, such as rc0, dev0, or post0; leave empty for stable
+        default: ""
+        type: string
         required: false
-      publish_release:
-        description: Upload both wheel families to a new draft GitHub prerelease
-        default: false
-        type: boolean
-      publish_pypi:
-        description: Publish both wheel families to PyPI (requires trusted publishing setup)
-        default: false
-        type: boolean
-      platform:
-        description: Host platform to validate (publishing requires all)
-        default: all
-        type: choice
-        options: [all, manylinux_2_28_x86_64, manylinux_2_28_aarch64, macosx_14_0_arm64, win_amd64]
 
 permissions:
   contents: read
@@ -48,15 +37,13 @@ jobs:
       - name: Resolve and stamp package versions
         id: version
         env:
-          REQUESTED_VERSION: ${{ inputs.package_version }}
-        run: python packages/mlc-llvm-static/scripts/stamp_version.py "$REQUESTED_VERSION"
+          VERSION_SUFFIX: ${{ inputs.version_suffix }}
+        run: >-
+          python packages/mlc-llvm-static/scripts/stamp_version.py
+          --suffix "$VERSION_SUFFIX"
       - run: python -m pytest packages/mlc-llvm-static/tests -q
-      - name: Select validation platforms
+      - name: Define validation platforms
         id: platforms
-        env:
-          SDK_PLATFORM: ${{ inputs.platform || 'all' }}
-          PUBLISH_RELEASE: ${{ inputs.publish_release }}
-          PUBLISH_PYPI: ${{ inputs.publish_pypi }}
         run: |
           python - <<'PY'
           import json, os
@@ -66,13 +53,6 @@ jobs:
               dict(name="macOS arm64", os="macos-15", tag="macosx_14_0_arm64"),
               dict(name="Windows AMD64", os="windows-2022", tag="win_amd64"),
           ]
-          selected = os.environ["SDK_PLATFORM"]
-          if selected != "all":
-              if any(os.environ.get(name) == "true" for name in ("PUBLISH_RELEASE", "PUBLISH_PYPI")):
-                  raise SystemExit("Publishing requires platform=all")
-              rows = [row for row in rows if row["tag"] == selected]
-          if not rows:
-              raise SystemExit("Unknown SDK platform")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("matrix=" + json.dumps(dict(include=rows)) + "\n")
           PY
@@ -158,9 +138,9 @@ jobs:
           if-no-files-found: error
 
   distributions:
-    name: Prepare release distributions
+    name: Prepare PyPI distributions
     needs: [checks, build_wheels]
-    if: github.event_name == 'workflow_dispatch' && (inputs.publish_release || inputs.publish_pypi)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
@@ -184,87 +164,40 @@ jobs:
                       for row in json.loads(os.environ["PLATFORM_MATRIX"])["include"]
                       for family in ("mlc_llvm_static", "mlc_llvm_static_extra_targets")}
           if {path.name for path in wheels} != expected:
-              raise SystemExit("Release wheels do not match the selected platforms and package version")
+              raise SystemExit("Release wheels do not match all platforms and package version")
           PY
       - name: Verify distribution metadata
         run: |
           python -m pip install twine
           python -m twine check --strict dist/*.whl
-      - uses: actions/upload-artifact@v4
-        if: inputs.publish_release
-        with:
-          name: llvm-sdk-wheels
-          path: dist/*.whl
-          if-no-files-found: error
       - name: Stage native wheels for PyPI
-        if: inputs.publish_pypi
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static
           path: dist/mlc_llvm_static-*.whl
           if-no-files-found: error
       - name: Stage extra-target wheels for PyPI
-        if: inputs.publish_pypi
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static-extra-targets
           path: dist/mlc_llvm_static_extra_targets-*.whl
           if-no-files-found: error
 
-  release:
-    name: Draft GitHub release
-    needs: [checks, distributions]
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: llvm-sdk-wheels
-          path: dist
-      - name: Create draft prerelease with both wheel families and checksums
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          python - <<'PY'
-          import hashlib
-          from pathlib import Path
-          wheels = sorted(Path("dist").glob("*.whl"))
-          Path("dist/SHA256SUMS").write_text("".join(
-              hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name + "\n" for path in wheels))
-          PY
-          cat > release-notes.md <<'EOF'
-          Experimental LLVM static SDK with a Native base and All-target add-on.
-
-          Install mlc_llvm_static for your host platform for native code generation.
-          Install the matching mlc_llvm_static_extra_targets wheel to enable all
-          standard LLVM backends. Both wheels own disjoint files in one SDK prefix
-          and must come from the same SDK build. llvm-config is a Python frontend.
-
-          Includes static zlib/zstd and the Linux host ORC runtime. Clang, linkers,
-          other LLVM tools, target sysroots, and experimental backends are excluded.
-          Validation covers both profiles, cross-target object generation, static
-          dependencies, relocation, and removal of the add-on.
-          EOF
-          gh release create "mlc-llvm-static-v${PACKAGE_VERSION}" dist/* \
-            --target "$GITHUB_SHA" --draft --prerelease \
-            --title "LLVM static SDK ${PACKAGE_VERSION}" --notes-file release-notes.md
-
   publish_pypi:
     name: Publish ${{ matrix.project }} to PyPI
     needs: distributions
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_pypi
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        project: [mlc-llvm-static, mlc-llvm-static-extra-targets]
+        include:
+          - project: mlc-llvm-static
+            environment: pypi
+          - project: mlc-llvm-static-extra-targets
+            environment: pypi-all-targets
     environment:
-      name: pypi-${{ matrix.project }}
+      name: ${{ matrix.environment }}
       url: https://pypi.org/p/${{ matrix.project }}
     permissions:
       id-token: write

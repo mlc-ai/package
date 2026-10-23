@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0 WITH LLVM-exception"
 license-files = ["LICENSE"]
-dependencies = ["mlc-llvm-static==23.1.1.dev3"]
+dependencies = ["mlc-llvm-static==23.1.1"]
 
 [project.urls]
 Repository = "https://github.com/mlc-ai/package"
