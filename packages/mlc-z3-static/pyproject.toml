@@ -59,9 +59,6 @@ skip = "*-musllinux_* pp*"
 test-requires = ["cmake", "ninja"]
 test-command = "python {project}/scripts/smoke_test_mlc_z3_static.py"
 
-[tool.cibuildwheel.environment]
-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD = "1"
-
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"

@@ -18,9 +18,9 @@ The wheel contains:
 
 The package is built with scikit-build-core: building a wheel runs
 `scripts/prepare_z3.py`, which downloads the pinned Z3 source archive,
-verifies its SHA-256 digest, and builds both library flavors. Source builds are
-opt-in (`MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1`) to avoid accidental long Z3
-builds when pip cannot find a matching prebuilt wheel.
+verifies its SHA-256 digest, and builds both library flavors. Prebuilt wheels
+are published for common platforms; elsewhere pip builds from the sdist like
+any other compiled package (see [Build From Source](#build-from-source)).
 
 ## Python Helpers
 
@@ -87,20 +87,28 @@ archive. Use `--kind shared` (or `get_cmake_prefix_path("shared")`) to link the
 shared flavor instead; each flavor has its own relocatable CMake prefix. See
 `example_project/` for a complete uv-managed consumer.
 
-## Local Build
+## Build From Source
 
-Build a wheel directly:
+Building from the sdist (or this directory) needs a C++20 compiler with
+`<format>` support (Z3 5.x requires it; e.g. GCC >= 13, Clang >= 17, Visual
+Studio 2022), network access to download the pinned Z3 source archive, and
+Python; CMake (>= 3.26) and Ninja are pulled in as build requirements. A full static + shared Z3 build
+takes a while; set `CMAKE_BUILD_PARALLEL_LEVEL` to use more cores:
 
 ```bash
-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 python -m build --wheel
+CMAKE_BUILD_PARALLEL_LEVEL=8 python -m pip install --no-binary mlc-z3-static mlc-z3-static
+```
+
+Build a wheel from a checkout:
+
+```bash
+python -m build --wheel
 ```
 
 Use an existing Z3 checkout instead of downloading the pinned archive:
 
 ```bash
-MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 \
-MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 \
-python -m build --wheel
+MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 python -m build --wheel
 ```
 
 ## Build Release Wheels

@@ -3,13 +3,6 @@ project(mlc_z3_static LANGUAGES NONE)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-if(NOT "$ENV{MLC_Z3_STATIC_ALLOW_SOURCE_BUILD}" STREQUAL "1")
-  message(FATAL_ERROR
-    "mlc-z3-static source builds are disabled by default. Install a prebuilt "
-    "wheel, or set MLC_Z3_STATIC_ALLOW_SOURCE_BUILD=1 to build Z3 from source "
-    "explicitly.")
-endif()
-
 set(MLC_Z3_STATIC_STAGE_DIR "${CMAKE_BINARY_DIR}/staged/mlc_z3_static")
 set(MLC_Z3_STATIC_BUILD_ROOT "${CMAKE_BINARY_DIR}/z3-build")
 
