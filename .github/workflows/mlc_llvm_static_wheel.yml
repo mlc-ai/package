@@ -138,9 +138,8 @@ jobs:
           if-no-files-found: error
 
   distributions:
-    name: Prepare PyPI distributions
+    name: Validate wheel distributions
     needs: [checks, build_wheels]
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       PACKAGE_VERSION: ${{ needs.checks.outputs.version }}
@@ -171,12 +170,14 @@ jobs:
           python -m pip install twine
           python -m twine check --strict dist/*.whl
       - name: Stage native wheels for PyPI
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static
           path: dist/mlc_llvm_static-*.whl
           if-no-files-found: error
       - name: Stage extra-target wheels for PyPI
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static-extra-targets

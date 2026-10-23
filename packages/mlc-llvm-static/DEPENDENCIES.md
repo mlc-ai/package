@@ -1,7 +1,7 @@
 # LLVM static SDK dependency audit
 
-The LLVM 23.1.1 SDK should keep PIC static zlib and zstd in its base package and
-keep the other optional integrations disabled. libxml2 is unnecessary for the
+The LLVM 23.1.1 SDK includes PIC static zlib and zstd in its base package and
+keeps the other optional integrations disabled. libxml2 is unnecessary for the
 IR, optimization, code generation, object, debug-info, and ORC paths used by the
 current consumers. Its absence does remove Windows manifest merging. Adding all
 standard code-generation backends does not require enabling libxml2 or adding
@@ -152,14 +152,13 @@ vendor runtimes into this SDK; applications using such targets may need vendor
 tools and device libraries separately. Cross-compilation and cross-target JIT
 execution are different capabilities.
 
-Keep zlib, zstd, their headers/notices, generic LLVM libraries, and the Linux
-host ORC runtime owned by the native base. The exact-version extra-targets
-add-on should own only additional target archives and its distinct profile
-metadata/headers/CMake files. Installing it must not replace the base's
-compression libraries or host runtime. Native and All profiles should report
-the same dependency feature policy and compatible build fingerprint. All
-backend behavior still needs remote compilation/link validation when that
-profile is implemented; this audit did not build it.
+The native base owns zlib, zstd, their headers/notices, generic LLVM libraries,
+and the Linux host ORC runtime. The exact-version extra-targets add-on owns only
+additional target archives and its distinct profile metadata/headers/CMake
+files. Installing it preserves the base's compression libraries and host runtime.
+Both profiles use the same dependency feature policy and build fingerprint.
+Remote CI initializes every selected backend and emits representative
+cross-target objects on all four hosts.
 
 ## Metadata needed by a configuration frontend
 

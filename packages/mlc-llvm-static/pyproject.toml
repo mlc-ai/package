@@ -33,28 +33,3 @@ sdist.exclude = ["build", "dist", "wheelhouse", ".sdk-cache", "src/mlc_llvm_stat
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "src/mlc_llvm_static/_version.py"
-
-[tool.cibuildwheel]
-# The interpreter runs the build; the payload has no Python ABI dependency.
-build = "cp311-*"
-skip = "*-musllinux_* *-manylinux_i686 *-win32 pp*"
-build-verbosity = 1
-test-requires = ["cmake>=3.31", "ninja"]
-test-command = "python {project}/scripts/verify_wheel.py"
-
-[tool.cibuildwheel.environment]
-MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD = "1"
-CMAKE_BUILD_PARALLEL_LEVEL = "2"
-
-[tool.cibuildwheel.linux]
-manylinux-x86_64-image = "manylinux_2_28"
-manylinux-aarch64-image = "manylinux_2_28"
-# These archives are linked into a consumer by verify_wheel.py. auditwheel
-# cannot establish a static archive's downstream ABI by inspecting the wheel.
-repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
-
-[tool.cibuildwheel.macos]
-repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"
-
-[tool.cibuildwheel.windows]
-repair-wheel-command = "python scripts/copy_wheel.py {wheel} {dest_dir}"

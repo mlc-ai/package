@@ -1,17 +1,9 @@
 name: Detect build environment
 description: Default CMake build parallelism to the available CPU count.
-outputs:
-  cpu_count:
-    description: Number of CPUs available to the runner.
-    value: ${{ steps.detect.outputs.cpu_count }}
-  parallel_level:
-    description: Selected build parallelism, preserving an existing override.
-    value: ${{ steps.detect.outputs.parallel_level }}
 runs:
   using: composite
   steps:
-    - id: detect
-      shell: python
+    - shell: python
       run: |
         import os
 
@@ -22,6 +14,4 @@ runs:
         parallel = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL") or str(cpu_count)
         with open(os.environ["GITHUB_ENV"], "a") as output:
             output.write(f"CMAKE_BUILD_PARALLEL_LEVEL={parallel}\n")
-        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-            output.write(f"cpu_count={cpu_count}\nparallel_level={parallel}\n")
         print(f"CMake build parallelism: {parallel} (available CPUs: {cpu_count})")

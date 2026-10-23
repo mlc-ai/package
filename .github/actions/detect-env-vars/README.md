@@ -6,7 +6,7 @@ affinity when available; other hosts use the system CPU count.
 
 An existing `CMAKE_BUILD_PARALLEL_LEVEL` takes precedence, so memory-constrained
 runners can select a lower limit. The action exports the setting through
-`GITHUB_ENV` and reports `cpu_count` and `parallel_level` outputs.
+`GITHUB_ENV` and logs the selected value.
 
 The LLVM Docker build and `docker/bash.sh` forward the setting into containers.
 The Z3 and Doxygen workflows also include it in cibuildwheel's environment for

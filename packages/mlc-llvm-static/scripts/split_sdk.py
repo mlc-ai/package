@@ -251,7 +251,6 @@ def split_sdk(raw: Path, native: Path, extra: Path, version: str, runtime: Path)
         (directory / ("base.json" if profile == "native" else "extra.json")).write_text(json.dumps(record, indent=2) + "\n")
         manifests[profile] = record
     shutil.copytree(raw / "licenses", native / "licenses")
-    # Keep the existing package-level manifest API, without giving either wheel
-    # ownership of the other wheel's manifest or licenses.
+    # Expose the native manifest to the base wheel's packaging backend.
     (native / "staticlib.json").write_text(json.dumps(manifests["native"], indent=2) + "\n")
     return manifests

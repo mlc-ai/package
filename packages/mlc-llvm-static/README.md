@@ -1,8 +1,8 @@
 # mlc-llvm-static
 
-An LLVM 23.1.1 development SDK distributed as a Python-version-independent,
-platform-specific wheel. Initial verification uses GitHub Releases; PyPI
-publishing is an optional manual workflow action.
+An LLVM 23.1.1 development SDK distributed as Python-version-independent,
+platform-specific wheels. Manual workflow runs publish the native SDK and its
+matching all-target add-on to PyPI.
 
 The SDK contains:
 
@@ -43,13 +43,11 @@ C++ runtimes remain downstream dependencies.
 
 ## Install and locate
 
-Install the wheel matching your platform, using a downloaded file or its GitHub
-release asset URL:
+Install the native SDK, then add every standard code-generation backend if needed:
 
 ```bash
-python -m pip install /path/to/mlc_llvm_static-<version>-py3-none-<platform>.whl
-# Optional: add every standard code-generation backend from the same build.
-python -m pip install /path/to/mlc_llvm_static_extra_targets-<version>-py3-none-<platform>.whl
+python -m pip install mlc-llvm-static
+python -m pip install 'mlc-llvm-static[all]'
 python -m mlc_llvm_static.config --prefix
 python -m mlc_llvm_static.config --cmake-dir
 python -m mlc_llvm_static.config --llvm-config
@@ -64,15 +62,11 @@ print(llvm.get_llvm_config())
 print(llvm.metadata()["targets"])
 ```
 
-The package metadata also defines `mlc-llvm-static[all]` to install the exact
-matching add-on when both distributions are available from an index. During
-GitHub-release validation, install their wheel paths/URLs explicitly. Once both
-distributions are published to PyPI, install the native SDK with
-`python -m pip install mlc-llvm-static`, or every standard backend with
-`python -m pip install 'mlc-llvm-static[all]'`.
 The `all` extra pins the add-on to the base wheel's exact version, and the add-on
 pins the base to that same version, including any RC suffix. The base wheel can
-be installed on its own.
+be installed on its own. Downloaded wheel files and GitHub release asset URLs
+can also be passed to `pip install`; install both matching wheels explicitly
+when using files or URLs.
 
 The frontend supports `--profile=native|all|auto` and normal static LLVM queries,
 including components, compiler flags, library paths/order, and system libraries.
@@ -108,7 +102,7 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 `LLVM_PREFIX` to the result of `--prefix`. Linux ORC runtime archives live under
 `lib/clang/<LLVM-major>/lib/`, matching the addon's discovery convention.
 
-## Builds and GitHub verification
+## Builds and publishing
 
 The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
 families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows AMD64.
@@ -201,26 +195,10 @@ encoding. Linux and macOS packaging fetch an official 7-Zip 26.05 binary with
 a pinned SHA-256; Windows uses the installed 7-Zip. Set `MLC_LLVM_STATIC_7ZIP`
 to use an existing executable, including for offline packaging. Neither
 packaging tool is needed by installed consumers. Recompression runs after
-retagging and preserves the unpacked files, permissions, and RECORD hashes. Packaging fails if
-either wheel reaches 100,000,000 bytes, leaving no ambiguity between MB and MiB.
-
-A remote compression-only benchmark of the dev2 release measured these savings
-over zlib level 9 (decimal MB). Every unpacked file's SHA-256, mode, and timestamp
-was identical. This reduces downloads; installed SDK size is unchanged.
-
-| Host | Native: zlib → 7-Zip | Extra targets: zlib → 7-Zip |
-| --- | ---: | ---: |
-| Linux x86_64 | 64.2 → 61.3 | 34.4 → 32.3 |
-| Linux aarch64 | 62.2 → 59.3 | 33.2 → 31.2 |
-| macOS arm64 | 48.5 → 46.2 | 25.7 → 24.1 |
-
-An additional Linux aarch64 `objcopy --strip-unneeded` experiment on the eight
-largest archives saved 4.58 MB installed but only 0.65 MB compressed (2.5%).
-It preserved allocated section bytes and externally defined symbols in those
-samples. This transformation is not enabled: it changes object metadata and
-requires separate exhaustive native linker validation, unlike lossless ZIP
-recompression. Linux/macOS archives retain their original symbols and sections;
-no code generation targets or compiler optimizations are removed to save space.
+retagging and preserves the unpacked files, permissions, and RECORD hashes.
+Packaging fails if either wheel reaches 100,000,000 bytes. Linux/macOS archives
+retain their original symbols and sections; lossless ZIP recompression reduces
+downloads without changing the installed SDK size.
 
 The packager compares native-component library queries with upstream
 `llvm-config`. Wheel verification covers Native and All, explicit Native with

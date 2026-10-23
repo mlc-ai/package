@@ -43,12 +43,8 @@ endforeach()
 llvm_map_components_to_libnames(libraries Core OrcJIT Support native IRReader BitWriter Linker Passes Object DebugInfoDWARF)
 option(MLC_LLVM_USE_CONFIG_FLAGS "Link using llvm-config output instead of imported targets" OFF)
 if(MLC_LLVM_USE_CONFIG_FLAGS)
-  if(EXISTS "${LLVM_TOOLS_BINARY_DIR}/llvm-config.py")
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    set(llvm_config_command "${Python3_EXECUTABLE}" "${LLVM_TOOLS_BINARY_DIR}/llvm-config.py")
-  else()
-    set(llvm_config_command "${LLVM_TOOLS_BINARY_DIR}/llvm-config${CMAKE_EXECUTABLE_SUFFIX}")
-  endif()
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(llvm_config_command "${Python3_EXECUTABLE}" "${LLVM_TOOLS_BINARY_DIR}/llvm-config.py")
   execute_process(
     COMMAND ${llvm_config_command}
       --quote-paths --link-static --libfiles --system-libs
