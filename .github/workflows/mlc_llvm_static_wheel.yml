@@ -236,7 +236,7 @@ jobs:
       matrix:
         # Each project publishes from its own environment; publish_packages
         # selects one of them or both.
-        include: ${{ fromJSON(inputs.publish_packages == 'mlc-llvm-static' && '[{"project":"mlc-llvm-static","environment":"pypi"}]' || inputs.publish_packages == 'mlc-llvm-static-extra-targets' && '[{"project":"mlc-llvm-static-extra-targets","environment":"pypi-all-targets"}]' || '[{"project":"mlc-llvm-static","environment":"pypi"},{"project":"mlc-llvm-static-extra-targets","environment":"pypi-all-targets"}]') }}
+        include: ${{ fromJSON(inputs.publish_packages == 'mlc-llvm-static' && '[{"project":"mlc-llvm-static","environment":"pypi"}]' || inputs.publish_packages == 'mlc-llvm-static-extra-targets' && '[{"project":"mlc-llvm-static-extra-targets","environment":"pypi-extra-targets"}]' || '[{"project":"mlc-llvm-static","environment":"pypi"},{"project":"mlc-llvm-static-extra-targets","environment":"pypi-extra-targets"}]') }}
     environment:
       name: ${{ matrix.environment }}
       url: https://pypi.org/p/${{ matrix.project }}

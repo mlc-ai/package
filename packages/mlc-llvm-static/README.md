@@ -201,7 +201,7 @@ no API-token secret is required:
 | Owner | `mlc-ai` | `mlc-ai` |
 | Repository | `package` | `package` |
 | Workflow filename | `mlc_llvm_static_wheel.yml` | `mlc_llvm_static_wheel.yml` |
-| Environment | `pypi` | `pypi-all-targets` |
+| Environment | `pypi` | `pypi-extra-targets` |
 
 For projects that do not exist yet, register
 [pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
