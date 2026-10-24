@@ -22,13 +22,16 @@ by `build_docker_package.yaml` and `build_docker_ci.yaml`.
 - **Manual runs** (Actions -> workflow -> Run workflow) build every platform.
   The PyPI packages publish only when *Publish to PyPI* is checked, optionally
   to a custom repository URL; `version_suffix` stamps a suffix such as `.post1`.
+  The `mlc-ai` workflows take a `tag` to build a stable release instead of a
+  nightly.
 - **Nightly**: the `mlc-ai` wheel workflows build on a daily schedule and upload
   from `main`; `prune_nightly.yaml` then prunes old nightly wheels and refreshes
   the wheel index.
 
-## Package Layout
+## Package layout
 
-Native-artifact Python packages under `packages/` follow one standard layout:
+The PyPI packages under `packages/` follow one standard layout (`mlc-ai` is
+the exception; see its README):
 
 ```text
 packages/<pkg>/
