@@ -166,10 +166,10 @@ default), and `repository_url` (a custom PyPI-compatible repository URL; empty
 means PyPI), plus `publish_packages` (`both` by default, or only
 `mlc-llvm-static` or `mlc-llvm-static-extra-targets`, for example to finish a
 release where one upload failed). Publishing waits for every host's validation
-and checks the
-complete wheel set and its metadata. Separate jobs then upload each project's
-validated wheels without rebuilding; they can be rerun independently. Wait for
-both jobs to succeed before using the All profile from the index. Existing
+and checks the complete wheel set and its metadata. Separate jobs then upload
+each project's validated wheels without rebuilding; they can be rerun
+independently. Wait for both jobs to succeed before using the All profile from
+the index. Existing
 filenames on PyPI cause an error rather than being silently skipped.
 
 The workflow appends `version_suffix` to `LLVM_VERSION` and normalizes it with
