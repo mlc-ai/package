@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install pytest packaging build
+      - run: python -m pip install pytest packaging
       - name: Resolve and stamp package versions
         id: version
         env:
@@ -56,10 +56,6 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("matrix=" + json.dumps(dict(include=rows)) + "\n")
           PY
-      # The extra-targets add-on is wheel-only: it shares the parent
-      # version.py and packages a payload split from the native SDK build.
-      - name: Build the source distribution
-        run: python -m build --sdist packages/mlc-llvm-static
 
   build_wheels:
     needs: checks
