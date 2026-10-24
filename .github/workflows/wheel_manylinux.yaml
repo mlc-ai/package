@@ -6,10 +6,9 @@
 #   * schedule          -> nightly build. Package names mlc-ai-nightly-* /
 #                          mlc-llm-nightly-*, built from the tip of origin/mlc (tvm)
 #                          and origin/main (mlc-llm).
-#   * push (main)       -> nightly build + deploy, so the nightly wheels track the
-#                          latest main.
-#   * pull_request      -> nightly build for CI only. The deploy step is skipped
-#                          (guarded by `github.ref == 'refs/heads/main'`).
+#   * pull_request      -> nightly build for CI only, when packages/mlc-ai changes.
+#                          The deploy step is skipped (guarded by
+#                          `github.ref == 'refs/heads/main'`).
 #   * workflow_dispatch -> stable release build when a `tag` is given: package names
 #                          mlc-ai-* / mlc-llm-*, the tag checked out in both
 #                          mlc-ai/relax and mlc-ai/mlc-llm (via MLC_STABLE_BUILD_VER,
@@ -21,7 +20,10 @@
 name: Wheel-Manylinux
 
 on:
-  # Push and pull request triggers are temporarily disabled; nightly and manual runs only.
+  # Pull requests build only when this package's files change.
+  pull_request:
+    paths:
+      - "packages/mlc-ai/**"
   workflow_dispatch:
     inputs:
       tag:
@@ -30,6 +32,10 @@ on:
         default: ""
   schedule:
     - cron: '0 6 * * *' # 6 AM UTC
+
+defaults:
+  run:
+    working-directory: packages/mlc-ai
 
 jobs:
   Build:
@@ -90,6 +96,7 @@ jobs:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
       with:
+        working-directory: packages/mlc-ai
         run: |
           docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
         post: |
@@ -100,6 +107,7 @@ jobs:
         IMAGE: ${{ matrix.config.image }}
         GPU: ${{ matrix.config.gpu }}
       with:
+        working-directory: packages/mlc-ai
         run: |
           docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
         post: |
@@ -111,7 +119,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       with:
         files: |
-          tvm/repaired_wheels/*.whl
-          mlc-llm/repaired_wheels/*.whl
+          packages/mlc-ai/tvm/repaired_wheels/*.whl
+          packages/mlc-ai/mlc-llm/repaired_wheels/*.whl
         tag_name: v0.9.dev0
         prerelease: true

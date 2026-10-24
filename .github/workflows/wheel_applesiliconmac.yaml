@@ -7,8 +7,8 @@
 #
 # Triggers:
 #   * schedule          -> nightly build (mlc-ai-nightly-* / mlc-llm-nightly-*).
-#   * push (main)       -> nightly build + deploy (tracks latest main).
-#   * pull_request      -> nightly build for CI only; deploy is skipped.
+#   * pull_request      -> nightly build for CI only, when packages/mlc-ai
+#                          changes; deploy is skipped.
 #   * workflow_dispatch -> stable release build (mlc-ai-* / mlc-llm-*) from the
 #                          `tag` input, checked out via MLC_STABLE_BUILD_VER
 #                          (see sync_package.py); the tag must exist in both
@@ -19,7 +19,10 @@
 name: Wheel-AppleSiliconMac
 
 on:
-  # Push and pull request triggers are temporarily disabled; nightly and manual runs only.
+  # Pull requests build only when this package's files change.
+  pull_request:
+    paths:
+      - "packages/mlc-ai/**"
   workflow_dispatch:
     inputs:
       tag:
@@ -28,6 +31,10 @@ on:
         default: ""
   schedule:
     - cron: '0 8 * * *' # 8 AM UTC -> 4 AM EDT
+
+defaults:
+  run:
+    working-directory: packages/mlc-ai
 
 jobs:
   Build:
@@ -71,7 +78,7 @@ jobs:
         activate-environment: tlcpack-build
         python-version: '3.13'
         channel-priority: strict
-        environment-file: conda/build-environment.yaml
+        environment-file: packages/mlc-ai/conda/build-environment.yaml
         auto-activate-base: false
     - name: Conda info
       run: |
@@ -92,7 +99,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       with:
         files: |
-          tvm/dist/*.whl
-          mlc-llm/dist/*.whl
+          packages/mlc-ai/tvm/dist/*.whl
+          packages/mlc-ai/mlc-llm/dist/*.whl
         tag_name: v0.9.dev0
         prerelease: true

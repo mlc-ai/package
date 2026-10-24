@@ -2,6 +2,10 @@
 
 ## Package Layout
 
+Each project lives in `packages/<package>/`, and its workflows build on pull
+requests only when that folder changes. `packages/mlc-ai/` holds the nightly
+mlc-ai and mlc-llm wheel builds; see its README.
+
 Native-artifact Python packages under `packages/` (currently `mlc-z3-static`,
 `mlc-doxygen-bin`, and `mlc-llvm-static`) follow one standard layout:
 

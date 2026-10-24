@@ -5,7 +5,6 @@ name: Prune-Nightly
 
 
 on:
-  # Push and pull request triggers are temporarily disabled; nightly and manual runs only.
   workflow_dispatch:
   schedule:
     - cron: '0 11 * * *' # 10 AM UTC
@@ -36,4 +35,4 @@ jobs:
       run: >-
         python -m pip install pyOpenSSL --upgrade &&
         python -m pip install github3.py requests &&
-        python scripts/wheel_prune_and_sync.py --site-path wheels --repo mlc-ai/package
+        python packages/mlc-ai/scripts/wheel_prune_and_sync.py --site-path wheels --repo mlc-ai/package
