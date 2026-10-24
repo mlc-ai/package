@@ -5,8 +5,10 @@ name: Prune-Nightly
 
 
 on:
-  # Pull request, push, and nightly triggers are temporarily disabled; run manually.
+  # Push and pull request triggers are temporarily disabled; nightly and manual runs only.
   workflow_dispatch:
+  schedule:
+    - cron: '0 11 * * *' # 10 AM UTC
 
 jobs:
   Build:

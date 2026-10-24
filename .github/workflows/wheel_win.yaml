@@ -16,13 +16,15 @@
 name: Wheel-Windows
 
 on:
-  # Pull request, push, and nightly triggers are temporarily disabled; run manually.
+  # Push and pull request triggers are temporarily disabled; nightly and manual runs only.
   workflow_dispatch:
     inputs:
       tag:
         description: "Stable release tag to build (e.g. v0.20.0); must exist in both mlc-ai/relax and mlc-ai/mlc-llm. Leave empty to run a nightly build."
         required: false
         default: ""
+  schedule:
+    - cron: '0 6 * * *' # 6 AM UTC
 
 jobs:
   Build:
