@@ -67,7 +67,7 @@ jobs:
               dict(name="Linux x86_64", os="ubuntu-latest", arch="x64", tag="manylinux_2_28_x86_64", image="quay.io/pypa/manylinux_2_28_x86_64:latest"),
               dict(name="Linux aarch64", os="ubuntu-24.04-arm", arch="arm64", tag="manylinux_2_28_aarch64", image="quay.io/pypa/manylinux_2_28_aarch64:latest"),
               dict(name="macOS arm64", os="macos-15", arch="arm64", tag="macosx_14_0_arm64"),
-              dict(name="Windows AMD64", os="windows-2022", arch="x64", tag="win_amd64"),
+              dict(name="Windows AMD64", os="windows-2022", arch="x64", tag="win_amd64", compiler="clang-cl"),
               dict(name="Windows ARM64", os="windows-11-vs2026-arm", arch="arm64", tag="win_arm64", compiler="clang-cl"),
           ]
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -136,7 +136,9 @@ jobs:
         shell: bash
         env:
           PLATFORM_TAG: ${{ matrix.tag }}
-          # MSVC's ARM64 optimizer exhausts its heap on the AMDGPU asm writer.
+          # Windows builds use clang-cl: MSVC's ARM64 optimizer exhausts its heap
+          # on the AMDGPU asm writer, and MSVC objects carry about twice the
+          # sections and symbols, which makes the AMD64 wheels much larger.
           CC: ${{ matrix.compiler }}
           CXX: ${{ matrix.compiler }}
           MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD: "1"
