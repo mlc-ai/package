@@ -31,16 +31,14 @@ on:
   schedule:
     - cron: '0 6 * * *' # 6 AM UTC
 
-defaults:
-  run:
-    working-directory: packages/mlc-ai
-
 jobs:
   Build:
     runs-on: windows-latest
+    # Job-level defaults replace workflow-level ones, so set both here.
     defaults:
       run:
         shell: 'cmd /C call {0}'
+        working-directory: packages/mlc-ai
     env:
       # 'stable' only for a manual (workflow_dispatch) run that supplies a tag;
       # nightly otherwise (schedule, push to main, pull_request, or a tagless

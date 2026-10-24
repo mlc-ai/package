@@ -34,16 +34,14 @@ on:
   schedule:
     - cron: '0 8 * * *' # 8 AM UTC -> 4 AM EDT
 
-defaults:
-  run:
-    working-directory: packages/mlc-ai
-
 jobs:
   Build:
     runs-on: macos-latest
+    # Job-level defaults replace workflow-level ones, so set both here.
     defaults:
       run:
         shell: 'bash -l {0}'
+        working-directory: packages/mlc-ai
     env:
       # 'stable' only for a manual (workflow_dispatch) run that supplies a tag;
       # nightly otherwise (schedule, push to main, pull_request, or a tagless
