@@ -104,7 +104,7 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 
 ## Builds and publishing
 
-The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
+The `Publish mlc-llvm-static wheels` workflow builds and verifies both wheel
 families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows
 AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
 `clang-cl` with the ARM64 MSVC libraries and linker; its wheels use the
