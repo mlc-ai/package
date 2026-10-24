@@ -15,7 +15,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--kind",
-        choices=["static", "shared"],
+        choices=["static"],
         default="static",
         help="Artifact flavor to report (default: static)",
     )

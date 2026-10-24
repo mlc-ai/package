@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "mlc-z3-static"
 dynamic = ["version"]
-description = "Prebuilt Z3 static and shared libraries, headers, and CMake metadata"
+description = "Prebuilt Z3 static libraries, headers, and CMake metadata"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"

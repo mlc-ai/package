@@ -9,7 +9,7 @@ import pytest
 
 import mlc_z3_static
 
-KINDS = ["static", "shared"]
+KINDS = ["static"]
 
 
 def test_version_constants() -> None:
@@ -36,9 +36,26 @@ def test_artifact_paths(kind: str) -> None:
 
 def test_library_flavors() -> None:
     assert Path(mlc_z3_static.get_static_library_path()).suffix in {".a", ".lib"}
-    assert Path(mlc_z3_static.get_shared_library_path()).suffix in {".so", ".dylib", ".dll"} or ".so." in Path(
-        mlc_z3_static.get_shared_library_path()
-    ).name
+    assert not hasattr(mlc_z3_static, "get_shared_library_path")
+    with pytest.raises(ValueError):
+        mlc_z3_static.get_library_path("shared")
+
+
+def test_static_only_inventory() -> None:
+    root = Path(mlc_z3_static.__file__).parent
+    assert set(mlc_z3_static.metadata()["artifacts"]) == {"static"}
+    assert not (root / "shared").exists()
+    assert not any(path.suffix in {".dll", ".dylib"} or ".so" in path.suffixes
+                   for path in root.rglob("*") if path.is_file())
+
+
+def test_cli_rejects_shared() -> None:
+    result = subprocess.run(
+        [sys.executable, "-m", "mlc_z3_static.config", "--prefix", "--kind", "shared"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr
 
 
 @pytest.mark.parametrize("kind", KINDS)
