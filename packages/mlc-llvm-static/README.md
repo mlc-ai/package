@@ -163,7 +163,10 @@ arm64 (14.0+), and Windows AMD64/ARM64. See the
 
 Manual runs take `version_suffix`, `publish` (*Publish to PyPI*, off by
 default), and `repository_url` (a custom PyPI-compatible repository URL; empty
-means PyPI). Publishing waits for every host's validation and checks the
+means PyPI), plus `publish_packages` (`both` by default, or only
+`mlc-llvm-static` or `mlc-llvm-static-extra-targets`, for example to finish a
+release where one upload failed). Publishing waits for every host's validation
+and checks the
 complete wheel set and its metadata. Separate jobs then upload each project's
 validated wheels without rebuilding; they can be rerun independently. Wait for
 both jobs to succeed before using the All profile from the index. Existing
