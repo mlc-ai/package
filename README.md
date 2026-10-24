@@ -1,7 +1,8 @@
-# Building Utils
+# Packaging Utils
 
-Build and release pipelines for MLC packages. Each package lives in
-`packages/<package>/` with its own README and GitHub Actions workflow.
+This project contains a set of packaging utils to build packages in the
+community. Each package lives in `packages/<package>/` with its own README and
+GitHub Actions workflow.
 
 | Package | Workflow | Published to |
 | --- | --- | --- |
@@ -27,8 +28,7 @@ by `build_docker_package.yaml` and `build_docker_ci.yaml`.
 
 ## Package Layout
 
-Native-artifact Python packages under `packages/` (currently `mlc-z3-static`,
-`mlc-doxygen-bin`, and `mlc-llvm-static`) follow one standard layout:
+Native-artifact Python packages under `packages/` follow one standard layout:
 
 ```text
 packages/<pkg>/
