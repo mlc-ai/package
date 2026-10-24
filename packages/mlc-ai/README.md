@@ -1,6 +1,6 @@
 # mlc-ai
 
-Nightly and stable wheel builds for `mlc-ai` (TVM) and `mlc-llm`, published to
+Nightly and stable wheel builds for `mlc-ai` and `mlc-llm`, published to
 the `v0.9.dev0` release and indexed at https://mlc.ai/wheels.
 
 This folder does not follow the standard package layout: it holds the build
