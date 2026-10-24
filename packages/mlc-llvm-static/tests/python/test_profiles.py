@@ -2,13 +2,10 @@
 import importlib.util
 import json
 from pathlib import Path
-import sys
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "scripts"))
+ROOT = Path(__file__).resolve().parents[2]
 from mlc_llvm_static._llvm_config import Configuration, ConfigurationError
 from split_sdk import filter_headers, partitions, read_components, split_sdk
 
@@ -163,7 +160,7 @@ def test_split_removes_reference_executable_and_keeps_disjoint_ownership(tmp_pat
             "flags": base_metadata["flags"], "host_target": base_metadata["host_target"]}
     (static / "share/mlc-llvm-static/build.json").write_text(json.dumps(data))
     native, extra = tmp_path / "native", tmp_path / "extra"
-    split_sdk(raw, native, extra, "23.1.1.dev1", ROOT / "src/mlc_llvm_static/_llvm_config.py")
+    split_sdk(raw, native, extra, "23.1.1.dev1", ROOT / "python/mlc_llvm_static/_llvm_config.py")
     native_files = {p.relative_to(native / "static") for p in (native / "static").rglob("*") if p.is_file()}
     extra_files = {p.relative_to(extra / "static") for p in (extra / "static").rglob("*") if p.is_file()}
     assert not native_files & extra_files

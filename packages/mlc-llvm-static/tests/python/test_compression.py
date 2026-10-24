@@ -7,7 +7,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts/compress_wheel.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts/compress_wheel.py"
 spec = importlib.util.spec_from_file_location("compress_wheel", SCRIPT)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

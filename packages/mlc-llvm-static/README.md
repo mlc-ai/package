@@ -114,8 +114,11 @@ Relevant pull requests build and validate the wheels. Manual runs publish both
 wheel families to PyPI, with `version_suffix` as the only input. Every run
 validates every supported host platform. Publishing waits for every host's
 validation and checks the complete wheel set and its metadata before uploading.
-PyPI receives wheels only; source distributions are built for validation, since
-these packages provide a prebuilt SDK.
+PyPI receives wheels only; the `mlc-llvm-static` source distribution is built for
+validation, since these packages provide a prebuilt SDK. The
+`mlc-llvm-static-extra-targets` add-on in [`extra-targets/`](extra-targets) has
+no source distribution: it shares this package's `version.py` and packages a
+payload split from the native SDK build.
 The SDK is compiled once per host and partitioned into both wheel families.
 Separate publishing jobs download their project's validated wheels and do not
 build anything. Wait for both jobs to succeed before using the All profile from
@@ -123,7 +126,7 @@ the index. Publishing jobs reuse the validated artifacts and can be rerun
 independently.
 
 The workflow appends the optional `version_suffix` string to the pinned
-`LLVM_VERSION` in `_version.py`, then validates and normalizes it with Python's
+`LLVM_VERSION` in `version.py`, then validates and normalizes it with Python's
 packaging version parser:
 
 | `version_suffix` | Both package versions |
@@ -218,8 +221,8 @@ MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1 CMAKE_BUILD_PARALLEL_LEVEL=8 \
 python scripts/verify_split_wheels.py wheelhouse
 ```
 
-The source archive digests are pinned in `scripts/prepare_llvm.py`. Useful build
-overrides:
+The LLVM source archive digest is pinned in `version.py`; the zlib and zstd
+digests are pinned in `scripts/prepare_llvm.py`. Useful build overrides:
 
 - `MLC_LLVM_STATIC_SOURCE_CACHE`: reusable directory of downloaded source archives.
 - `MLC_LLVM_STATIC_LLVM_SOURCE_DIR`, `MLC_LLVM_STATIC_ZLIB_SOURCE_DIR`, and
@@ -239,3 +242,30 @@ Static libraries and generated configuration must stay together. External Clang
 versions can compile native objects independently, but Clang producing LLVM IR
 for this SDK should use a tested matching LLVM release. Android and ROCm tools
 should come from their corresponding vendor toolchains.
+
+## Tests
+
+The unit tests cover the build scripts and the Python frontend without building
+LLVM:
+
+```bash
+python -m pip install pytest packaging
+python -m pytest tests/python
+```
+
+## Bumping the version
+
+[`version.py`](version.py) is the single version source for both
+distributions. To move to a new LLVM release, edit only that file:
+
+- `LLVM_VERSION`: the upstream release (the source archive is
+  `llvm-project-<LLVM_VERSION>.src.tar.xz` from the `llvmorg-<LLVM_VERSION>`
+  GitHub release).
+- `__version__`: the Python package version; it must equal `LLVM_VERSION`, or
+  `LLVM_VERSION` plus a PEP 440 suffix such as `.post1`.
+- `LLVM_ARCHIVE_SHA256`: the SHA-256 of that source archive.
+
+Then run `python scripts/stamp_version.py` to update the exact-version
+requirements between `mlc-llvm-static` and `mlc-llvm-static-extra-targets` in
+both `pyproject.toml` files. The build generates the runtime
+`mlc_llvm_static/_version.py` from `version.py`; it is not checked in.

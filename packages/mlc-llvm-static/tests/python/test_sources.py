@@ -7,7 +7,7 @@ import tarfile
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts/prepare_llvm.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts/prepare_llvm.py"
 spec = importlib.util.spec_from_file_location("prepare_sources", SCRIPT)
 prepare = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare)

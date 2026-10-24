@@ -8,4 +8,6 @@ It does not include Clang, linkers, target sysroots, or other LLVM tools.
 
 Both payloads must come from one All-target LLVM build. Build and verify them
 with `packages/mlc-llvm-static/scripts/build_wheels.py` in this repository.
-Source compilation requires `MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1`.
+Source compilation requires `MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1`. This add-on
+shares the version in `packages/mlc-llvm-static/version.py` and is published as
+wheels only.

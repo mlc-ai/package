@@ -15,6 +15,8 @@ keywords = ["llvm", "static-library", "cmake", "compiler"]
 
 [project.optional-dependencies]
 all = ["mlc-llvm-static-extra-targets==23.1.1"]
+# Run with: pip install ".[test]" && pytest
+test = ["pytest", "packaging"]
 
 [project.scripts]
 llvm-config = "mlc_llvm_static._llvm_config:main"
@@ -26,10 +28,27 @@ LLVM = "https://llvm.org/"
 [tool.scikit-build]
 cmake.version = ">=3.31"
 wheel.py-api = "py3"
-wheel.packages = ["src/mlc_llvm_static"]
+wheel.packages = ["python/mlc_llvm_static"]
 build-dir = "build/{wheel_tag}"
-sdist.exclude = ["build", "dist", "wheelhouse", ".sdk-cache", "src/mlc_llvm_static/static", "src/mlc_llvm_static/licenses", "src/mlc_llvm_static/staticlib.json"]
+sdist.exclude = [
+  "build",
+  "dist",
+  "wheelhouse",
+  ".sdk-cache",
+  # The extra-targets add-on is a separate, wheel-only distribution.
+  "extra-targets",
+  "python/mlc_llvm_static/static",
+  "python/mlc_llvm_static/licenses",
+  "python/mlc_llvm_static/staticlib.json",
+  "python/mlc_llvm_static/_version.py",
+]
 
+# version.py is the single version source for this package and the
+# extra-targets add-on; the build generates the runtime
+# python/mlc_llvm_static/_version.py from it (see scripts/build_wheels.py).
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
-input = "src/mlc_llvm_static/_version.py"
+input = "version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

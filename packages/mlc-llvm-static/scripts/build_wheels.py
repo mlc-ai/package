@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import argparse
 import copy
+import importlib.util
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
-import runpy
 import shutil
 import subprocess
 import sys
@@ -16,6 +16,7 @@ import zipfile
 from compact_coff import compact_coff
 from compress_wheel import compress_wheel
 from packaging_tools import seven_zip
+from prepare_llvm import PACKAGE_VERSION, write_version_module
 from split_sdk import split_sdk
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -25,11 +26,24 @@ def run(command, *, env=None):
     subprocess.run([str(value) for value in command], check=True, env=env)
 
 
-def version() -> str:
-    return runpy.run_path(str(PROJECT / "src/mlc_llvm_static/_version.py"))["__version__"]
+def load_llvm_config():
+    # Load the runtime helper by path: the source package has no generated
+    # _version.py, so importing the mlc_llvm_static package would fail here.
+    path = PROJECT / "python/mlc_llvm_static/_llvm_config.py"
+    spec = importlib.util.spec_from_file_location("mlc_llvm_static_llvm_config", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def stage(native: Path, work: Path) -> Path | None:
+    extra = stage_payloads(native, work)
+    write_version_module(native)
+    return extra
+
+
+def stage_payloads(native: Path, work: Path) -> Path | None:
     supplied = os.environ.get("MLC_LLVM_STATIC_PREFIX")
     if supplied and (Path(supplied) / "share/mlc-llvm-static/base.json").is_file():
         # Repackaging a prepared native payload never compiles LLVM.
@@ -58,11 +72,10 @@ def stage(native: Path, work: Path) -> Path | None:
     extra = native.parent / "extra/mlc_llvm_static"
     # Work on the restored copy, keeping the cached upstream SDK unchanged.
     compact_coff(raw)
-    split_sdk(raw, native, extra, version(), PROJECT / "src/mlc_llvm_static/_llvm_config.py")
+    split_sdk(raw, native, extra, PACKAGE_VERSION, PROJECT / "python/mlc_llvm_static/_llvm_config.py")
     # Upstream's executable remains in the raw build/cache, never either wheel.
     # Verify every installed component's dependency order against that build.
-    sys.path.insert(0, str(PROJECT / "src"))
-    from mlc_llvm_static._llvm_config import Configuration
+    Configuration = load_llvm_config().Configuration
     config = Configuration(native / "static", "native")
     executable = raw / "static/bin" / ("llvm-config.exe" if os.name == "nt" else "llvm-config")
     for profile in ("native", "all"):
@@ -97,7 +110,7 @@ def build(output: Path, work: Path, tag: str | None) -> None:
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True, exist_ok=True)
-    for project in (PROJECT, PROJECT.parent / "mlc-llvm-static-extra-targets"):
+    for project in (PROJECT, PROJECT / "extra-targets"):
         run([sys.executable, "-m", "build", "--wheel", "--no-isolation", "--outdir", destination, project], env=env)
     if tag:
         for wheel in sorted(destination.glob("*.whl")):
