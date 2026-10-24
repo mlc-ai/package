@@ -122,8 +122,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
-/tvm
-/mlc-llm
+packages/mlc-ai/tvm/
+packages/mlc-ai/mlc-llm/
 
 # mypy
 .mypy_cache/
