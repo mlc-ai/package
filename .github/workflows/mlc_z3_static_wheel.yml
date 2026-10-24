@@ -1,7 +1,10 @@
 name: Publish mlc-z3-static wheels
 
 on:
-  # Pull request triggers are temporarily disabled; run manually.
+  # Pull requests build only when this package's files change.
+  pull_request:
+    paths:
+      - "packages/mlc-z3-static/**"
   workflow_dispatch:
     inputs:
       version_suffix:

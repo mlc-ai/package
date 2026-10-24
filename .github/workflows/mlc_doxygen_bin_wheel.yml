@@ -1,6 +1,10 @@
 name: Publish mlc-doxygen-bin wheels
 
 on:
+  # Pull requests build only when this package's files change.
+  pull_request:
+    paths:
+      - "packages/mlc-doxygen-bin/**"
   workflow_dispatch:
     inputs:
       version_suffix:
