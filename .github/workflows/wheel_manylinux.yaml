@@ -81,7 +81,7 @@ jobs:
         # cancelled build leaves root-owned files under tvm/ and mlc-llm/ that
         # actions/checkout's git clean cannot remove. Delete them as root (inside
         # the build image) before cloning, or `git clone` fails on the stale dir.
-        docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
+        "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
         git clone https://github.com/mlc-ai/relax tvm --recursive
         git clone https://github.com/mlc-ai/mlc-llm mlc-llm --recursive
     - name: Sync MLC AI Package
@@ -98,9 +98,9 @@ jobs:
       with:
         working-directory: packages/mlc-ai
         run: |
-          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
+          "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/build_mlc_ai_wheel_manylinux.sh --gpu $GPU
         post: |
-          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
+          "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Build MLC-LLM
       uses: gacts/run-and-post-run@v1
       env:
@@ -109,9 +109,9 @@ jobs:
       with:
         working-directory: packages/mlc-ai
         run: |
-          docker/bash.sh --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
+          "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/build_mlc_llm_wheel_manylinux.sh --gpu $GPU
         post: |
-          docker/bash.sh --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
+          "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
