@@ -33,6 +33,8 @@ Z3 = "https://github.com/Z3Prover/z3"
 cmake.version = ">=3.26"
 wheel.py-api = "py3"
 wheel.packages = ["python/mlc_z3_static"]
+# Exclude stale shared outputs left by older in-place source builds.
+wheel.exclude = ["mlc_z3_static/shared/**"]
 sdist.exclude = [
   "build",
   "dist",
