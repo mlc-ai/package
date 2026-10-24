@@ -67,7 +67,7 @@ jobs:
       MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
       with:
         submodules: 'recursive'
     - uses: ./.github/actions/detect-env-vars
@@ -116,7 +116,7 @@ jobs:
           "$GITHUB_WORKSPACE/docker/bash.sh" --no-gpu $IMAGE ./scripts/cleanup_workspace.sh
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       with:
