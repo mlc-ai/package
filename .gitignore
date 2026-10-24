@@ -139,12 +139,6 @@ common
 
 # Native artifact packages: cibuildwheel output and staged package payloads
 wheelhouse/
-packages/*/src/*/static/
-packages/*/src/*/shared/
-packages/*/src/*/bin/
-packages/*/src/*/licenses/
-packages/*/src/*/staticlib.json
-packages/*/src/*/doxygen.json
 packages/*/python/*/static/
 packages/*/python/*/shared/
 packages/*/python/*/bin/
@@ -154,3 +148,4 @@ packages/*/python/*/doxygen.json
 # Runtime version modules generated from each package's root version.py
 packages/mlc-z3-static/python/mlc_z3_static/_version.py
 packages/mlc-doxygen-bin/python/mlc_doxygen_bin/_version.py
+packages/mlc-llvm-static/python/mlc_llvm_static/_version.py

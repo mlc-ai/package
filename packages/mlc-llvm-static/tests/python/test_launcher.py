@@ -1,11 +1,9 @@
 """Windows console discovery must respect the wheel's real install scheme."""
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from types import SimpleNamespace
-import sys
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import mlc_llvm_static as sdk
 
 

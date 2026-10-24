@@ -8,8 +8,8 @@
 
 ## Package Layout
 
-Native-artifact Python packages under `packages/` (currently `mlc-z3-static`
-and `mlc-doxygen-bin`) follow one standard layout:
+Native-artifact Python packages under `packages/` (currently `mlc-z3-static`,
+`mlc-doxygen-bin`, and `mlc-llvm-static`) follow one standard layout:
 
 ```text
 packages/<pkg>/
@@ -36,3 +36,8 @@ packages/<pkg>/
 
 Helpers are copied per package rather than shared so each package builds from
 its own sdist.
+
+`mlc-llvm-static` keeps this layout with its own build scripts instead of
+cibuildwheel. Its wheel-only `mlc-llvm-static-extra-targets` add-on lives in
+`packages/mlc-llvm-static/extra-targets/` and reads the parent `version.py`, so
+both distributions share one version.

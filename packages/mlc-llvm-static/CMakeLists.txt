@@ -19,4 +19,4 @@ add_custom_target(stage_mlc_llvm_static ALL
   VERBATIM)
 install(DIRECTORY "${stage}/static" "${stage}/licenses" DESTINATION mlc_llvm_static
   USE_SOURCE_PERMISSIONS)
-install(FILES "${stage}/staticlib.json" DESTINATION mlc_llvm_static)
+install(FILES "${stage}/staticlib.json" "${stage}/_version.py" DESTINATION mlc_llvm_static)

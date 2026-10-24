@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "verify_wheel.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "verify_wheel.py"
 spec = importlib.util.spec_from_file_location("verify_wheel", SCRIPT)
 verify = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verify)

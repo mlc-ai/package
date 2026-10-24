@@ -21,6 +21,8 @@ wheel.py-api = "py3"
 wheel.packages = []
 build-dir = "build/{wheel_tag}"
 
+# Share the parent mlc-llvm-static version.py. This package is published as
+# wheels only, built together with mlc-llvm-static by scripts/build_wheels.py.
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
-input = "version.py"
+input = "../version.py"

@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "packages/mlc-llvm-static/**"
-      - "packages/mlc-llvm-static-extra-targets/**"
       - ".github/workflows/mlc_llvm_static_wheel.yml"
       - ".github/actions/detect-env-vars/**"
   workflow_dispatch:
@@ -33,7 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install pytest build
+      - run: python -m pip install pytest packaging build
       - name: Resolve and stamp package versions
         id: version
         env:
@@ -41,7 +40,7 @@ jobs:
         run: >-
           python packages/mlc-llvm-static/scripts/stamp_version.py
           --suffix "$VERSION_SUFFIX"
-      - run: python -m pytest packages/mlc-llvm-static/tests -q
+      - run: python -m pytest packages/mlc-llvm-static/tests/python -q
       - name: Define validation platforms
         id: platforms
         run: |
@@ -57,10 +56,10 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("matrix=" + json.dumps(dict(include=rows)) + "\n")
           PY
-      - name: Build both source distributions
-        run: |
-          python -m build --sdist packages/mlc-llvm-static
-          python -m build --sdist packages/mlc-llvm-static-extra-targets
+      # The extra-targets add-on is wheel-only: it shares the parent
+      # version.py and packages a payload split from the native SDK build.
+      - name: Build the source distribution
+        run: python -m build --sdist packages/mlc-llvm-static
 
   build_wheels:
     needs: checks

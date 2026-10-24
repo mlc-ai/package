@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts/compact_coff.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts/compact_coff.py"
 sys.path.insert(0, str(SCRIPT.parent))
 spec = importlib.util.spec_from_file_location("compact_coff", SCRIPT)
 module = importlib.util.module_from_spec(spec)
