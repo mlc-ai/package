@@ -1,6 +1,7 @@
 """Cached SDK extraction retains executable modes and confines file paths."""
 import importlib.util
 from pathlib import Path
+import runpy
 from zipfile import ZipFile, ZipInfo
 
 import pytest
@@ -42,3 +43,26 @@ def test_rejects_a_cached_sdk_path_that_escapes_the_work_directory(tmp_path, mon
         archive.writestr("mlc_llvm_static/static/../../../escape", "invalid")
     with pytest.raises(RuntimeError, match="Invalid cached SDK path"):
         prepare.cached_prefix(tmp_path / "work")
+
+
+def test_recipe_cache_separates_compilers_but_not_parallelism(monkeypatch):
+    monkeypatch.syspath_prepend(str(SCRIPT.parent))
+    for name in ("CC", "CXX"):
+        monkeypatch.delenv(name, raising=False)
+
+    def key():
+        return runpy.run_path(str(SCRIPT.with_name("cache_key.py")))["key"]
+
+    default = key()
+    monkeypatch.setenv("CC", "")
+    monkeypatch.setenv("CXX", "")
+    monkeypatch.setenv("CMAKE_BUILD_PARALLEL_LEVEL", "1")
+    assert key() == default
+    monkeypatch.setenv("CC", "clang-cl")
+    c_override = key()
+    assert c_override != default
+    monkeypatch.setenv("CXX", "clang-cl")
+    both_overrides = key()
+    assert both_overrides not in (default, c_override)
+    monkeypatch.setenv("CXX", "cl")
+    assert key() not in (default, c_override, both_overrides)

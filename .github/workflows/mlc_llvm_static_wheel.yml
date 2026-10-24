@@ -52,7 +52,7 @@ jobs:
               dict(name="Linux aarch64", os="ubuntu-24.04-arm", arch="arm64", tag="manylinux_2_28_aarch64", image="quay.io/pypa/manylinux_2_28_aarch64:latest"),
               dict(name="macOS arm64", os="macos-15", arch="arm64", tag="macosx_14_0_arm64"),
               dict(name="Windows AMD64", os="windows-2022", arch="x64", tag="win_amd64"),
-              dict(name="Windows ARM64", os="windows-11-vs2026-arm", arch="arm64", tag="win_arm64"),
+              dict(name="Windows ARM64", os="windows-11-vs2026-arm", arch="arm64", tag="win_arm64", compiler="clang-cl"),
           ]
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("matrix=" + json.dumps(dict(include=rows)) + "\n")
@@ -92,6 +92,9 @@ jobs:
       - name: Fingerprint compiled SDK recipe
         id: recipe
         shell: bash
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.compiler }}
         run: python packages/mlc-llvm-static/scripts/cache_key.py >> "$GITHUB_OUTPUT"
       - name: Restore compiled All-target SDK
         id: sdk_cache
@@ -115,12 +118,15 @@ jobs:
               python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
               python scripts/verify_split_wheels.py wheelhouse
             '
-      - name: Build and verify macOS and Windows wheels
+      - name: Build macOS and Windows wheels
         if: runner.os != 'Linux'
         working-directory: packages/mlc-llvm-static
         shell: bash
         env:
           PLATFORM_TAG: ${{ matrix.tag }}
+          # MSVC's ARM64 optimizer exhausts its heap on the AMDGPU asm writer.
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.compiler }}
           MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD: "1"
           MLC_LLVM_STATIC_USE_CACHE: "1"
           MLC_LLVM_STATIC_CLEAN_BUILD: "1"
@@ -128,7 +134,11 @@ jobs:
         run: |
           python -m pip install build scikit-build-core cmake ninja wheel
           python scripts/build_wheels.py --platform-tag "$PLATFORM_TAG"
-          python scripts/verify_split_wheels.py wheelhouse
+      - name: Verify macOS and Windows consumers with the default compiler
+        if: runner.os != 'Linux'
+        working-directory: packages/mlc-llvm-static
+        shell: bash
+        run: python scripts/verify_split_wheels.py wheelhouse
       - name: Save compiled SDK even if packaging or validation failed
         if: always() && steps.sdk_cache.outputs.cache-hit != 'true' && hashFiles('packages/mlc-llvm-static/.sdk-cache/all-sdk.zip') != ''
         uses: actions/cache/save@v4

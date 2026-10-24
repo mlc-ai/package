@@ -107,7 +107,8 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 The `Build LLVM static SDK wheels` workflow builds and verifies both wheel
 families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows
 AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
-the ARM64 MSVC toolchain; its wheels use the `win_arm64` platform tag.
+`clang-cl` with the ARM64 MSVC libraries and linker; its wheels use the
+`win_arm64` platform tag. Consumer verification uses MSVC on both Windows hosts.
 Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
 Relevant pull requests build and validate the wheels. Manual runs publish both
 wheel families to PyPI, with `version_suffix` as the only input. Every run
@@ -179,7 +180,8 @@ the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline
 The probe also round-trips both compression formats, reads compressed ELF DWARF,
 and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
 CI caches the raw All-target SDK by platform and a fingerprint of the compilation
-and graph-generation recipe. Frontend, packaging, and verification changes reuse
+and graph-generation recipe, including explicit `CC`/`CXX` overrides.
+Frontend, packaging, and verification changes reuse
 that build. Windows packaging uses `llvm-objcopy` on a copy of the raw archives
 to remove unreferenced local labels and unused undefined declarations. Public
 definitions, relocation/weak-reference targets, linker directive references,
