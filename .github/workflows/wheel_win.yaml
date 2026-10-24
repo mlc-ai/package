@@ -50,6 +50,8 @@ jobs:
 
     steps:
     - name: Git config
+      # Runs before checkout, when packages/mlc-ai does not exist yet.
+      working-directory: .
       run: >-
         git config --system core.longpaths true
     - uses: actions/checkout@v5
