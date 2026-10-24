@@ -1,11 +1,7 @@
 name: Publish mlc-llvm-static wheels
 
 on:
-  pull_request:
-    paths:
-      - "packages/mlc-llvm-static/**"
-      - ".github/workflows/mlc_llvm_static_wheel.yml"
-      - ".github/actions/detect-env-vars/**"
+  # Pull request triggers are temporarily disabled; run manually.
   workflow_dispatch:
     inputs:
       version_suffix:

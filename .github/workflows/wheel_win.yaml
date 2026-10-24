@@ -16,26 +16,13 @@
 name: Wheel-Windows
 
 on:
+  # Pull request, push, and nightly triggers are temporarily disabled; run manually.
   workflow_dispatch:
     inputs:
       tag:
         description: "Stable release tag to build (e.g. v0.20.0); must exist in both mlc-ai/relax and mlc-ai/mlc-llm. Leave empty to run a nightly build."
         required: false
         default: ""
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-    # Self-contained per-package projects and repo config do not affect the
-    # nightly TVM/MLC-LLM wheel pipelines; skip them for such changes.
-    paths-ignore:
-      - 'packages/**'
-      - '.github/**'
-      - '.gitignore'
-  schedule:
-    - cron: '0 6 * * *' # 6 AM UTC
 
 jobs:
   Build:
