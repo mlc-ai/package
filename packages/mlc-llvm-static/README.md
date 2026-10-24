@@ -1,8 +1,8 @@
 # mlc-llvm-static
 
 An LLVM 23.1.1 development SDK distributed as Python-version-independent,
-platform-specific wheels. Manual workflow runs publish the native SDK and its
-matching all-target add-on to PyPI.
+platform-specific wheels. Manual workflow runs can publish the native SDK and
+its matching all-target add-on to PyPI.
 
 The SDK contains:
 
@@ -110,15 +110,15 @@ AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
 `clang-cl` with the ARM64 MSVC libraries and linker; its wheels use the
 `win_arm64` platform tag. Consumer verification uses MSVC on both Windows hosts.
 Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
-Relevant pull requests build and validate the wheels. Manual runs publish both
-wheel families to PyPI, with `version_suffix` as the only input. Every run
-validates every supported host platform. Publishing waits for every host's
-validation and checks the complete wheel set and its metadata before uploading.
-PyPI receives wheels only; the `mlc-llvm-static` source distribution is built for
-validation, since these packages provide a prebuilt SDK. The
-`mlc-llvm-static-extra-targets` add-on in [`extra-targets/`](extra-targets) has
-no source distribution: it shares this package's `version.py` and packages a
-payload split from the native SDK build.
+Relevant pull requests build and validate the wheels. Manual runs take the same
+inputs as the other packages' workflows: `version_suffix`, `publish` (publish to
+PyPI, off by default), and `repository_url` (a custom PyPI-compatible repository
+URL; empty means PyPI). Every run validates every supported host platform.
+Publishing waits for every host's validation and checks the complete wheel set
+and its metadata before uploading. Both packages publish wheels only, since they
+provide a prebuilt SDK. The `mlc-llvm-static-extra-targets` add-on in
+[`extra-targets/`](extra-targets) shares this package's `version.py` and packages
+a payload split from the native SDK build.
 The SDK is compiled once per host and partitioned into both wheel families.
 Separate publishing jobs download their project's validated wheels and do not
 build anything. Wait for both jobs to succeed before using the All profile from

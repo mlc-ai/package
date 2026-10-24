@@ -9,10 +9,18 @@ on:
   workflow_dispatch:
     inputs:
       version_suffix:
-        description: Version suffix, such as rc0, dev0, or post0; leave empty for stable
-        default: ""
-        type: string
+        description: Python package version suffix, such as .post1
         required: false
+        default: ""
+      publish:
+        description: Publish to PyPI
+        type: boolean
+        required: true
+        default: false
+      repository_url:
+        description: Custom PyPI-compatible repository URL
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -179,14 +187,14 @@ jobs:
           python -m pip install twine
           python -m twine check --strict dist/*.whl
       - name: Stage native wheels for PyPI
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ inputs.publish }}
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static
           path: dist/mlc_llvm_static-*.whl
           if-no-files-found: error
       - name: Stage extra-target wheels for PyPI
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ inputs.publish }}
         uses: actions/upload-artifact@v4
         with:
           name: pypi-mlc-llvm-static-extra-targets
@@ -196,7 +204,7 @@ jobs:
   publish_pypi:
     name: Publish ${{ matrix.project }} to PyPI
     needs: distributions
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -210,11 +218,28 @@ jobs:
       name: ${{ matrix.environment }}
       url: https://pypi.org/p/${{ matrix.project }}
     permissions:
+      contents: read
       id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: pypi-${{ matrix.project }}
           path: dist
-      - name: Publish with trusted publishing
+      - name: List distributions
+        run: ls -l dist
+      - name: Generate artifact attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/*"
+      - name: Publish to PyPI
+        if: ${{ inputs.repository_url == '' }}
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+      - name: Publish to custom repository
+        if: ${{ inputs.repository_url != '' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          repository-url: ${{ inputs.repository_url }}
