@@ -1,10 +1,11 @@
 name: Publish mlc-doxygen-bin wheels
 
 on:
-  # Pull requests build only when this package or this workflow changes.
+  # Pull requests build only when this package (other than docs) or this workflow changes.
   pull_request:
     paths:
       - "packages/mlc-doxygen-bin/**"
+      - "!packages/mlc-doxygen-bin/**/*.md"
       - ".github/workflows/mlc_doxygen_bin_wheel.yml"
   workflow_dispatch:
     inputs:

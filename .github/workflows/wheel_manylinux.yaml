@@ -20,10 +20,11 @@
 name: Wheel-Manylinux
 
 on:
-  # Pull requests build only when this package or this workflow changes.
+  # Pull requests build only when this package (other than docs) or this workflow changes.
   pull_request:
     paths:
       - "packages/mlc-ai/**"
+      - "!packages/mlc-ai/**/*.md"
       - ".github/workflows/wheel_manylinux.yaml"
   workflow_dispatch:
     inputs:

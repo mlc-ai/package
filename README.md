@@ -1,10 +1,31 @@
 # Building Utils
 
-## Package Layout
+Build and release pipelines for MLC packages. Each package lives in
+`packages/<package>/` with its own README and GitHub Actions workflow.
 
-Each project lives in `packages/<package>/`, and its workflows build on pull
-requests only when that folder changes. `packages/mlc-ai/` holds the nightly
-mlc-ai and mlc-llm wheel builds; see its README.
+| Package | Workflow | Published to |
+| --- | --- | --- |
+| [`mlc-z3-static`](packages/mlc-z3-static) | `mlc_z3_static_wheel.yml` | PyPI |
+| [`mlc-doxygen-bin`](packages/mlc-doxygen-bin) | `mlc_doxygen_bin_wheel.yml` | PyPI |
+| [`mlc-llvm-static`](packages/mlc-llvm-static) | `mlc_llvm_static_wheel.yml` | PyPI |
+| [`mlc-ai`](packages/mlc-ai) (`mlc-ai`, `mlc-llm` wheels) | `wheel_manylinux.yaml`, `wheel_win.yaml`, `wheel_applesiliconmac.yaml` | [mlc.ai/wheels](https://mlc.ai/wheels) |
+
+`docker/` at the repo root holds the build environment images, built manually
+by `build_docker_package.yaml` and `build_docker_ci.yaml`.
+
+## When workflows run
+
+- **Pull requests** build a package only when files in its `packages/<package>/`
+  folder or its own workflow file change. Changes that touch only Markdown files
+  there do not trigger a build. Pull request runs never publish.
+- **Manual runs** (Actions -> workflow -> Run workflow) build every platform.
+  The PyPI packages publish only when *Publish to PyPI* is checked, optionally
+  to a custom repository URL; `version_suffix` stamps a suffix such as `.post1`.
+- **Nightly**: the `mlc-ai` wheel workflows build on a daily schedule and upload
+  from `main`; `prune_nightly.yaml` then prunes old nightly wheels and refreshes
+  the wheel index.
+
+## Package Layout
 
 Native-artifact Python packages under `packages/` (currently `mlc-z3-static`,
 `mlc-doxygen-bin`, and `mlc-llvm-static`) follow one standard layout:
@@ -34,8 +55,3 @@ packages/<pkg>/
 
 Helpers are copied per package rather than shared so each package builds from
 its own sdist.
-
-`mlc-llvm-static` keeps this layout with its own build scripts instead of
-cibuildwheel. Its wheel-only `mlc-llvm-static-extra-targets` add-on lives in
-`packages/mlc-llvm-static/extra-targets/` and reads the parent `version.py`, so
-both distributions share one version.
