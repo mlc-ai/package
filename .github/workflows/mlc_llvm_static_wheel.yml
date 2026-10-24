@@ -1,4 +1,4 @@
-name: Build LLVM static SDK wheels
+name: Publish mlc-llvm-static wheels
 
 on:
   pull_request:
