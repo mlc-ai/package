@@ -110,7 +110,7 @@ AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
 `clang-cl` with the ARM64 MSVC libraries and linker; its wheels use the
 `win_arm64` platform tag. Consumer verification uses MSVC on both Windows hosts.
 Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
-Relevant pull requests build and validate the wheels. Manual runs take the same
+The workflow runs manually (pull request triggers are temporarily disabled). It takes the same
 inputs as the other packages' workflows: `version_suffix`, `publish` (publish to
 PyPI, off by default), and `repository_url` (a custom PyPI-compatible repository
 URL; empty means PyPI). Every run validates every supported host platform.

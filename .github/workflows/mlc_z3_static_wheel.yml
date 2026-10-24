@@ -1,10 +1,7 @@
 name: Publish mlc-z3-static wheels
 
 on:
-  pull_request:
-    paths:
-      - "packages/mlc-z3-static/**"
-      - ".github/workflows/mlc_z3_static_wheel.yml"
+  # Pull request triggers are temporarily disabled; run manually.
   workflow_dispatch:
     inputs:
       version_suffix:
