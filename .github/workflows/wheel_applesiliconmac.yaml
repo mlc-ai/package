@@ -19,10 +19,11 @@
 name: Wheel-AppleSiliconMac
 
 on:
-  # Pull requests build only when this package's files change.
+  # Pull requests build only when this package or this workflow changes.
   pull_request:
     paths:
       - "packages/mlc-ai/**"
+      - ".github/workflows/wheel_applesiliconmac.yaml"
   workflow_dispatch:
     inputs:
       tag:
