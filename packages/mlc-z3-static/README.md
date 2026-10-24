@@ -1,9 +1,10 @@
 # mlc-z3-static
 
-`mlc-z3-static` is a Python package that carries native Z3 development
-artifacts for build systems. It does not provide Z3 Python bindings. The pinned
-Z3 release is recorded in [`version.py`](version.py); at runtime it is exposed
-as `mlc_z3_static.Z3_VERSION`, `mlc_z3_static.Z3_TAG`, and
+Native Z3 development artifacts (headers, a static library, and CMake
+metadata) packaged as Python wheels for build systems. It does not provide Z3
+Python bindings. The pinned Z3 release is recorded in
+[`version.py`](version.py) and exposed at runtime as
+`mlc_z3_static.Z3_VERSION`, `mlc_z3_static.Z3_TAG`, and
 `mlc_z3_static.Z3_COMMIT`.
 
 The wheel contains:
@@ -14,13 +15,14 @@ The wheel contains:
 - Relocatable CMake and pkg-config metadata under
   `mlc_z3_static/static/lib/cmake/z3` and `mlc_z3_static/static/lib/pkgconfig`.
 
-The package is built with scikit-build-core: building a wheel runs
-`scripts/prepare_z3.py`, which downloads the pinned Z3 source archive,
-verifies its SHA-256 digest, and builds the static library. Prebuilt wheels
-are published for common platforms; elsewhere pip builds from the sdist like
-any other compiled package (see [Build From Source](#build-from-source)).
+Prebuilt wheels are published to PyPI for common platforms; elsewhere pip
+builds from the sdist (see [Build from source](#build-from-source)).
 
-## Python Helpers
+## Usage
+
+```bash
+python -m pip install mlc-z3-static
+```
 
 Build systems can locate the packaged artifacts from Python:
 
@@ -39,15 +41,10 @@ python -m mlc_z3_static.config --cmake-dir
 python -m mlc_z3_static.config --prefix
 ```
 
-## Downstream CMake Usage
+### CMake
 
-Install the wheel into the Python environment used by the downstream build:
-
-```bash
-python -m pip install mlc-z3-static
-```
-
-Point CMake at the packaged static Z3 and use Z3's exported target:
+Install the wheel into the Python environment used by the downstream build,
+then point CMake at the packaged static Z3 and use Z3's exported target:
 
 ```bash
 cmake -S . -B build \
@@ -83,13 +80,17 @@ CMake project and let CMake link through a C++ linker when using the static
 archive. No shared Z3 library or DLL is bundled. See
 `example_project/` for a complete uv-managed consumer.
 
-## Build From Source
+## Build from source
 
-Building from the sdist (or this directory) needs a C++20 compiler with
-`<format>` support (Z3 5.x requires it; e.g. GCC >= 13, Clang >= 17, Visual
-Studio 2022), network access to download the pinned Z3 source archive, and
-Python; CMake (>= 3.26) and Ninja are pulled in as build requirements. A static Z3 build
-takes a while; set `CMAKE_BUILD_PARALLEL_LEVEL` to use more cores:
+The package is built with scikit-build-core: building a wheel runs
+`scripts/prepare_z3.py`, which downloads the pinned Z3 source archive, verifies
+its SHA-256 digest, and builds the static library.
+
+This needs a C++20 compiler with `<format>` support (Z3 5.x requires it; e.g.
+GCC >= 13, Clang >= 17, Visual Studio 2022), Python, and network access to
+download the source archive. CMake (>= 3.26) and Ninja are pulled in as build
+requirements. A static Z3 build takes a while; set `CMAKE_BUILD_PARALLEL_LEVEL`
+to use more cores:
 
 ```bash
 CMAKE_BUILD_PARALLEL_LEVEL=8 python -m pip install --no-binary mlc-z3-static mlc-z3-static
@@ -107,16 +108,20 @@ Use an existing Z3 checkout instead of downloading the pinned archive:
 MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 python -m build --wheel
 ```
 
-## Build Release Wheels
+## Release wheels
 
-The publishing workflow builds `py3-none` wheels for manylinux_2_28
+The `Publish mlc-z3-static wheels` workflow
+([`mlc_z3_static_wheel.yml`](../../.github/workflows/mlc_z3_static_wheel.yml))
+builds `py3-none` wheels for manylinux_2_28
 (`x86_64`, `aarch64`), macOS (`arm64`, `x86_64`), and Windows (`AMD64`,
 `ARM64`). On Windows the inner Z3 build uses the same Visual Studio platform
 (`-A x64` or `-A ARM64`) as the wheel being built. MSVC builds explicitly
 enable `/Zc:inline` to omit unused inline COMDAT code and data from object
-files while preserving the static linking interface.
+files while preserving the static linking interface. See the
+[root README](../../README.md#when-workflows-run) for when it runs and how to
+publish.
 
-From this directory:
+To build release wheels locally, from this directory:
 
 ```bash
 scripts/wheel_manylinux_2_28.sh
@@ -133,10 +138,9 @@ scripts\wheel_windows.ps1
 The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
 Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
 host CIBW runner. They run `cibuildwheel==3.3.1`, which tests each wheel in a
-clean virtual environment with the pytest suite (see [Tests](#tests)): it
-links a small CMake consumer against `z3::libz3` against the static library, runs it,
-and checks that the static flavor does not link a dynamic `libz3`. The
-manylinux script retags Linux wheels as `manylinux_2_28`.
+clean virtual environment with the pytest suite (see [Tests](#tests)). The
+manylinux script retags Linux wheels as `manylinux_2_28`. Wheels are written
+to `wheelhouse/`.
 
 The manylinux script defaults to the host architecture. Set
 `MLC_Z3_STATIC_ARCH=x86_64` or `MLC_Z3_STATIC_ARCH=aarch64` to choose explicitly.
@@ -149,9 +153,11 @@ interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
 
 ## Tests
 
-The pytest suite under `tests/python/` exercises the installed package. The
-tests check the version metadata, artifact paths, and the config CLI, and configure,
-link, and run a small CMake consumer against the static library (this needs a C++ compiler). From this directory:
+The pytest suite under `tests/python/` exercises the installed package. It
+checks the version metadata, artifact paths, and the config CLI, and builds,
+links, and runs a small CMake consumer against `z3::libz3`, checking that it
+does not link a dynamic `libz3` (this needs a C++ compiler). From this
+directory:
 
 ```bash
 python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest

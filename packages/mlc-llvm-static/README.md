@@ -1,8 +1,10 @@
 # mlc-llvm-static
 
-An LLVM 23.1.1 development SDK distributed as Python-version-independent,
-platform-specific wheels. Manual workflow runs can publish the native SDK and
-its matching all-target add-on to PyPI.
+An LLVM development SDK packaged as Python-version-independent,
+platform-specific wheels for build systems. The pinned LLVM release (23.1.1) is
+recorded in [`version.py`](version.py). The optional
+`mlc-llvm-static-extra-targets` add-on in [`extra-targets/`](extra-targets)
+adds the remaining code-generation backends.
 
 The SDK contains:
 
@@ -41,7 +43,7 @@ libxml2 is needed for LLVM's Windows manifest merger, which this profile disable
 it is not required by the selected IR/code-generation/ORC paths. Host system and
 C++ runtimes remain downstream dependencies.
 
-## Install and locate
+## Usage
 
 Install the native SDK, then add every standard code-generation backend if needed:
 
@@ -64,9 +66,8 @@ print(llvm.metadata()["targets"])
 
 The `all` extra pins the add-on to the base wheel's exact version, and the add-on
 pins the base to that same version, including any RC suffix. The base wheel can
-be installed on its own. Downloaded wheel files and GitHub release asset URLs
-can also be passed to `pip install`; install both matching wheels explicitly
-when using files or URLs.
+be installed on its own. Downloaded wheel files can also be passed to
+`pip install`; install both matching wheels explicitly when using files.
 
 The frontend supports `--profile=native|all|auto` and normal static LLVM queries,
 including components, compiler flags, library paths/order, and system libraries.
@@ -102,115 +103,7 @@ of `--llvm-config` followed by `--link-static`. For the FFI ORC JIT addon, set
 `LLVM_PREFIX` to the result of `--prefix`. Linux ORC runtime archives live under
 `lib/clang/<LLVM-major>/lib/`, matching the addon's discovery convention.
 
-## Builds and publishing
-
-The `Publish mlc-llvm-static wheels` workflow builds and verifies both wheel
-families for Linux x86_64, Linux aarch64, macOS arm64 (14.0+), and Windows
-AMD64/ARM64. Windows ARM64 uses a native Windows 11 runner, ARM64 Python, and
-`clang-cl` with the ARM64 MSVC libraries and linker; its wheels use the
-`win_arm64` platform tag. Consumer verification uses MSVC on both Windows hosts.
-Linux builds run in manylinux_2_28; Windows uses the MSVC dynamic CRT (`/MD`).
-Pull requests that change this package build and validate the wheels. Manual runs take the same
-inputs as the other packages' workflows: `version_suffix`, `publish` (publish to
-PyPI, off by default), and `repository_url` (a custom PyPI-compatible repository
-URL; empty means PyPI). Every run validates every supported host platform.
-Publishing waits for every host's validation and checks the complete wheel set
-and its metadata before uploading. Both packages publish wheels only, since they
-provide a prebuilt SDK. The `mlc-llvm-static-extra-targets` add-on in
-[`extra-targets/`](extra-targets) shares this package's `version.py` and packages
-a payload split from the native SDK build.
-The SDK is compiled once per host and partitioned into both wheel families.
-Separate publishing jobs download their project's validated wheels and do not
-build anything. Wait for both jobs to succeed before using the All profile from
-the index. Publishing jobs reuse the validated artifacts and can be rerun
-independently.
-
-The workflow appends the optional `version_suffix` string to the pinned
-`LLVM_VERSION` in `version.py`, then validates and normalizes it with Python's
-packaging version parser:
-
-| `version_suffix` | Both package versions |
-| --- | --- |
-| Empty (default) | `23.1.1` |
-| `rc0` | `23.1.1rc0` |
-| `dev0` | `23.1.1.dev0` |
-| `post0` | `23.1.1.post0` |
-
-Other valid suffixes, including alpha/beta and combined suffixes, work the same
-way. Both distributions, wheel filenames, and exact-version requirements are
-stamped together. Cache restores require the exact recipe key; changing the
-package suffix reuses the same compiled LLVM SDK.
-
-Python packaging normalizes `23.1.1.rc0` to `23.1.1rc0`. To test an RC from PyPI,
-pin it explicitly, for example:
-
-```bash
-python -m pip install 'mlc-llvm-static[all]==23.1.1rc0'
-```
-
-To enable PyPI publishing, configure a
-[trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
-for **each** project using these settings:
-
-| PyPI publisher field | Native SDK | Extra targets |
-| --- | --- | --- |
-| Project | `mlc-llvm-static` | `mlc-llvm-static-extra-targets` |
-| Owner | `mlc-ai` | `mlc-ai` |
-| Repository | `package` | `package` |
-| Workflow filename | `mlc_llvm_static_wheel.yml` | `mlc_llvm_static_wheel.yml` |
-| Environment | `pypi` | `pypi-all-targets` |
-
-For projects that do not exist yet, register
-[pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
-for both names. PyPI requires
-[pending publishers to have distinct identities](https://github.com/pypi/warehouse/blob/main/warehouse/oidc/models/github.py)
-for the repository/workflow/environment combination; the separate environments above
-allow both projects to be registered before their first upload. Existing
-projects can share a publisher, but this setup keeps the first release independent
-for each project. Use these same environment names in GitHub's environment
-settings when configuring protection rules.
-Each publishing job requests its own OIDC token; no PyPI API-token secret is
-required. After setup, dispatch this workflow with the desired version suffix.
-No workflow change is needed. Existing filenames on PyPI cause an error rather
-than being silently skipped.
-
-Verification installs the wheel and copies its SDK to a new directory containing
-spaces. It checks artifact hashes, `llvm-config` relocation, CMake import paths,
-and absence of unrequested tools/shared libraries. A shared consumer then parses
-LLVM IR, optimizes it, writes bitcode, and JIT-executes a function returning 42.
-The consumer must not depend on dynamic LLVM, zlib, or zstd. Linux also checks
-the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline.
-The probe also round-trips both compression formats, reads compressed ELF DWARF,
-and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
-CI caches the raw All-target SDK by platform and a fingerprint of the compilation
-and graph-generation recipe, including explicit `CC`/`CXX` overrides.
-Frontend, packaging, and verification changes reuse
-that build. Windows packaging uses `llvm-objcopy` on a copy of the raw archives
-to remove unreferenced local labels and unused undefined declarations. Public
-definitions, relocation/weak-reference targets, linker directive references,
-COMDAT section definitions and key symbols, compiler feature flags, debug/PCH
-metadata, and unwind data are retained.
-Generic `--strip-unneeded` is unsuitable because
-it removes COMDAT records required by MSVC's linker. Install LLVM's
-`llvm-objcopy` as a build tool or set `MLC_LLVM_STATIC_OBJCOPY` to its path; the
-tool is not included in either wheel. The resulting archive hashes and tool
-version are included in the SDK fingerprint. The packager rejects any change to
-public symbol definitions or non-debug section contents, including code, data,
-and unwind information. Windows verification also links every archive member
-using `/WHOLEARCHIVE`. All hosts use 7-Zip for stronger standard ZIP DEFLATE
-encoding. Linux and macOS packaging fetch an official 7-Zip 26.05 binary with
-a pinned SHA-256; Windows uses the installed 7-Zip. Set `MLC_LLVM_STATIC_7ZIP`
-to use an existing executable, including for offline packaging. Neither
-packaging tool is needed by installed consumers. Recompression runs after
-retagging and preserves the unpacked files, permissions, and RECORD hashes.
-Packaging fails if either wheel reaches 100,000,000 bytes. Linux/macOS archives
-retain their original symbols and sections; lossless ZIP recompression reduces
-downloads without changing the installed SDK size.
-
-The packager compares native-component library queries with upstream
-`llvm-config`. Wheel verification covers Native and All, explicit Native with
-the add-on present, and add-on uninstall. It initializes every selected backend
-and emits/parses x86_64, AArch64, RISC-V, and WebAssembly objects for All.
+## Build from source
 
 Use remote build machines for LLVM compilation. Source builds are explicitly
 opt-in to avoid a lengthy accidental build when a wheel is unavailable:
@@ -221,8 +114,10 @@ MLC_LLVM_STATIC_ALLOW_SOURCE_BUILD=1 CMAKE_BUILD_PARALLEL_LEVEL=8 \
 python scripts/verify_split_wheels.py wheelhouse
 ```
 
-The LLVM source archive digest is pinned in `version.py`; the zlib and zstd
-digests are pinned in `scripts/prepare_llvm.py`. Useful build overrides:
+`build_wheels.py` compiles one All-target SDK per host and partitions it into
+the base and add-on wheels. The LLVM source archive digest is pinned in
+`version.py`; the zlib and zstd digests are pinned in `scripts/prepare_llvm.py`.
+Useful build overrides:
 
 - `MLC_LLVM_STATIC_SOURCE_CACHE`: reusable directory of downloaded source archives.
 - `MLC_LLVM_STATIC_LLVM_SOURCE_DIR`, `MLC_LLVM_STATIC_ZLIB_SOURCE_DIR`, and
@@ -232,6 +127,8 @@ digests are pinned in `scripts/prepare_llvm.py`. Useful build overrides:
 - `MLC_LLVM_STATIC_PREFIX`: repackage a raw All-target SDK produced by this
   recipe, or a staged Native SDK when invoking the base wheel's build backend.
   Its parent must contain the matching `licenses/` and `staticlib.json`.
+- `MLC_LLVM_STATIC_OBJCOPY` and `MLC_LLVM_STATIC_7ZIP`: packaging tools (see
+  [Packaging details](#packaging-details)).
 
 Build settings are Release, assertions off, RTTI on, exceptions off, PIC on, and
 LTO off. `staticlib.json` records source hashes, selected targets, build settings,
@@ -243,15 +140,132 @@ versions can compile native objects independently, but Clang producing LLVM IR
 for this SDK should use a tested matching LLVM release. Android and ROCm tools
 should come from their corresponding vendor toolchains.
 
+## Release wheels
+
+The `Publish mlc-llvm-static wheels` workflow
+([`mlc_llvm_static_wheel.yml`](../../.github/workflows/mlc_llvm_static_wheel.yml))
+builds and verifies both wheel families for Linux x86_64, Linux aarch64, macOS
+arm64 (14.0+), and Windows AMD64/ARM64. See the
+[root README](../../README.md#when-workflows-run) for when it runs.
+
+- Linux builds run in manylinux_2_28.
+- Windows uses the MSVC dynamic CRT (`/MD`). Windows ARM64 uses a native
+  Windows 11 runner, ARM64 Python, and `clang-cl` with the ARM64 MSVC libraries
+  and linker; its wheels use the `win_arm64` platform tag. Consumer
+  verification uses MSVC on both Windows hosts.
+- The SDK is compiled once per host and partitioned into both wheel families.
+  CI caches the raw All-target SDK by platform and a fingerprint of the
+  compilation and graph-generation recipe, including explicit `CC`/`CXX`
+  overrides, so frontend, packaging, and verification changes reuse that build.
+- Both packages publish wheels only, since they provide a prebuilt SDK.
+
+### Publishing to PyPI
+
+Manual runs take `version_suffix`, `publish` (*Publish to PyPI*, off by
+default), and `repository_url` (a custom PyPI-compatible repository URL; empty
+means PyPI). Publishing waits for every host's validation and checks the
+complete wheel set and its metadata. Separate jobs then upload each project's
+validated wheels without rebuilding; they can be rerun independently. Wait for
+both jobs to succeed before using the All profile from the index. Existing
+filenames on PyPI cause an error rather than being silently skipped.
+
+The workflow appends `version_suffix` to `LLVM_VERSION` and normalizes it with
+Python's packaging version parser. Both distributions, wheel filenames, and
+exact-version requirements are stamped together, and the compiled SDK cache is
+reused:
+
+| `version_suffix` | Both package versions |
+| --- | --- |
+| Empty (default) | `23.1.1` |
+| `rc0` | `23.1.1rc0` |
+| `dev0` | `23.1.1.dev0` |
+| `post0` | `23.1.1.post0` |
+
+Python packaging normalizes `23.1.1.rc0` to `23.1.1rc0`. To test an RC from
+PyPI, pin it explicitly:
+
+```bash
+python -m pip install 'mlc-llvm-static[all]==23.1.1rc0'
+```
+
+Each project needs a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/);
+no API-token secret is required:
+
+| PyPI publisher field | Native SDK | Extra targets |
+| --- | --- | --- |
+| Project | `mlc-llvm-static` | `mlc-llvm-static-extra-targets` |
+| Owner | `mlc-ai` | `mlc-ai` |
+| Repository | `package` | `package` |
+| Workflow filename | `mlc_llvm_static_wheel.yml` | `mlc_llvm_static_wheel.yml` |
+| Environment | `pypi` | `pypi-all-targets` |
+
+For projects that do not exist yet, register
+[pending publishers](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
+PyPI requires
+[distinct identities](https://github.com/pypi/warehouse/blob/main/warehouse/oidc/models/github.py)
+for pending publishers, which is why the two projects use separate
+environments. Use the same environment names in GitHub's environment settings
+when configuring protection rules.
+
+### Verification
+
+Verification installs the wheel and copies its SDK to a new directory containing
+spaces. It checks artifact hashes, `llvm-config` relocation, CMake import paths,
+and absence of unrequested tools/shared libraries. A shared consumer then parses
+LLVM IR, optimizes it, writes bitcode, and JIT-executes a function returning 42.
+The consumer must not depend on dynamic LLVM, zlib, or zstd. Linux also checks
+the required GLIBC/GLIBCXX/CXXABI symbol versions against the manylinux baseline.
+The probe also round-trips both compression formats, reads compressed ELF DWARF,
+and checks its exports, allowing LLVM's two forced GDB JIT hooks on Windows.
+
+The packager compares native-component library queries with upstream
+`llvm-config`. Wheel verification covers Native and All, explicit Native with
+the add-on present, and add-on uninstall. It initializes every selected backend
+and emits/parses x86_64, AArch64, RISC-V, and WebAssembly objects for All.
+Windows verification also links every archive member using `/WHOLEARCHIVE`.
+
+### Packaging details
+
+Windows packaging uses `llvm-objcopy` on a copy of the raw archives to remove
+unreferenced local labels and unused undefined declarations. Public
+definitions, relocation/weak-reference targets, linker directive references,
+COMDAT section definitions and key symbols, compiler feature flags, debug/PCH
+metadata, and unwind data are retained. Generic `--strip-unneeded` is
+unsuitable because it removes COMDAT records required by MSVC's linker. Install
+LLVM's `llvm-objcopy` as a build tool or set `MLC_LLVM_STATIC_OBJCOPY` to its
+path. The resulting archive hashes and tool version are included in the SDK
+fingerprint. The packager rejects any change to public symbol definitions or
+non-debug section contents, including code, data, and unwind information.
+Linux/macOS archives retain their original symbols and sections.
+
+All hosts recompress wheels with 7-Zip's standard ZIP DEFLATE encoder. Linux
+and macOS packaging fetch an official 7-Zip 26.05 binary with a pinned SHA-256;
+Windows uses the installed 7-Zip. Set `MLC_LLVM_STATIC_7ZIP` to use an existing
+executable, including for offline packaging. Recompression runs after retagging
+and preserves the unpacked files, permissions, and RECORD hashes, so it reduces
+downloads without changing the installed SDK. Packaging fails if either wheel
+reaches 100,000,000 bytes. Neither packaging tool is needed by installed
+consumers or included in either wheel.
+
 ## Tests
 
-The unit tests cover the build scripts and the Python frontend without building
-LLVM:
+The pytest suite under `tests/python/` covers the build scripts and the Python
+frontend without building LLVM. From this directory:
 
 ```bash
 python -m pip install pytest packaging
-python -m pytest tests/python
+pytest
 ```
+
+Wheel verification on real builds is described in [Verification](#verification).
+
+## License
+
+`LICENSE` is LLVM's license (Apache-2.0 with LLVM exceptions). The wheel also
+bundles zlib and zstd, so its metadata declares
+`Apache-2.0 WITH LLVM-exception AND Zlib AND BSD-3-Clause`, and each
+component's license notice is installed under `mlc_llvm_static/licenses/`.
 
 ## Bumping the version
 
