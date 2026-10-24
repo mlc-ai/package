@@ -54,7 +54,7 @@ jobs:
     - name: Git config
       run: >-
         git config --system core.longpaths true
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
       with:
         submodules: 'recursive'
     - uses: ./.github/actions/detect-env-vars
@@ -75,7 +75,7 @@ jobs:
         python3 scripts/sync_package.py --package mlc-llm --package-name ${{ env.PKG_KIND == 'nightly' && 'mlc-llm-nightly' || 'mlc-llm' }} --revision origin/main ${{ env.PKG_KIND == 'nightly' && '--skip-checkout' || '' }}
     # Use conda for LLVM dep
     - name: Setup@Py313
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         activate-environment: tlcpack-build
         python-version: '3.13'
@@ -96,7 +96,7 @@ jobs:
     # Use system python instead of conda for upload
     - name: Wheel-Deploy
       if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       env:
         GITHUB_TOKEN: ${{ secrets.MLC_AI_BOT_GITHUB_TOKEN }}
       with:

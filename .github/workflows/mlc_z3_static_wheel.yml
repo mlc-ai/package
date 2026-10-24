@@ -65,8 +65,8 @@ jobs:
             arch: ARM64
             platform_tag: win_arm64
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - uses: ./.github/actions/detect-env-vars
@@ -107,7 +107,7 @@ jobs:
           python -m pip install wheel
           python -m wheel tags --remove --platform-tag "${{ matrix.platform_tag }}" wheelhouse/*.whl
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mlc-z3-static-wheel-${{ matrix.platform_tag }}
           path: packages/mlc-z3-static/wheelhouse/*.whl
@@ -117,8 +117,8 @@ jobs:
     name: Source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Stamp package version
@@ -133,7 +133,7 @@ jobs:
         working-directory: packages/mlc-z3-static
         run: pipx run build --sdist
       - name: Upload sdist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mlc-z3-static-sdist
           path: packages/mlc-z3-static/dist/*.tar.gz
@@ -150,7 +150,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: mlc-z3-static-*
           path: dist
@@ -158,7 +158,7 @@ jobs:
       - name: List distributions
         run: ls -l dist
       - name: Generate artifact attestations
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: "dist/*"
       - name: Publish to PyPI
