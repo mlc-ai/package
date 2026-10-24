@@ -1,10 +1,11 @@
 name: Publish mlc-z3-static wheels
 
 on:
-  # Pull requests build only when this package's files change.
+  # Pull requests build only when this package or this workflow changes.
   pull_request:
     paths:
       - "packages/mlc-z3-static/**"
+      - ".github/workflows/mlc_z3_static_wheel.yml"
   workflow_dispatch:
     inputs:
       version_suffix:
