@@ -149,10 +149,13 @@ arm64 (14.0+), and Windows AMD64/ARM64. See the
 [root README](../../README.md#when-workflows-run) for when it runs.
 
 - Linux builds run in manylinux_2_28.
-- Windows uses the MSVC dynamic CRT (`/MD`). Windows ARM64 uses a native
-  Windows 11 runner, ARM64 Python, and `clang-cl` with the ARM64 MSVC libraries
-  and linker; its wheels use the `win_arm64` platform tag. Consumer
-  verification uses MSVC on both Windows hosts.
+- Windows uses the MSVC dynamic CRT (`/MD`) and builds LLVM with `clang-cl`
+  against the MSVC headers, libraries, and linker. `clang-cl` objects carry
+  about half the sections and symbols of MSVC's, which keeps the wheels well
+  under PyPI's size limit, and MSVC's ARM64 optimizer cannot build the AMDGPU
+  backend. Consumer verification uses MSVC on both Windows hosts, so MSVC
+  projects link the `clang-cl` libraries. Windows ARM64 uses a native Windows 11
+  runner and ARM64 Python; its wheels use the `win_arm64` platform tag.
 - The SDK is compiled once per host and partitioned into both wheel families.
   CI caches the raw All-target SDK by platform and a fingerprint of the
   compilation and graph-generation recipe, including explicit `CC`/`CXX`
