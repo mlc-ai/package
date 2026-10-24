@@ -30,7 +30,7 @@ jobs:
     - name: Build Docker image
       run: |
         set -eux
-        cd packages/mlc-ai/docker
+        cd docker
         docker build -t ci-${{ matrix.platform }} -f Dockerfile.ci-${{ matrix.platform }} .
     - name: Upload to Docker Hub
       if: ${{ github.ref == 'refs/heads/main' }}
