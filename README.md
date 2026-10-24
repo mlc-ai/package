@@ -9,7 +9,7 @@ GitHub Actions workflow.
 | [`mlc-z3-static`](packages/mlc-z3-static) | `mlc_z3_static_wheel.yml` | PyPI |
 | [`mlc-doxygen-bin`](packages/mlc-doxygen-bin) | `mlc_doxygen_bin_wheel.yml` | PyPI |
 | [`mlc-llvm-static`](packages/mlc-llvm-static) | `mlc_llvm_static_wheel.yml` | PyPI |
-| [`mlc-ai`](packages/mlc-ai) (`mlc-ai`, `mlc-llm` wheels) | `wheel_manylinux.yaml`, `wheel_win.yaml`, `wheel_applesiliconmac.yaml` | [mlc.ai/wheels](https://mlc.ai/wheels) |
+| [`mlc-ai`](packages/mlc-ai) | `wheel_manylinux.yaml`, `wheel_win.yaml`, `wheel_applesiliconmac.yaml` | [mlc.ai/wheels](https://mlc.ai/wheels) |
 
 `docker/` at the repo root holds the build environment images, built manually
 by `build_docker_package.yaml` and `build_docker_ci.yaml`.
