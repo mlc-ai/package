@@ -143,7 +143,8 @@ def cmake_generator_platform(generator: str | None) -> str | None:
 
 def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, kind: str) -> list[str | Path]:
     build_type = os.environ.get("MLC_Z3_STATIC_BUILD_TYPE", "Release")
-    shared = "ON" if kind == "shared" else "OFF"
+    if kind != "static":
+        raise ValueError("Only static Z3 artifacts are supported")
     cmd: list[str | Path] = [
         CMAKE,
         "-S",
@@ -170,7 +171,8 @@ def cmake_configure_command(source_dir: Path, build_dir: Path, stage_dir: Path, 
             "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
             "-DCMAKE_CXX_STANDARD=20",
             "-DCMAKE_CXX_STANDARD_REQUIRED=ON",
-            f"-DZ3_BUILD_LIBZ3_SHARED={shared}",
+            "-DZ3_BUILD_LIBZ3_SHARED=OFF",
+            f"-DCMAKE_PROJECT_Z3_INCLUDE={PROJECT_ROOT / 'scripts' / 'z3_build_options.cmake'}",
             "-DZ3_BUILD_PYTHON_BINDINGS=OFF",
             "-DZ3_INSTALL_PYTHON_BINDINGS=OFF",
             "-DZ3_BUILD_DOTNET_BINDINGS=OFF",
@@ -231,27 +233,12 @@ def build_and_install(source_dir: Path, work_root: Path, package_dir: Path, kind
 
 def library_candidates(stage_dir: Path, kind: str) -> list[Path]:
     lib_dir = stage_dir / "lib"
-    bin_dir = stage_dir / "bin"
-    if kind == "static":
-        return [
-            lib_dir / "libz3.a",
-            lib_dir / "z3.lib",
-            lib_dir / "libz3.lib",
-            # Z3 >= 5 names the MSVC static archive libz3-static.lib so it can
-            # share a prefix with the shared build's libz3.lib import library.
-            lib_dir / "libz3-static.lib",
-        ]
-
-    candidates = [
-        lib_dir / "libz3.dylib",
-        lib_dir / "libz3.so",
-        bin_dir / "z3.dll",
-        bin_dir / "libz3.dll",
-        lib_dir / "z3.dll",
-        lib_dir / "libz3.dll",
+    return [
+        lib_dir / "libz3.a",
+        lib_dir / "z3.lib",
+        lib_dir / "libz3.lib",
+        lib_dir / "libz3-static.lib",
     ]
-    candidates.extend(sorted(lib_dir.glob("libz3.so*")))
-    return candidates
 
 
 def first_library(stage_dir: Path, kind: str) -> Path:
@@ -463,7 +450,6 @@ def main() -> None:
     clean_package_outputs(package_dir)
     stages = {
         "static": build_and_install(source_dir, build_root, package_dir, "static"),
-        "shared": build_and_install(source_dir, build_root, package_dir, "shared"),
     }
     license_path = write_license(package_dir, source_dir)
     write_version_module(package_dir)

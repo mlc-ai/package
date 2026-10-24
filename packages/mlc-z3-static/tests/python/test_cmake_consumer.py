@@ -1,7 +1,6 @@
-"""Configure, link, and run a C++ consumer against each packaged Z3 flavor."""
+"""Configure, link, and run a C++ consumer against the packaged static Z3 library."""
 from __future__ import annotations
 
-import os
 import platform
 import re
 import shutil
@@ -48,16 +47,6 @@ int main() {
 """
 
 
-def runtime_env(kind: str) -> dict[str, str]:
-    env = os.environ.copy()
-    if kind == "shared":
-        # On Windows the DLL lives in shared/bin, elsewhere in shared/lib.
-        lib_dir = str(Path(mlc_z3_static.get_shared_library_path()).parent)
-        key = {"Darwin": "DYLD_LIBRARY_PATH", "Windows": "PATH"}.get(platform.system(), "LD_LIBRARY_PATH")
-        env[key] = os.pathsep.join(filter(None, [lib_dir, env.get(key)]))
-    return env
-
-
 def dynamic_dependencies(exe: Path) -> str | None:
     """Return the executable's dynamic library list, or None if no tool is available."""
     system = platform.system()
@@ -68,13 +57,12 @@ def dynamic_dependencies(exe: Path) -> str | None:
 
 
 @pytest.mark.skipif(shutil.which("cmake") is None, reason="cmake is not installed")
-@pytest.mark.parametrize("kind", ["static", "shared"])
-def test_cmake_consumer(kind: str, tmp_path: Path) -> None:
+def test_cmake_consumer(tmp_path: Path) -> None:
     source, build = tmp_path / "src", tmp_path / "build"
     source.mkdir()
     (source / "CMakeLists.txt").write_text(CMAKELISTS, encoding="utf-8")
     (source / "main.cpp").write_text(MAIN_CPP, encoding="utf-8")
-    prefix = mlc_z3_static.get_cmake_prefix_path(kind)
+    prefix = mlc_z3_static.get_cmake_prefix_path()
     configure = ["cmake", "-S", str(source), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                  f"-DCMAKE_PREFIX_PATH={prefix}", f"-DZ3_EXPECTED_PREFIX={prefix}"]
     if platform.system() != "Windows" and shutil.which("ninja"):
@@ -84,11 +72,11 @@ def test_cmake_consumer(kind: str, tmp_path: Path) -> None:
 
     # Visual Studio generators are multi-config and add a Release subdirectory.
     exe = build / "Release" / "consumer.exe" if platform.system() == "Windows" else build / "consumer"
-    subprocess.run([str(exe)], check=True, env=runtime_env(kind))
+    subprocess.run([str(exe)], check=True)
 
-    # The static flavor must be linked in, the shared one loaded at runtime.
+    # Z3 must be linked into the executable, with no runtime Z3 dependency.
     dependencies = dynamic_dependencies(exe)
     if dependencies is not None:
         # Install names may be versioned: libz3.so.5.3 on Linux, libz3.5.3.dylib on macOS.
         links_libz3 = re.search(r"libz3(\.[0-9]+)*\.(so|dylib)\b", dependencies) is not None
-        assert links_libz3 == (kind == "shared"), dependencies
+        assert not links_libz3, dependencies

@@ -16,12 +16,11 @@ add_custom_target(stage_mlc_z3_static ALL
     "MLC_Z3_STATIC_CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
     "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare_z3.py"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  COMMENT "Building Z3 static and shared artifacts"
+  COMMENT "Building Z3 static artifacts"
   VERBATIM
 )
 
 install(DIRECTORY "${MLC_Z3_STATIC_STAGE_DIR}/static" DESTINATION mlc_z3_static)
-install(DIRECTORY "${MLC_Z3_STATIC_STAGE_DIR}/shared" DESTINATION mlc_z3_static)
 install(DIRECTORY "${MLC_Z3_STATIC_STAGE_DIR}/licenses" DESTINATION mlc_z3_static)
 install(FILES
   "${MLC_Z3_STATIC_STAGE_DIR}/staticlib.json"

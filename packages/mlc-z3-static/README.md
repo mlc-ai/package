@@ -11,14 +11,12 @@ The wheel contains:
 - Z3 C and C++ headers.
 - A position-independent static `libz3` (`libz3.a` on Unix-like platforms,
   `.lib` on Windows).
-- A shared `libz3`.
-- Relocatable CMake and pkg-config metadata for each library flavor, under
-  `mlc_z3_static/<kind>/lib/cmake/z3` and `mlc_z3_static/<kind>/lib/pkgconfig`
-  for `kind` in `static` and `shared`.
+- Relocatable CMake and pkg-config metadata under
+  `mlc_z3_static/static/lib/cmake/z3` and `mlc_z3_static/static/lib/pkgconfig`.
 
 The package is built with scikit-build-core: building a wheel runs
 `scripts/prepare_z3.py`, which downloads the pinned Z3 source archive,
-verifies its SHA-256 digest, and builds both library flavors. Prebuilt wheels
+verifies its SHA-256 digest, and builds the static library. Prebuilt wheels
 are published for common platforms; elsewhere pip builds from the sdist like
 any other compiled package (see [Build From Source](#build-from-source)).
 
@@ -30,16 +28,15 @@ Build systems can locate the packaged artifacts from Python:
 import mlc_z3_static
 
 print(mlc_z3_static.get_cmake_dir("static"))
-print(mlc_z3_static.get_cmake_prefix_path("shared"))
+print(mlc_z3_static.get_cmake_prefix_path())
 print(mlc_z3_static.get_static_library_path())
-print(mlc_z3_static.get_shared_library_path())
 ```
 
 Or from a build script through the configuration CLI:
 
 ```bash
 python -m mlc_z3_static.config --cmake-dir
-python -m mlc_z3_static.config --prefix --kind shared
+python -m mlc_z3_static.config --prefix
 ```
 
 ## Downstream CMake Usage
@@ -83,8 +80,7 @@ find_package(Z3 CONFIG REQUIRED)
 
 Z3 is implemented in C++, so even C-only consumers should enable CXX in the
 CMake project and let CMake link through a C++ linker when using the static
-archive. Use `--kind shared` (or `get_cmake_prefix_path("shared")`) to link the
-shared flavor instead; each flavor has its own relocatable CMake prefix. See
+archive. No shared Z3 library or DLL is bundled. See
 `example_project/` for a complete uv-managed consumer.
 
 ## Build From Source
@@ -92,7 +88,7 @@ shared flavor instead; each flavor has its own relocatable CMake prefix. See
 Building from the sdist (or this directory) needs a C++20 compiler with
 `<format>` support (Z3 5.x requires it; e.g. GCC >= 13, Clang >= 17, Visual
 Studio 2022), network access to download the pinned Z3 source archive, and
-Python; CMake (>= 3.26) and Ninja are pulled in as build requirements. A full static + shared Z3 build
+Python; CMake (>= 3.26) and Ninja are pulled in as build requirements. A static Z3 build
 takes a while; set `CMAKE_BUILD_PARALLEL_LEVEL` to use more cores:
 
 ```bash
@@ -116,7 +112,9 @@ MLC_Z3_STATIC_SOURCE_DIR=/path/to/z3 python -m build --wheel
 The publishing workflow builds `py3-none` wheels for manylinux_2_28
 (`x86_64`, `aarch64`), macOS (`arm64`, `x86_64`), and Windows (`AMD64`,
 `ARM64`). On Windows the inner Z3 build uses the same Visual Studio platform
-(`-A x64` or `-A ARM64`) as the wheel being built.
+(`-A x64` or `-A ARM64`) as the wheel being built. MSVC builds explicitly
+enable `/Zc:inline` to omit unused inline COMDAT code and data from object
+files while preserving the static linking interface.
 
 From this directory:
 
@@ -136,7 +134,7 @@ The scripts use `uv` for host-side Python tooling, so Debian/Ubuntu system
 Python restrictions such as PEP 668 and missing `ensurepip` do not affect the
 host CIBW runner. They run `cibuildwheel==3.3.1`, which tests each wheel in a
 clean virtual environment with the pytest suite (see [Tests](#tests)): it
-links a small CMake consumer against `z3::libz3` for both flavors, runs it,
+links a small CMake consumer against `z3::libz3` against the static library, runs it,
 and checks that the static flavor does not link a dynamic `libz3`. The
 manylinux script retags Linux wheels as `manylinux_2_28`.
 
@@ -153,8 +151,7 @@ interpreter, for example `CIBW_BUILD=cp313-macosx_arm64`.
 
 The pytest suite under `tests/python/` exercises the installed package. The
 tests check the version metadata, artifact paths, and the config CLI, and configure,
-link, and run a small CMake consumer against both the static and shared
-flavors (this needs a C++ compiler). From this directory:
+link, and run a small CMake consumer against the static library (this needs a C++ compiler). From this directory:
 
 ```bash
 python -m pip install ".[test]"   # or: python -m pip install <wheel> pytest
