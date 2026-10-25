@@ -115,9 +115,16 @@ The `Publish mlc-z3-static wheels` workflow
 builds `py3-none` wheels for manylinux_2_28
 (`x86_64`, `aarch64`), macOS (`arm64`, `x86_64`), and Windows (`AMD64`,
 `ARM64`). On Windows the inner Z3 build uses the same Visual Studio platform
-(`-A x64` or `-A ARM64`) as the wheel being built. MSVC builds explicitly
-enable `/Zc:inline` to omit unused inline COMDAT code and data from object
-files while preserving the static linking interface. See the
+(`-A x64` or `-A ARM64`) as the wheel being built. GNU and Clang builds on
+non-Apple platforms use `-ffunction-sections -fdata-sections`; MSVC builds use
+`/Gy /Gw` to package functions and global data in individual COMDATs, together
+with `/Zc:inline` to omit unused inline COMDATs. Mach-O already provides
+function/data granularity for dead stripping. These settings preserve the
+static linking interface and let consumers discard unused code and data when
+they enable linker garbage collection, such as `--gc-sections`, `/OPT:REF`, or
+`-dead_strip` on the corresponding platform. The package does not impose
+consumer link options, and section granularity can increase archive size even
+when it reduces the linked binary. See the
 [root README](../../README.md#when-workflows-run) for when it runs and how to
 publish.
 
