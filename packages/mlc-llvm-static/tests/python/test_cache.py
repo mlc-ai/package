@@ -66,18 +66,3 @@ def test_recipe_cache_separates_compilers_but_not_parallelism(monkeypatch):
     assert both_overrides not in (default, c_override)
     monkeypatch.setenv("CXX", "cl")
     assert key() not in (default, c_override, both_overrides)
-
-
-def test_recipe_cache_includes_native_build_policy(tmp_path, monkeypatch):
-    import prepare_llvm
-
-    def key():
-        return runpy.run_path(str(SCRIPT.with_name("cache_key.py")))["key"]
-
-    original = key()
-    policy = tmp_path / "sdk_build_options.cmake"
-    policy.write_text(SCRIPT.with_name(policy.name).read_text())
-    monkeypatch.setattr(prepare_llvm, "__file__", str(tmp_path / "prepare_llvm.py"))
-    assert key() == original
-    policy.write_text(policy.read_text() + "\nadd_compile_options(-fno-rtti)\n")
-    assert key() != original

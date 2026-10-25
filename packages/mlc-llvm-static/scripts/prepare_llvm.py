@@ -194,11 +194,11 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         if tool.is_dir() and (tool / "CMakeLists.txt").is_file():
             name = tool.name.upper().replace("-", "_")
             options.append(f"-DLLVM_TOOL_{name}_BUILD={'ON' if tool.name == 'llvm-config' else 'OFF'}")
-    configure(source / "llvm", build, prefix, options, split_sections=True)
+    configure(source / "llvm", build, prefix, options)
     # Configure once to obtain LLVM's actual component graph, then assign the
     # backend libraries to upstream's separate CMake export sets. No LLVM
     # objects have been compiled at this point.
-    configure(source / "llvm", build, prefix, options + distribution_options(build), split_sections=True)
+    configure(source / "llvm", build, prefix, options + distribution_options(build))
     # Upstream llvm-config embeds the absolute zstd archive location in
     # LLVM_SYSTEM_LIBS when zstd is static. Emit a library name instead, using
     # the SDK's --ldflags search path, so a relocated SDK cannot retain it.
