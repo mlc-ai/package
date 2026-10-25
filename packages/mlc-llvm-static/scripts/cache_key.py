@@ -3,6 +3,7 @@ import hashlib
 import inspect
 import json
 import os
+from pathlib import Path
 
 import prepare_llvm
 import split_sdk
@@ -14,6 +15,7 @@ for module, names in (
     (split_sdk, ("read_components", "closure", "partitions", "cmake_value", "distribution_options", "record_build")),
 ):
     recipe.extend(inspect.getsource(getattr(module, name)) for name in names)
+recipe.append((Path(prepare_llvm.__file__).parent / "sdk_build_options.cmake").read_text())
 compilers = {name: os.environ[name] for name in ("CC", "CXX") if os.environ.get(name)}
 if compilers:
     recipe.append(compilers)

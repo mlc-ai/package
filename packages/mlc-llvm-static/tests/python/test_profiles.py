@@ -50,6 +50,14 @@ def install_extra(directory, **overrides):
     (directory / "extra.json").write_text(json.dumps(extra))
 
 
+@pytest.mark.parametrize("rtti", [False, True])
+def test_rtti_query_matches_sdk_metadata(sdk, rtti):
+    prefix, directory, base = sdk
+    base["build"]["rtti"] = rtti
+    (directory / "base.json").write_text(json.dumps(base))
+    assert Configuration(prefix).query(["--has-rtti"]) == ("YES\n" if rtti else "NO\n")
+
+
 def test_native_has_no_foreign_component_or_target(sdk):
     prefix, _, _ = sdk
     config = Configuration(prefix)
