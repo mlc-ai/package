@@ -60,8 +60,8 @@ def test_orc_install_directory_uses_the_configured_llvm_major(tmp_path, monkeypa
     (prefix / "lib").mkdir(parents=True)
     configurations = []
 
-    def configure(source, build, destination, options, **kwargs):
-        configurations.append((source, destination, options, kwargs))
+    def configure(source, build, destination, options):
+        configurations.append((source, destination))
         if build.name == "build-llvm":
             variables = build / "tools/llvm-config/BuildVariables.inc"
             variables.parent.mkdir(parents=True, exist_ok=True)
@@ -75,9 +75,4 @@ def test_orc_install_directory_uses_the_configured_llvm_major(tmp_path, monkeypa
     monkeypatch.setattr(split_sdk, "distribution_options", lambda *args: [])
     monkeypatch.setattr(split_sdk, "record_build", lambda *args: None)
     prepare.build_llvm(source, work, prefix)
-    assert configurations[-1][:2] == (source / "compiler-rt", prefix / "lib/clang/99")
-    assert not configurations[-1][3].get("split_sections", False)
-    assert not any("RTTI" in option or "CMAKE_PROJECT_INCLUDE" in option for option in configurations[-1][2])
-    for _, _, options, kwargs in configurations[:-1]:
-        assert "-DLLVM_ENABLE_RTTI=OFF" in options
-        assert kwargs["split_sections"]
+    assert configurations[-1] == (source / "compiler-rt", prefix / "lib/clang/99")

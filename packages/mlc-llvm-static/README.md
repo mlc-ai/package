@@ -135,8 +135,9 @@ LTO off. `staticlib.json` records source hashes, selected targets, build setting
 and per-file hashes. Source overrides are development inputs and are not covered
 by the pinned archive digests.
 
-Linux builds use separate function/data sections for LLVM and its bundled
-compression libraries; Windows builds use `/Gy /Gw`. The ORC runtime keeps its
+LLVM retains its upstream Release section defaults. Its bundled compression
+libraries use separate function/data sections on Linux and add `/Gw` on Windows,
+where Release `/O2` already enables function-level linking. The ORC runtime keeps its
 upstream build flags. macOS retains native Mach-O dead-stripping behavior. Consumers must enable their linker's dead-code
 removal to discard unused sections. Code using C++ RTTI (`dynamic_cast` or
 `typeid`) on LLVM classes is unsupported; compile LLVM-facing code consistently
