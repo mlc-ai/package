@@ -113,13 +113,15 @@ def source_tree(name: str, work: Path) -> Path:
     return destination
 
 
-def configure(source: Path, build: Path, prefix: Path, options: list[str]) -> None:
+def configure(source: Path, build: Path, prefix: Path, options: list[str], *, split_sections: bool = False) -> None:
     command: list[str | Path] = [
         "cmake", "-S", source, "-B", build, "-G", "Ninja",
         "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={prefix}",
         "-DCMAKE_INSTALL_LIBDIR=lib", "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
         "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL",
     ]
+    if split_sections:
+        command.append(f"-DCMAKE_PROJECT_INCLUDE={PROJECT_ROOT / 'scripts' / 'sdk_build_options.cmake'}")
     deployment = os.environ.get("MACOSX_DEPLOYMENT_TARGET")
     if platform.system() == "Darwin" and deployment:
         command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={deployment}")
@@ -134,7 +136,7 @@ def install(build: Path, target: str = "install") -> None:
 def build_dependencies(work: Path, prefix: Path) -> None:
     source = source_tree("zlib", work)
     build = work / "build-zlib"
-    configure(source, build, prefix, ["-DZLIB_BUILD_EXAMPLES=OFF"])
+    configure(source, build, prefix, ["-DZLIB_BUILD_EXAMPLES=OFF"], split_sections=True)
     # zlib 1.3.1 always defines a shared target. Install only the static target
     # and its public headers; no unused DLL/dylib is carried into the SDK.
     run(["cmake", "--build", build, "--target", "zlibstatic"])
@@ -153,7 +155,7 @@ def build_dependencies(work: Path, prefix: Path) -> None:
         "-DZSTD_BUILD_PROGRAMS=OFF", "-DZSTD_BUILD_TESTS=OFF",
         "-DZSTD_BUILD_SHARED=OFF", "-DZSTD_BUILD_STATIC=ON",
         "-DZSTD_MULTITHREAD_SUPPORT=OFF",
-    ])
+    ], split_sections=True)
     install(build)
 
 
@@ -175,7 +177,7 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         "-DLLVM_BUILD_LLVM_C_DYLIB=OFF",
         "-DLLVM_LINK_LLVM_DYLIB=OFF", "-DLLVM_ENABLE_PIC=ON",
         "-DLLVM_ENABLE_LTO=OFF", "-DLLVM_ENABLE_ASSERTIONS=OFF",
-        "-DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF", "-DLLVM_ENABLE_RTTI=ON",
+        "-DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF", "-DLLVM_ENABLE_RTTI=OFF",
         "-DLLVM_ENABLE_EH=OFF", "-DLLVM_USE_CRT_RELEASE=MD",
         "-DLLVM_ENABLE_ZLIB=FORCE_ON", "-DZLIB_USE_STATIC_LIBS=ON",
         "-DLLVM_ENABLE_ZSTD=FORCE_ON", "-DLLVM_USE_STATIC_ZSTD=ON", "-DLLVM_ENABLE_LIBXML2=OFF",
@@ -192,11 +194,11 @@ def build_llvm(source: Path, work: Path, prefix: Path) -> None:
         if tool.is_dir() and (tool / "CMakeLists.txt").is_file():
             name = tool.name.upper().replace("-", "_")
             options.append(f"-DLLVM_TOOL_{name}_BUILD={'ON' if tool.name == 'llvm-config' else 'OFF'}")
-    configure(source / "llvm", build, prefix, options)
+    configure(source / "llvm", build, prefix, options, split_sections=True)
     # Configure once to obtain LLVM's actual component graph, then assign the
     # backend libraries to upstream's separate CMake export sets. No LLVM
     # objects have been compiled at this point.
-    configure(source / "llvm", build, prefix, options + distribution_options(build))
+    configure(source / "llvm", build, prefix, options + distribution_options(build), split_sections=True)
     # Upstream llvm-config embeds the absolute zstd archive location in
     # LLVM_SYSTEM_LIBS when zstd is static. Emit a library name instead, using
     # the SDK's --ldflags search path, so a relocated SDK cannot retain it.
@@ -398,7 +400,7 @@ def main() -> None:
         "source_overrides": [name for name in SOURCES if os.environ.get(f"MLC_LLVM_STATIC_{name.upper()}_SOURCE_DIR")],
         "system": platform.system(), "machine": platform.machine(),
         "build": {"type": "Release", "pic": True, "lto": False,
-                  "assertions": False, "rtti": True, "exceptions": False},
+                  "assertions": False, "rtti": False, "exceptions": False},
         "files": {str(path.relative_to(prefix)).replace(os.sep, "/"): {
             "sha256": sha256(path), "size": path.stat().st_size,
         } for path in sorted(prefix.rglob("*")) if path.is_file()},

@@ -130,10 +130,18 @@ Useful build overrides:
 - `MLC_LLVM_STATIC_OBJCOPY` and `MLC_LLVM_STATIC_7ZIP`: packaging tools (see
   [Packaging details](#packaging-details)).
 
-Build settings are Release, assertions off, RTTI on, exceptions off, PIC on, and
+Build settings are Release, assertions off, RTTI off, exceptions off, PIC on, and
 LTO off. `staticlib.json` records source hashes, selected targets, build settings,
 and per-file hashes. Source overrides are development inputs and are not covered
 by the pinned archive digests.
+
+Linux builds use separate function/data sections for LLVM and its bundled
+compression libraries; Windows builds use `/Gy /Gw`. The ORC runtime keeps its
+upstream build flags. macOS retains native Mach-O dead-stripping behavior. Consumers must enable their linker's dead-code
+removal to discard unused sections. Code using C++ RTTI (`dynamic_cast` or
+`typeid`) on LLVM classes is unsupported; compile LLVM-facing code consistently
+with the SDK's RTTI setting (reported by `llvm-config --has-rtti` and
+`LLVM_ENABLE_RTTI` in the CMake package).
 
 Static libraries and generated configuration must stay together. External Clang
 versions can compile native objects independently, but Clang producing LLVM IR
