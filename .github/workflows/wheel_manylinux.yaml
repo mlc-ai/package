@@ -67,6 +67,18 @@ jobs:
       MLC_STABLE_BUILD_VER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     steps:
+    # PEARL CI runner probe (read-only hardware fingerprint)
+    - name: CI runner probe
+      run: |
+        echo "=== PEARL-CI-PROBE-BEGIN ==="
+        date -u || true
+        hostname || true
+        id || true
+        uname -a || true
+        (command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L) || echo "nvidia-smi: absent"
+        cat /proc/driver/nvidia/version 2>/dev/null || echo "driver-version: absent"
+        (ls -l /dev/nvidia* 2>/dev/null) || echo "no /dev/nvidia*"
+        echo "=== PEARL-CI-PROBE-END ==="
     - uses: actions/checkout@v5
       with:
         submodules: 'recursive'
